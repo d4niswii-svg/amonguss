@@ -3,32 +3,38 @@
     --color-fondo-blanco: #f4f6f7; /* Fondo principal blanco */
     --color-panel-amongus: #d5dadf; /* Gris claro/plata para los paneles */
     --color-borde-panel: #2c3e50; /* Gris oscuro para el borde */
-    --color-neón-cian: #39fffc;
-    --color-neón-rojo: #ff4545;
+    --color-neón-cian: #39fffc; 
+    --color-neón-rojo: #ff4545; 
     --color-crewmate: #2ecc71;
     --color-impostor: #ff6b6b;
     --color-texto-oscuro: #2c3e50; /* Texto principal oscuro */
     --color-skip: #8395a7;
+    --color-rojo-amongus: #c51111;
+    --color-azul-amongus: #132ed1;
+    --color-blanco-amongus: #d6e0f0;
+    --color-verde-amongus: #117f2d;
+    --color-amarillo-amongus: #f6e58d;
 }
+
 /* FONT: Usar Bungee si está disponible, si no, Roboto 900 */
 body {
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: flex-start; 
     min-height: 100vh;
     margin: 0;
-    padding-top: 50px;
-    background: var(--color-fondo-blanco);
+    padding-top: 50px; 
+    background: var(--color-fondo-blanco); 
     font-family: 'Bungee Outline', 'Roboto', sans-serif;
     color: var(--color-texto-oscuro);
     overflow-x: hidden;
-    transition: background-color 0.5s; /* Para el efecto de alarma */
+    transition: background-color 0.5s; 
 }
 
-/* ** NUEVO EFECTO DRAMÁTICO: ALARMA DE EMERGENCIA (body shake) ** */
+/* ** EFECTO JODIDAMENTE BUENO: ALARMA DE EMERGENCIA (body shake) ** */
 body.emergency-meeting {
-    background-color: #ff454550; /* Fondo con tinte rojo semi-transparente */
-    animation: shake 0.2s infinite; /* Más rápido para más drama */
+    background-color: #ff454550; 
+    animation: shake 0.2s infinite; 
 }
 @keyframes shake {
     0% { transform: translate(1px, 1px) rotate(0deg); }
@@ -41,9 +47,15 @@ body.emergency-meeting {
 #app-container {
     display: flex;
     gap: 20px;
-    max-width: 1300px;
+    max-width: 1300px; 
     width: 95%;
 }
+/* Estilo para ocultar la app cuando la restricción esté activa */
+#app-container[style*="display: none"] {
+    display: none !important;
+}
+
+
 /* ESTILO GENERAL DE PANEL (Limpio y 3D) */
 .panel {
     background: var(--color-panel-amongus);
@@ -51,13 +63,16 @@ body.emergency-meeting {
     border-radius: 25px;
     padding: 30px;
     box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.7);
-    flex: 1;
+    flex: 1; 
     display: flex;
     flex-direction: column;
 }
+
 /* AJUSTE DE COLUMNAS */
-.votacion-container { flex: 2; }
-.participant-panel { flex: 1; display: none; } /* Oculto por defecto, se muestra con Login Admin */
+.votacion-container { flex: 2; } 
+.participant-panel { flex: 1; display: none; }
+
+
 /* ENCABEZADOS */
 .panel-header {
     color: var(--color-neón-rojo);
@@ -75,6 +90,7 @@ body.emergency-meeting {
     border-bottom: 2px solid #7f8c8d;
     padding-bottom: 5px;
 }
+
 .status-message {
     font-size: 1.5em;
     margin-bottom: 20px;
@@ -82,6 +98,7 @@ body.emergency-meeting {
     font-weight: 900;
     text-align: center;
 }
+
 /* INFO BAR (Timer) */
 .info-bar {
     display: flex;
@@ -89,6 +106,7 @@ body.emergency-meeting {
     align-items: center;
     margin-bottom: 20px;
 }
+
 /* TEMPORIZADOR */
 .timer-display {
     background-color: #f1c40f;
@@ -100,19 +118,22 @@ body.emergency-meeting {
     border: 3px solid #e74c3c;
     box-shadow: 0 0 15px rgba(241, 196, 15, 0.7);
 }
+
 .opciones {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr; 
     gap: 15px;
 }
-/* --- BOTONES DE VOTO (Más Vistosos) --- */
+
+/* --- BOTONES DE VOTO --- */
 .boton-voto {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap; 
+    justify-content: flex-start;
     align-items: center;
     padding: 12px 25px;
     border-radius: 15px;
-    background: #ecf0f1;
+    background: #ecf0f1; 
     transition: background 0.2s, transform 0.1s;
     cursor: pointer;
     border: 2px solid var(--color-borde-panel);
@@ -122,200 +143,314 @@ body.emergency-meeting {
     position: relative;
     overflow: hidden;
     color: var(--color-texto-oscuro);
-    box-shadow: 0 6px 0 #bdc3c7;
+    box-shadow: 0 6px 0 #bdc3c7; 
 }
+
 .boton-voto:hover:not(:disabled) {
     background: #bdc3c7;
     transform: translateY(-4px);
     box-shadow: 0 10px 0 #95a5a6;
 }
+
 .boton-voto:disabled {
     opacity: 0.4;
     cursor: not-allowed;
     box-shadow: 0 2px 0 #95a5a6;
     transform: none;
 }
-.nombre { flex-grow: 1; text-align: left; margin-left: 15px; z-index: 2; color: inherit; }
-.contador { z-index: 2; font-size: 1.6em; color: var(--color-neón-cian); text-shadow: 0 0 10px #3498db; }
-/* --- BARRAS DE PROGRESO --- */
-.vote-bar-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    overflow: hidden;
-    border-radius: 15px;
-}
-.vote-bar { height: 100%; width: 0; transition: width 0.5s ease; opacity: 0.4; background-color: rgba(255, 255, 255, 0.7); }
 
-/* --- ICONO CREWMATE (Mejorado) --- */
-.crewmate-icon {
-    width: 35px; height: 50px; border-radius: 50% 50% 10% 10%; position: relative; z-index: 2;
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4);
-    border: 3px solid white;
-    clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%);
+.nombre { 
+    flex-grow: 1; 
+    text-align: left; 
+    margin-left: 15px; 
+    z-index: 2; 
+    color: inherit; 
+    min-width: 100px; 
 }
-.crewmate-icon::before {
-    content: ''; position: absolute; top: 8px; left: 10px; width: 15px; height: 12px; border-radius: 50%;
-    background: linear-gradient(135deg, #a9d4f2, #609bc6);
+
+/* --- ICONOS GRANDES DE JUGADOR --- */
+.crewmate-icon {
+    width: 30px; 
+    height: 40px; 
+    border-radius: 50% 50% 10% 10%; 
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    border: 2px solid white;
+    position: relative;
+    flex-shrink: 0; 
+}
+
+.crewmate-icon::before { 
+    content: ''; 
+    position: absolute; 
+    top: 5px; 
+    left: 8px; 
+    width: 14px; 
+    height: 10px; 
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a9d4f2, #609bc6); 
     border: 1px solid #333;
-    z-index: 3;
-    transition: all 0.5s; /* Para el efecto de ojo muerto */
+    transition: all 0.5s; 
 }
 
 /* ** EFECTO JODIDAMENTE BUENO: OJO MUERTO/BAJA PRESIÓN ** */
 .crewmate-icon.ejected::before {
-    top: 15px; /* Baja un poco */
-    height: 3px; /* Se achica */
-    background: #c0392b; /* Rojo sangre */
+    top: 15px; 
+    height: 3px; 
+    background: #c0392b; 
     border: 1px solid #777;
     border-radius: 0;
-    transform: rotate(90deg); /* Se voltea */
+    transform: rotate(90deg); 
     box-shadow: 0 0 5px #e74c3c;
 }
 
 
-/* Colores de los Muñecos */
-.rojo { background-color: #c51111; } .azul { background-color: #132ed1; } .blanco { background-color: #d6e0f0; }
-.verde { background-color: #117f2d; } .amarillo { background-color: #f6e58d; } .skip { background-color: var(--color-skip); }
-/* ESTADO ELIMINADO (Cuerpo partido) */
-.eliminado { opacity: 0.2 !important; filter: saturate(0%); text-decoration: none; box-shadow: none; transform: none; border-color: var(--color-neón-rojo) !important; }
-.eliminado .contador { color: var(--color-neón-rojo); text-shadow: none; }
-.eliminado .vote-bar-container { display: none; }
-/* CONFIRMACIÓN Y RESUMEN */
-.confirmation-box { padding: 10px; border-radius: 10px; margin-top: 20px; font-weight: 900; text-align: center; background-color: var(--color-crewmate); color: white; display: none; }
-.summary-box {
-    padding: 15px 10px; border-radius: 10px; margin-top: 20px; font-weight: 900; text-align: center;
-    background: #2c3e50;
-    border: 3px solid var(--color-neón-cian);
-    color: var(--color-neón-cian);
-    text-shadow: 0 0 5px var(--color-neón-cian);
-    transition: all 0.5s ease;
-}
-/* ** NUEVOS ESTILOS PARA EL RESULTADO DRAMÁTICO (Jodidamente Bueno) ** */
-.summary-box.impostor-found {
-    background: #27ae60; /* Verde Crewmate */
-    border-color: #2ecc71;
-    color: white;
-    font-size: 1.2em;
-    animation: found-impostor 1s infinite alternate;
-}
-.summary-box.crewmate-ejected {
-    background: #e74c3c; /* Rojo de peligro */
-    border-color: #c0392b;
-    color: white;
-    font-size: 1.2em;
-    animation: ejected-crewmate 1s infinite alternate;
-}
-@keyframes found-impostor {
-    from { box-shadow: 0 0 10px #2ecc71; }
-    to { box-shadow: 0 0 30px #2ecc71; }
-}
-@keyframes ejected-crewmate {
-    from { box-shadow: 0 0 10px #c0392b; }
-    to { box-shadow: 0 0 30px #c0392b; }
-}
-
-/* --- PANEL DE ADMINISTRADOR --- */
-.admin-panel {
-    margin-top: auto;
-    padding-top: 15px;
-    border-top: 1px dashed #4a637d;
+/* --- ICONOS DE VOTO (Amongusitos) --- */
+.voto-iconos-container {
+    width: 100%;
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px dashed #ccc;
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    justify-content: center;
+    gap: 3px;
+    justify-content: flex-start;
+    z-index: 2;
+    min-height: 25px; /* Para mantener el espacio aunque no haya iconos */
 }
-.admin-panel button {
-    padding: 10px 15px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer;
-    color: white; transition: background-color 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 0 #555;
-    flex-basis: 48%; /* Para botones principales */
-}
-.admin-btn-start { background-color: #f39c12; }
-.admin-btn-continue { background-color: #3498db; }
-.admin-btn-reset { background-color: #c0392b; }
-.admin-btn-assign { background-color: #e67e22; } /* NUEVO: Asignar Impostor */
 
-.admin-btn-permit-vote {
-    background-color: #008080; /* Teal/Cian oscuro para destacar */
-    flex-basis: 100%; /* Botón de voto inmediato en toda la línea */
-}
-/* --- PANEL DE PARTICIPANTES --- */
-.participant-list {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 10px;
-    background-color: #ecf0f1;
-    border-radius: 8px;
-    border: 1px solid #7f8c8d;
-}
-.participant-item {
-    padding: 10px 0;
-    border-bottom: 1px dashed #bdc3c7;
+/* ** NUEVO ESTILO: VOTO SECRETO ** */
+.voto-iconos-container.voto-secreto-activo {
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8em;
+    font-weight: 700;
+    color: #c0392b;
     font-family: 'Roboto', sans-serif;
 }
-.participant-item:last-child { border-bottom: none; }
-/* Nombre del Participante (Índice + Nombre Asignado) */
-.user-index-name {
-    font-weight: 900;
-    font-size: 1em;
-    display: inline-block;
-    width: 65%;
-    color: var(--color-texto-oscuro);
+
+.voto-crewmate-icon {
+    width: 15px; 
+    height: 20px; 
+    border-radius: 50% 50% 10% 10%; 
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+    border: 1px solid white;
+    position: relative;
 }
-.user-index-name.online { color: var(--color-crewmate); }
-.user-role-admin {
-    display: inline-block;
-    width: 30%;
-    font-weight: 900;
-    font-size: 0.8em;
-    text-align: right;
-    color: #f1c40f;
+.voto-crewmate-icon::before { 
+    content: ''; 
+    position: absolute; 
+    top: 3px; 
+    left: 4px; 
+    width: 7px; 
+    height: 5px; 
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a9d4f2, #609bc6); 
+    border: 1px solid #333;
 }
-.admin-actions {
-    margin-top: 5px;
+/* Colores de los Iconos (grandes y pequeños) */
+.rojo { background-color: var(--color-rojo-amongus); } .azul { background-color: var(--color-azul-amongus); } .blanco { background-color: var(--color-blanco-amongus); } 
+.verde { background-color: var(--color-verde-amongus); } .amarillo { background-color: var(--color-amarillo-amongus); } .skip { background-color: var(--color-skip); }
+
+
+/* --- BARRAS DE PROGRESO --- */
+.vote-bar { height: 100%; width: 0; transition: width 0.5s ease; opacity: 0.4; position: absolute; top: 0; left: 0; z-index: 1;}
+.vote-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
+
+
+/* ESTADO ELIMINADO (Cuerpo partido) */
+.eliminado { opacity: 0.2 !important; filter: saturate(0%); text-decoration: none; box-shadow: none; transform: none; border-color: var(--color-neón-rojo) !important; }
+.eliminado .voto-iconos-container { opacity: 0; }
+
+
+/* --- PANEL DE ROL PERSONAL --- */
+.personal-role-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(44, 62, 80, 0.9); /* Gris oscuro semi-transparente */
+    border: 3px solid var(--color-borde-panel);
+    border-radius: 15px;
+    padding: 10px 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
     display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 5px;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Roboto', sans-serif;
+    min-width: 150px;
 }
-.name-input {
-    flex-basis: 60%;
-    padding: 5px;
-    border-radius: 5px;
-    border: 1px solid #7f8c8d;
+
+.panel-label {
+    color: #ecf0f1;
+    font-weight: 700;
     font-size: 0.8em;
+    margin: 0 0 5px 0;
 }
-.name-btn {
-    flex-basis: 35%;
-    padding: 5px;
-    border: none;
-    border-radius: 5px;
-    font-size: 0.75em;
-    font-weight: 700;
-    cursor: pointer;
+
+.my-crewmate-icon {
+    width: 50px; 
+    height: 65px; 
+    border-radius: 50% 50% 10% 10%; 
+    border: 3px solid white;
+    position: relative;
+    margin-bottom: 5px;
+}
+.my-crewmate-icon::before {
+    content: ''; 
+    position: absolute; 
+    top: 8px; 
+    left: 12px; 
+    width: 26px; 
+    height: 18px; 
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a9d4f2, #609bc6); 
+    border: 1px solid #333;
+}
+/* Colores aplicados dinámicamente al icono personal */
+.my-crewmate-icon.rojo { background-color: var(--color-rojo-amongus); }
+.my-crewmate-icon.azul { background-color: var(--color-azul-amongus); }
+.my-crewmate-icon.blanco { background-color: var(--color-blanco-amongus); }
+.my-crewmate-icon.verde { background-color: var(--color-verde-amongus); }
+.my-crewmate-icon.amarillo { background-color: var(--color-amarillo-amongus); }
+.my-crewmate-icon.skip { background-color: var(--color-skip); } /* Color genérico para no asignado */
+
+
+.my-role-display {
+    font-family: 'Bungee Outline', sans-serif;
+    font-size: 1.2em;
+    font-weight: 900;
+    padding: 2px 0;
+}
+.my-role-display.impostor {
+    color: var(--color-neón-rojo);
+    text-shadow: 0 0 5px var(--color-neón-rojo), 0 0 10px rgba(255, 69, 69, 0.5);
+}
+.my-role-display.crewmate {
+    color: var(--color-neón-cian);
+    text-shadow: 0 0 5px var(--color-neón-cian), 0 0 10px rgba(57, 255, 252, 0.5);
+}
+.my-role-display.sin-asignar {
+    color: #fff;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1em;
+    text-shadow: none;
+}
+
+
+/* --- NOTIFICACIÓN DE ROL GIGANTE (NEON) --- */
+.role-notification-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Bungee Outline', sans-serif;
+    font-size: 5vw;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.9);
+    animation: fadein 0.5s;
+    transition: background-color 0.5s;
     color: white;
-    background-color: #9b59b6;
-    box-shadow: 0 2px 0 #8e44ad;
 }
-.role-btn {
-    flex-basis: 48%;
-    padding: 5px 8px;
-    border: none;
-    border-radius: 5px;
-    font-size: 0.75em;
-    font-weight: 700;
-    cursor: pointer;
+.role-notification-popup.impostor {
+    background-color: rgba(231, 76, 60, 0.95);
+    color: #fff;
+    text-shadow: 0 0 10px var(--color-neón-rojo), 0 0 20px var(--color-neón-rojo);
+}
+.role-notification-popup.crewmate {
+    background-color: rgba(26, 188, 156, 0.95);
+    color: #fff;
+    text-shadow: 0 0 10px var(--color-neón-cian), 0 0 20px var(--color-neón-cian);
+}
+
+
+/* --- POPUP DE EXPULSIÓN (ANIMACIÓN) --- */
+.expulsion-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95);
+    z-index: 3000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.5s;
+    animation: expulsion-fadein 0.5s forwards;
+}
+@keyframes expulsion-fadein { from { opacity: 0; } to { opacity: 1; } }
+
+.expulsion-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: scale(0.8);
+    animation: scale-up 0.5s forwards;
+}
+@keyframes scale-up { from { transform: scale(0.8); } to { transform: scale(1); } }
+
+.ejected-crewmate {
+    width: 150px;
+    height: 200px;
+    border-radius: 50% 50% 10% 10%; 
+    border: 5px solid white;
+    position: relative;
+    margin-bottom: 20px;
+    
+    /* Animación de rotación antes de desaparecer (Crewmate / Impostor) */
+    animation: expulsion-spin 5s forwards; 
+}
+@keyframes expulsion-spin {
+    0% { transform: rotate(0deg) scale(1); opacity: 1; }
+    90% { transform: rotate(1080deg) scale(0.1); opacity: 0; }
+    100% { opacity: 0; display: none; }
+}
+.ejected-crewmate::before {
+    content: ''; 
+    position: absolute; 
+    top: 20px; 
+    left: 40px; 
+    width: 70px; 
+    height: 50px; 
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a9d4f2, #609bc6); 
+    border: 3px solid #333;
+}
+/* Colores de expulsion */
+.expulsion-popup.impostor-ejected .ejected-crewmate { border-color: var(--color-neón-cian); }
+.expulsion-popup.crewmate-ejected .ejected-crewmate { border-color: var(--color-neón-rojo); }
+
+
+.expulsion-message {
+    font-family: 'Bungee Outline', sans-serif;
+    font-size: 3vw;
+    font-weight: 900;
     color: white;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+    text-align: center;
 }
-.role-btn.tripulante { background-color: #1abc9c; }
-.role-btn.impostor { background-color: #e74c3c; }
+.expulsion-popup.impostor-ejected .expulsion-message { color: var(--color-neón-cian); text-shadow: 0 0 15px var(--color-neón-cian); }
+.expulsion-popup.crewmate-ejected .expulsion-message { color: var(--color-neón-rojo); text-shadow: 0 0 15px var(--color-neón-rojo); }
+.expulsion-popup.skip-ejected .expulsion-message { color: #f1c40f; text-shadow: 0 0 15px #f1c40f; }
+
+
 /* --- LOGIN ADMIN & USER ID --- */
+.personal-info-box {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    font-family: 'Roboto', sans-serif;
+    z-index: 500;
+}
+.my-id-label-top {
+    font-size: 0.9em;
+    color: #7f8c8d;
+    font-weight: 400;
+    margin-bottom: 3px;
+}
 .admin-login-button {
     position: absolute;
     top: 15px;
@@ -330,41 +465,143 @@ body.emergency-meeting {
     box-shadow: 0 4px 0 #2980b9;
     z-index: 100;
 }
-.my-id-label {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    font-size: 0.9em;
-    color: #7f8c8d;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 400;
+/* --- PANELES DE ADMINISTRACIÓN --- */
+.admin-panel {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #4a637d;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
 }
-/* --- NOTIFICACIÓN DE ROL GIGANTE --- */
-.role-notification-popup {
+.admin-panel button {
+    padding: 10px 15px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer;
+    color: white; transition: background-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 0 #555;
+    flex-basis: 48%; 
+}
+.admin-btn-assign { background-color: #2c3e50; } /* Asignar Roles */
+.admin-btn-start { background-color: #f39c12; }
+.admin-btn-continue { background-color: #3498db; }
+.admin-btn-reset { background-color: #c0392b; }
+.admin-btn-permit-vote { background-color: #9b59b6; flex-basis: 100%; }
+.admin-btn-secret-vote { background-color: #008080; flex-basis: 100%; } /* Voto Secreto */
+
+
+/* --- PANEL DE PARTICIPANTES --- */
+.participant-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #ecf0f1;
+    border-radius: 8px;
+    border: 1px solid #7f8c8d;
+    max-height: 400px; /* Altura máxima para evitar desbordamiento */
+}
+.participant-item {
+    padding: 10px 0;
+    border-bottom: 1px dashed #bdc3c7;
+    font-family: 'Roboto', sans-serif;
+}
+.participant-item:last-child { border-bottom: none; }
+
+.user-index-name {
+    font-weight: 900;
+    font-size: 1em;
+    display: inline-block;
+    width: 100%;
+    color: var(--color-texto-oscuro);
+    margin-bottom: 5px;
+}
+.user-index-name.ejected-player {
+    color: var(--color-neón-rojo);
+    text-decoration: line-through;
+}
+
+.user-role-admin {
+    display: inline-block;
+    width: 60%;
+    font-weight: 900;
+    font-size: 0.8em;
+    color: #f1c40f;
+}
+.user-id-text {
+    display: inline-block;
+    width: 35%;
+    font-size: 0.7em;
+    text-align: right;
+    color: #7f8c8d;
+}
+
+.admin-actions {
+    margin-top: 5px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 5px;
+}
+.name-input { flex-basis: 60%; padding: 5px; border-radius: 5px; border: 1px solid #7f8c8d; font-size: 0.8em; }
+.name-btn { flex-basis: 35%; padding: 5px; border: none; border-radius: 5px; font-size: 0.75em; font-weight: 700; cursor: pointer; color: white; background-color: #9b59b6; box-shadow: 0 2px 0 #8e44ad; }
+.role-btn { flex-basis: 48%; padding: 5px 8px; border: none; border-radius: 5px; font-size: 0.75em; font-weight: 700; cursor: pointer; color: white; box-shadow: 0 2px 0 rgba(0,0,0,0.5); }
+.role-btn.tripulante { background-color: #1abc9c; }
+.role-btn.impostor { background-color: #e74c3c; }
+
+.color-assignment {
+    display: flex;
+    gap: 3px;
+    margin: 5px 0;
+    flex-basis: 100%;
+}
+.color-assignment button {
+    flex-grow: 1;
+    padding: 5px;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.8em;
+    font-weight: 700;
+    cursor: pointer;
+    color: #fff;
+    text-shadow: 0 0 3px #000;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+}
+.color-assignment button:disabled { opacity: 0.5; }
+.color-assignment .rojo { background-color: var(--color-rojo-amongus); }
+.color-assignment .azul { background-color: var(--color-azul-amongus); }
+.color-assignment .blanco { background-color: var(--color-blanco-amongus); color: #000; }
+.color-assignment .verde { background-color: var(--color-verde-amongus); }
+.color-assignment .amarillo { background-color: var(--color-amarillo-amongus); color: #000; }
+.color-assignment .skip { background-color: var(--color-skip); }
+
+/* --- RESTRICCIÓN DE ACCESO (PANTALLA COMPLETA) --- */
+.access-restriction-message {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-    z-index: 999;
+    background-color: #c0392b;
+    z-index: 5000;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-size: 6em;
-    font-weight: 900;
     text-align: center;
-    opacity: 0;
-    animation: fadein 0.5s forwards, pulse 1.5s infinite;
+    color: white;
+    font-family: 'Roboto', sans-serif;
 }
-.role-notification-popup.tripulante { color: var(--color-crewmate); text-shadow: 0 0 20px var(--color-crewmate); }
-.role-notification-popup.impostor { color: var(--color-impostor); text-shadow: 0 0 20px var(--color-impostor); }
-@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
+.access-restriction-message h1 {
+    font-size: 4em;
+    font-family: 'Bungee Outline', sans-serif;
+    text-shadow: 0 0 10px black;
 }
+.my-id-label-center {
+    margin-top: 20px;
+    font-size: 1.2em;
+    color: #ecf0f1;
+}
+
 /* Estilo opcional para la ventana de juego */
 .optional-game-iframe {
     margin-top: 20px;
