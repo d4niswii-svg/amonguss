@@ -214,12 +214,10 @@ votosDetalleRef.on('value', (snapshot) => {
 
 function showVotingModal() {
     votingModalContainer.style.display = 'flex';
-    // Se elimina document.body.classList.add('emergency-meeting')
 }
 
 function hideVotingModal() {
     votingModalContainer.style.display = 'none';
-    // Se elimina document.body.classList.remove('emergency-meeting')
 }
 
 
@@ -433,6 +431,14 @@ function actualizarTemporizador(tiempoFin) {
 
 // ** FUNCIÓN MEJORADA: Controla la visibilidad de los botones de Admin **
 function updateAdminButtonsVisibility(config) {
+    // --- LÓGICA COMÚN: VISIBILIDAD DEL MODAL (PARA TODOS) ---
+    if (config.votoActivo) {
+        showVotingModal(); // Muestra el modal si la votación está activa en DB
+    } else {
+         hideVotingModal(); // Oculta el modal si la votación terminó
+    }
+    // --------------------------------------------------------
+
     if (isAdmin) {
         // Mostrar el botón de toggle del panel
         toggleAdminPanelButton.style.display = 'block';
@@ -441,13 +447,6 @@ function updateAdminButtonsVisibility(config) {
         const isVotingActive = config.votoActivo && config.tiempoFin > Date.now();
         const isFinished = !config.votoActivo && config.tiempoFin > 0;
         const isReadyToStart = !config.votoActivo || config.tiempoFin === 0;
-
-        // Mostrar u ocultar el modal de votación (para todos)
-        if (config.votoActivo) {
-            showVotingModal(); // Muestra el modal si la votación está activa en DB
-        } else {
-             hideVotingModal(); // Oculta el modal si la votación terminó
-        }
 
         // Lógica de botones de Admin dentro del panel (solo para el admin)
         assignRolesButton.style.display = isReadyToStart ? 'block' : 'none';
@@ -475,7 +474,6 @@ function updateAdminButtonsVisibility(config) {
          toggleAdminPanelButton.style.display = 'none'; // No-admin no ve el botón de toggle
          adminPanelContainer.style.display = 'none'; // Asegurar que el contenedor esté oculto
          adminLoginButton.style.display = 'block';
-         hideVotingModal(); // Asegurarse de que el modal esté oculto para no admins
     }
 }
 
