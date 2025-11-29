@@ -681,5 +681,3 @@ assignImpostorButton.addEventListener('click', () => {
         });
     });
 });
-
-// FIN DE app.js
