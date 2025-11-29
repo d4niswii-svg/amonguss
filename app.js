@@ -35,7 +35,7 @@ const votosDetalleRef = database.ref('votosDetalle');
 
 
 // Referencias a la UI
-const botonesVoto = document.querySelectorAll('.boton-voto');
+// Removidos 'botonesVoto' ya que se usan dinámicamente
 const temporizadorElement = document.getElementById('temporizador');
 const votoConfirmadoElement = document.getElementById('voto-confirmado');
 const resultadoFinalElement = document.getElementById('resultado-final');
@@ -217,7 +217,7 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
         resultadoFinalElement.textContent = `VOTOS TOTALES: ${totalVotos} | LÍDER ACTUAL: ${liderTexto}`;
     }
     
-    // 7. Forzar actualización de deshabilitación de botones después de la recreación
+    // 7. FIX CRÍTICO: Aplicar la deshabilitación de botones basándose en el estado global
     configRef.once('value').then(snap => {
         const config = snap.val() || {};
         const votoTiempoCorriendo = config.votoActivo && config.tiempoFin > Date.now();
@@ -393,13 +393,13 @@ function updateAdminButtonsVisibility(config) {
     if (isAdmin) {
         participantPanel.style.display = 'flex';
         adminLoginButton.style.display = 'none';
-        // Botones de control de juego
+
         startTimerButton.style.display = config.votoActivo && config.tiempoFin === 0 ? 'block' : 'none';
         continueButton.style.display = config.votoActivo === false || config.tiempoFin > 0 ? 'block' : 'none';
         resetButton.style.display = 'block';
         allowMultipleVoteButton.style.display = 'block';
         // Nuevo botón de asignación de roles
-        assignRolesButton.style.display = 'block';
+        if(assignRolesButton) assignRolesButton.style.display = 'block';
         
     } else {
          participantPanel.style.display = 'none';
@@ -515,11 +515,7 @@ configRef.on('value', (snapshot) => {
     // Lógica clave: solo puede votar si votoActivo es TRUE, el tiempo está corriendo (tiempoFin > Date.now()) 
     // Y NO ha votado antes.
     const votoTiempoCorriendo = config.votoActivo && config.tiempoFin > Date.now();
-    const puedeVotar = votoTiempoCorriendo && localStorage.getItem('voted') !== 'true'; // <--- FIX LÓGICO
-
-    document.querySelectorAll('.boton-voto').forEach(btn => {
-        btn.disabled = !puedeVotar;
-    });
+    // La deshabilitación de botones se hace en updateVoteDisplay para los botones dinámicos
     
     updateAdminButtonsVisibility(config); 
     
@@ -545,8 +541,7 @@ estadoRef.on('value', (snapshot) => {
     }
 });
 
-// Asignar eventos de click a los botones de voto (Necesario para botones estáticos, pero re-asignado en updateVoteDisplay)
-// Se elimina la reasignación estática aquí para evitar duplicación.
+// Asignar eventos de click a los botones de voto (No es necesario aquí, se hace en updateVoteDisplay)
 
 
 // =========================================================
@@ -700,13 +695,14 @@ function updateParticipantDisplay(participantesData) {
                 </div>
                 <button class="role-btn tripulante" data-id="${p.id}" data-rol="tripulante">Tripulante</button>
                 <button class="role-btn impostor" data-id="${p.id}" data-rol="impostor">Impostor</button>
+                <button class="remove-btn admin-btn-reset" data-id="${p.id}">Expulsar</button> <!-- NUEVO BOTÓN EXPULSAR -->
             </div>
         `;
         participantListContainer.appendChild(pElement);
         index++;
     });
     
-    // 4. Agregar listeners para roles, nombres y colores
+    // 4. Agregar listeners para roles, nombres y colores (Y ELIMINAR)
     document.querySelectorAll('.role-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             asignarRol(e.target.dataset.id, e.target.dataset.rol);
@@ -726,6 +722,12 @@ function updateParticipantDisplay(participantesData) {
             const userId = e.target.dataset.id;
             const color = e.target.dataset.color === 'null' ? null : e.target.dataset.color;
             asignarColor(userId, color);
+        });
+    });
+
+    document.querySelectorAll('.remove-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            expulsarParticipante(e.target.dataset.id);
         });
     });
 }
@@ -753,6 +755,22 @@ function asignarColor(userId, color) {
         participantesRef.child(userId).update({ color: null });
     }
 }
+
+// NUEVA FUNCIÓN: Expulsar a un participante de la lista
+function expulsarParticipante(userId) {
+    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
+    if (confirm(`¿Estás seguro de que quieres expulsar al participante con ID: ${userId}?`)) {
+        participantesRef.child(userId).remove()
+            .then(() => {
+                alert(`Participante ${userId} expulsado exitosamente. Se necesitará un reinicio para que su ID pueda volver a unirse como principal.`);
+            })
+            .catch(error => {
+                console.error("Error al expulsar participante:", error);
+                alert("Hubo un error al intentar expulsar al participante.");
+            });
+    }
+}
+
 
 // 3.1 Listener de participantes que llama a la función de renderizado
 participantesRef.on('value', (snapshot) => {
@@ -889,45 +907,47 @@ resetButton.addEventListener('click', () => {
 /**
  * Asigna un impostor al azar y el resto como tripulantes entre los jugadores con color asignado.
  */
-assignRolesButton.addEventListener('click', () => {
-    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
+if(assignRolesButton) {
+    assignRolesButton.addEventListener('click', () => {
+        if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
 
-    // 1. Obtener los jugadores que tienen color asignado (activos)
-    const jugadoresActivos = Object.entries(participantesCache)
-        .filter(([id, p]) => p.color && coloresTripulantes.includes(p.color));
+        // 1. Obtener los jugadores que tienen color asignado (activos)
+        const jugadoresActivos = Object.entries(participantesCache)
+            .filter(([id, p]) => p.color && coloresTripulantes.includes(p.color));
 
-    if (jugadoresActivos.length < 2) {
-        alert("Se necesitan al menos 2 jugadores con color asignado para iniciar la asignación de roles.");
-        return;
-    }
-    
-    // 2. Determinar la cantidad de impostores (ej. 1 impostor por cada 5 jugadores)
-    const numJugadores = jugadoresActivos.length;
-    const numImpostores = Math.max(1, Math.floor(numJugadores / 5)); // Al menos 1, 1 por cada 5
-    
-    // 3. Seleccionar IDs de impostores al azar
-    const shuffledPlayers = jugadoresActivos.map(p => p[0]).sort(() => 0.5 - Math.random());
-    const impostorIds = shuffledPlayers.slice(0, numImpostores);
+        if (jugadoresActivos.length < 2) {
+            alert("Se necesitan al menos 2 jugadores con color asignado para iniciar la asignación de roles.");
+            return;
+        }
+        
+        // 2. Determinar la cantidad de impostores (ej. 1 impostor por cada 5 jugadores)
+        const numJugadores = jugadoresActivos.length;
+        const numImpostores = Math.max(1, Math.floor(numJugadores / 5)); // Al menos 1, 1 por cada 5
+        
+        // 3. Seleccionar IDs de impostores al azar
+        const shuffledPlayers = jugadoresActivos.map(p => p[0]).sort(() => 0.5 - Math.random());
+        const impostorIds = shuffledPlayers.slice(0, numImpostores);
 
-    // 4. Construir el objeto de actualizaciones
-    const updates = {};
-    for (const [id] of jugadoresActivos) {
-        const rol = impostorIds.includes(id) ? 'impostor' : 'tripulante';
-        updates[`${id}/rol`] = rol;
-    }
-    
-    // 5. Aplicar los roles en Firebase
-    participantesRef.update(updates)
-        .then(() => {
-            // Limpiar la señal de voto local para forzar la notificación de rol
-            configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
-            alert(`Roles asignados: ${numImpostores} Impostor(es) y ${numJugadores - numImpostores} Tripulante(s).`);
-        })
-        .catch(error => {
-            console.error("Error al asignar roles:", error);
-            alert("Error al asignar roles.");
-        });
-});
+        // 4. Construir el objeto de actualizaciones
+        const updates = {};
+        for (const [id] of jugadoresActivos) {
+            const rol = impostorIds.includes(id) ? 'impostor' : 'tripulante';
+            updates[`${id}/rol`] = rol;
+        }
+        
+        // 5. Aplicar los roles en Firebase
+        participantesRef.update(updates)
+            .then(() => {
+                // Limpiar la señal de voto local para forzar la notificación de rol
+                configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
+                alert(`Roles asignados: ${numImpostores} Impostor(es) y ${numJugadores - numImpostores} Tripulante(s).`);
+            })
+            .catch(error => {
+                console.error("Error al asignar roles:", error);
+                alert("Error al asignar roles.");
+            });
+    });
+}
 
 // 4. PERMITIR VOTO MÚLTIPLE (Solo Admin)
 allowMultipleVoteButton.addEventListener('click', () => {
