@@ -223,7 +223,7 @@ body {
 .eliminado .voto-iconos-container { opacity: 0; }
 
 
-/* --- PANEL DE ROL PERSONAL (AÑADIDO) --- */
+/* --- PANEL DE ROL PERSONAL (AÑADIDO Y FIXEADO) --- */
 .personal-role-panel {
     position: fixed;
     bottom: 20px;
@@ -238,6 +238,7 @@ body {
     flex-direction: column;
     align-items: center;
     font-family: 'Roboto', sans-serif;
+    min-width: 150px;
 }
 
 .panel-label {
@@ -266,6 +267,14 @@ body {
     background: linear-gradient(135deg, #a9d4f2, #609bc6); 
     border: 1px solid #333;
 }
+/* Colores aplicados dinámicamente al icono personal */
+.my-crewmate-icon.rojo { background-color: var(--color-rojo-amongus); }
+.my-crewmate-icon.azul { background-color: var(--color-azul-amongus); }
+.my-crewmate-icon.blanco { background-color: var(--color-blanco-amongus); }
+.my-crewmate-icon.verde { background-color: var(--color-verde-amongus); }
+.my-crewmate-icon.amarillo { background-color: var(--color-amarillo-amongus); }
+.my-crewmate-icon.skip { background-color: var(--color-skip); } /* Color genérico para no asignado */
+
 
 .my-role-display {
     font-family: 'Bungee Outline', sans-serif;
@@ -291,7 +300,6 @@ body {
 
 /* --- NOTIFICACIÓN DE ROL GIGANTE (NEON) --- */
 .role-notification-popup {
-    /* ... (Estilos sin cambios) ... */
     position: fixed;
     top: 0;
     left: 0;
