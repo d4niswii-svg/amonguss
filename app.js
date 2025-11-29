@@ -383,6 +383,8 @@ function performVoteChecks(personaje) {
     
     // Si la votación está activa (RESTRICCIÓN DE INICIO/CONTINUACIÓN)
     configRef.child('votoActivo').once('value').then(snap => {
+        // La restricción de voto por tiempo se maneja por la deshabilitación de botones, 
+        // pero esta alerta de seguridad se mantiene:
         if (!snap.val()) {
              alert('La votación ha terminado o no ha iniciado. El administrador debe iniciar o continuar la votación.');
              return;
@@ -440,8 +442,10 @@ configRef.on('value', (snapshot) => {
     }
     // ------------------------------------------------------------------
 
-    // Lógica clave: solo puede votar si votoActivo es TRUE Y NO ha votado antes
-    const puedeVotar = config.votoActivo && localStorage.getItem('voted') !== 'true';
+    // Lógica clave: solo puede votar si votoActivo es TRUE, el tiempo está corriendo (tiempoFin > Date.now()) 
+    // Y NO ha votado antes.
+    const votoTiempoCorriendo = config.votoActivo && config.tiempoFin > Date.now();
+    const puedeVotar = votoTiempoCorriendo && localStorage.getItem('voted') !== 'true'; // <--- FIX LÓGICO
 
     botonesVoto.forEach(btn => {
         btn.disabled = !puedeVotar;
@@ -450,11 +454,11 @@ configRef.on('value', (snapshot) => {
     updateAdminButtonsVisibility(config); 
     
     // Control del temporizador
-    if (config.tiempoFin > Date.now() && config.votoActivo) { 
+    if (votoTiempoCorriendo) { // Usamos la nueva variable para sincronizar el temporizador y el botón
         actualizarTemporizador(config.tiempoFin);
     } else if (config.votoActivo && config.tiempoFin === 0) {
         clearInterval(timerInterval);
-        temporizadorElement.textContent = "---";
+        temporizadorElement.textContent = "---"; // Votación activa, esperando inicio de tiempo
     } else if (!config.votoActivo) {
         clearInterval(timerInterval);
         temporizadorElement.textContent = "00:00 - Votación Cerrada";
@@ -493,7 +497,8 @@ function checkAndRestrictAccess(participantesData) {
         accessRestrictionMessage.style.display = 'flex';
         document.getElementById('app-container').style.display = 'none';
         // Se asegura de que el ID/Nombre se muestre en el panel de restricción
-        document.getElementById('user-id-display-center').textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
+        const centerIdDisplay = document.getElementById('user-id-display-center');
+        if(centerIdDisplay) centerIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
         return true;
     } else {
         accessRestrictionMessage.style.display = 'none';
