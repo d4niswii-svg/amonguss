@@ -126,16 +126,22 @@
                 <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
             </div>
 
-            <!-- Opcional: iFrame para otro juego o contenido -->
+            <!-- ** IMPLEMENTACIÓN DE KEKOCITY.COM ** -->
             <div class="optional-game-iframe">
-                <h2 class="panel-header-small">VENTANA SECUNDARIA (OPCIONAL)</h2>
-                <!-- Si quieres incrustar otro contenido, descomenta y usa un src válido: -->
-                <!-- <iframe src="URL_DE_TU_OTRO_JUEGO" frameborder="0" style="width:100%; height: 300px; border: 3px solid #7f8c8d; border-radius: 8px;"></iframe> -->
-                <p style="text-align: center; color: #7f8c8d;">Aquí iría tu contenido incrustado.</p>
+                <h2 class="panel-header-small">VENTANA DE JUEGO (KEKOCITY)</h2>
+                <!-- INTENTO DE INCRUSTAR EL JUEGO -->
+                <iframe 
+                    id="kekocity-iframe"
+                    src="https://kekocity.com" 
+                    frameborder="0" 
+                    style="width:100%; height: 500px; border: 3px solid #7f8c8d; border-radius: 8px;"
+                    title="Juego en Línea Kekocity"
+                ></iframe>
+                <p class="warning-message" style="color:red; font-size: 0.8em; margin-top: 5px;">
+                    Advertencia: Si el juego no carga, su servidor lo está bloqueando por seguridad.
+                </p>
             </div>
         </div>
-        
-    </div>
 
     <!-- Botón de Login Admin (Visible por defecto, fuera de las columnas) -->
     <button id="admin-login-button" class="admin-login-button">Login Admin</button>
@@ -148,3 +154,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+
