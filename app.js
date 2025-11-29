@@ -742,7 +742,7 @@ function updateParticipantDisplay(participantesData) {
         
         // Determinar el estado del jugador por su color en la tabla de jugadores
         let jugadorEliminado = false;
-        if (p.color) {
+        if (p.color && currentJugadoresSnapshot) {
             const jugadorData = currentJugadoresSnapshot.val()[p.color];
             if (jugadorData && jugadorData.eliminado) {
                  jugadorEliminado = true;
