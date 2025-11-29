@@ -481,7 +481,6 @@ body {
     box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
 }
 
-/* El botón de roles al azar usa admin-btn-start */
 .admin-btn-start { background-color: #f39c12; box-shadow: 0 4px 0 #d35400; }
 .admin-btn-start:active { box-shadow: 0 2px 0 #d35400; }
 
@@ -499,29 +498,7 @@ body {
 .admin-btn-permit-vote:active { box-shadow: 0 2px 0 #16a085; }
 
 /* --- ESTILOS DE ASIGNACIÓN DE ROLES Y NOMBRE EN EL PANEL --- */
-.admin-actions { 
-    margin-top: 5px; 
-    display: flex; 
-    flex-wrap: wrap; 
-    justify-content: space-between; 
-    gap: 5px; 
-    align-items: center; /* Centrar verticalmente los botones */
-}
-
-/* Botón de Expulsar (estilizado como reset) */
-.remove-btn {
-    padding: 5px 8px; 
-    font-size: 0.75em;
-    background-color: #c0392b;
-    box-shadow: 0 2px 0 #a03020;
-    transition: all 0.1s;
-    flex-basis: 100%; /* Ocupa toda la línea */
-}
-.remove-btn:active {
-    transform: translateY(1px);
-    box-shadow: 0 1px 0 #a03020;
-}
-
+.admin-actions { margin-top: 5px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; }
 
 .name-input { 
     flex-basis: 60%; 
@@ -561,7 +538,6 @@ body {
     color: white; 
     box-shadow: 0 3px 0 rgba(0,0,0,0.3); 
     transition: background-color 0.1s, box-shadow 0.1s, transform 0.1s;
-    margin-bottom: 5px; /* Separación de los botones de abajo */
 }
 .role-btn:active {
     transform: translateY(1px);
