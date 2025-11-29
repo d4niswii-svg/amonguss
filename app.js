@@ -1,5 +1,3 @@
-// app.js
-
 // =========================================================
 // 1. CONFIGURACIÓN DE FIREBASE (¡CLAVES INSERTADAS!)
 // =========================================================
@@ -160,22 +158,23 @@ function finalizarVotacion() {
                 ultimoEliminado: resultado.nombre,
                 mensaje: `¡${resultado.nombre.toUpperCase()} fue expulsado! No era un Impostor.`
             });
-            continueButton.style.display = isAdmin ? 'inline-block' : 'none';
         } else {
             estadoRef.update({
                 ultimoEliminado: null,
                 mensaje: resultado.nombre === "EMPATE" ? "Votación terminada en empate." : "Nadie fue expulsado. Votación saltada."
             });
-             continueButton.style.display = isAdmin ? 'inline-block' : 'none';
         }
         
-        startTimerButton.style.display = 'none';
+        // Llama a la función de visibilidad para actualizar los botones
+        configRef.once('value').then(snap => {
+            updateAdminButtonsVisibility(snap.val());
+        });
     });
 }
 
 
 // =========================================================
-// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL (Corregida la visibilidad Admin)
+// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL (FIXED)
 // =========================================================
 
 function actualizarTemporizador(tiempoFin) {
@@ -197,6 +196,35 @@ function actualizarTemporizador(tiempoFin) {
     }, 1000);
 }
 
+// NUEVA FUNCIÓN: Controla la visibilidad de los botones de Admin
+function updateAdminButtonsVisibility(config) {
+    if (!isAdmin) {
+        startTimerButton.style.display = 'none';
+        continueButton.style.display = 'none';
+        resetButton.style.display = 'none';
+        return;
+    }
+    
+    const isVoting = config.votoActivo && config.tiempoFin > Date.now();
+    const isFinished = !config.votoActivo && config.tiempoFin > 0;
+    const isReadyToStart = (config.votoActivo && config.tiempoFin === 0) || (!config.votoActivo && config.tiempoFin === 0);
+
+    if (isVoting) { 
+        startTimerButton.style.display = 'none';
+        continueButton.style.display = 'none';
+    } else if (isFinished) {
+        startTimerButton.style.display = 'none';
+        continueButton.style.display = 'inline-block';
+    } else if (isReadyToStart) {
+        startTimerButton.style.display = 'inline-block';
+        continueButton.style.display = 'none';
+    }
+    
+    // Reset Button siempre visible para el admin logueado
+    resetButton.style.display = 'inline-block';
+}
+
+
 configRef.on('value', (snapshot) => {
     const config = snapshot.val();
     const puedeVotar = config.votoActivo && localStorage.getItem('voted') !== 'true';
@@ -205,30 +233,18 @@ configRef.on('value', (snapshot) => {
         btn.disabled = !puedeVotar;
     });
     
-    // Control de visibilidad de botones de Admin
-    const isVoting = config.votoActivo && config.tiempoFin > Date.now();
-    const isFinished = !config.votoActivo && config.tiempoFin > 0;
-    const isReadyToStart = config.votoActivo && config.tiempoFin === 0;
-
-    if (isVoting) { 
+    // Llama a la nueva función
+    updateAdminButtonsVisibility(config); 
+    
+    // Control del temporizador
+    if (config.tiempoFin > Date.now() && config.votoActivo) { 
         actualizarTemporizador(config.tiempoFin);
-        startTimerButton.style.display = 'none';
-        continueButton.style.display = 'none';
-    } else if (isReadyToStart) {
+    } else if (config.votoActivo && config.tiempoFin === 0) {
         temporizadorElement.textContent = "---";
-        startTimerButton.style.display = isAdmin ? 'inline-block' : 'none';
-        continueButton.style.display = 'none';
-    } else if (isFinished) {
+    } else if (!config.votoActivo && config.tiempoFin > 0) {
         clearInterval(timerInterval);
         temporizadorElement.textContent = "00:00 - Votación Cerrada";
-        continueButton.style.display = isAdmin ? 'inline-block' : 'none';
-        startTimerButton.style.display = 'none';
-    } else { // Estado inicial
-         startTimerButton.style.display = isAdmin ? 'inline-block' : 'none';
-         continueButton.style.display = 'none';
     }
-
-    resetButton.style.display = isAdmin ? 'inline-block' : 'none'; 
 });
 
 estadoRef.on('value', (snapshot) => {
@@ -289,7 +305,7 @@ botonesVoto.forEach(btn => {
 
 
 // =========================================================
-// LÓGICA DE PARTICIPANTES Y ROLES (FIXED)
+// LÓGICA DE PARTICIPANTES Y ROLES (Sin Cambios en la lógica de listado)
 // =========================================================
 
 // Muestra el mensaje de notificación de rol
@@ -426,13 +442,16 @@ adminLoginButton.addEventListener('click', () => {
         participantPanel.style.display = 'flex'; // Muestra el panel de participantes
         adminLoginButton.style.display = 'none';
         
-        // CORRECCIÓN: Forzar la actualización inmediata de la UI de participantes
+        // CORRECCIÓN 1: Forzar la actualización inmediata de la UI de participantes
         participantesRef.once('value').then(snapshot => {
             updateParticipantDisplay(snapshot.val()); 
         });
         
-        // Forzar la actualización de los botones de control (Start/Continue/Reset)
-        configRef.once('value'); 
+        // CORRECCIÓN 2: Forzar la actualización inmediata de los botones de control
+        configRef.once('value').then(snapshot => {
+             updateAdminButtonsVisibility(snapshot.val());
+        });
+
         alert("Acceso de administrador concedido.");
     } else if (clave !== null) { 
         alert("Clave incorrecta. Acceso denegado.");
