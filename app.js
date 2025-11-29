@@ -1,3 +1,5 @@
+// app.js
+
 // =========================================================
 // 1. CONFIGURACIÓN DE FIREBASE (¡CLAVES INSERTADAS!)
 // =========================================================
@@ -46,6 +48,8 @@ const participantPanel = document.getElementById('participant-panel');
 const participantListContainer = document.getElementById('participant-list-container');
 const adminLoginButton = document.getElementById('admin-login-button');
 const roleNotification = document.getElementById('role-notification'); 
+// NUEVA REFERENCIA DE BOTÓN
+const allowMultipleVoteButton = document.getElementById('allow-multiple-vote-button');
 
 let isAdmin = false;
 let timerInterval = null;
@@ -211,6 +215,7 @@ function updateAdminButtonsVisibility(config) {
         startTimerButton.style.display = 'none';
         continueButton.style.display = 'none';
         resetButton.style.display = 'none';
+        allowMultipleVoteButton.style.display = 'none'; // NUEVO BOTÓN
         return;
     }
     
@@ -221,12 +226,15 @@ function updateAdminButtonsVisibility(config) {
     if (isVoting) { 
         startTimerButton.style.display = 'none';
         continueButton.style.display = 'none';
+        allowMultipleVoteButton.style.display = 'inline-block'; // Permitir voto múltiple durante la votación
     } else if (isFinished) {
         startTimerButton.style.display = 'none';
         continueButton.style.display = 'inline-block';
+        allowMultipleVoteButton.style.display = 'none';
     } else if (isReadyToStart) {
         startTimerButton.style.display = 'inline-block';
         continueButton.style.display = 'none';
+        allowMultipleVoteButton.style.display = 'none';
     }
     
     // Reset Button siempre visible para el admin logueado
@@ -248,11 +256,12 @@ configRef.on('value', (snapshot) => {
         localStorage.removeItem('voted');
         localStorage.removeItem('currentRole');
         localStorage.setItem('localClearSignal', dbClearSignal);
-        console.log("Local vote cleared by admin signal.");
+        console.log("Local vote cleared by admin signal. Now users can vote again.");
     }
     // =====================================================
 
     // Lógica clave: solo puede votar si votoActivo es TRUE Y NO ha votado antes
+    // Si el local storage se limpió, 'voted' será null y 'puedeVotar' será true.
     const puedeVotar = config.votoActivo && localStorage.getItem('voted') !== 'true';
 
     botonesVoto.forEach(btn => {
@@ -282,6 +291,7 @@ estadoRef.on('value', (snapshot) => {
 
 function votar(personaje) {
     if (localStorage.getItem('voted') === 'true') {
+        // Este mensaje solo se verá si el admin NO ha limpiado el voto.
         alert('¡Ya has emitido tu voto en este dispositivo!');
         return;
     }
@@ -301,7 +311,8 @@ function votar(personaje) {
                 return (currentVotes || 0) + 1;
             });
             
-            localStorage.setItem('voted', 'true');
+            // Marcar como votado localmente para evitar voto múltiple HASTA el próximo clear
+            localStorage.setItem('voted', 'true'); 
             botonesVoto.forEach(btn => btn.disabled = true);
             votoConfirmadoElement.style.display = 'block';
             setTimeout(() => { votoConfirmadoElement.style.display = 'none'; }, 3000);
@@ -331,7 +342,7 @@ botonesVoto.forEach(btn => {
 
 
 // =========================================================
-// LÓGICA DE PARTICIPANTES Y ROLES
+// LÓGICA DE PARTICIPANTES Y ROLES (Sin cambios)
 // =========================================================
 
 // Muestra el mensaje de notificación de rol
@@ -457,7 +468,7 @@ setupParticipantTracking();
 
 
 // =========================================================
-// FUNCIONES DE ADMINISTRADOR (CLAVE ZXZ - FIXED)
+// FUNCIONES DE ADMINISTRADOR (CLAVE ZXZ)
 // =========================================================
 
 // Manejar el botón de Login Admin
@@ -495,7 +506,7 @@ startTimerButton.addEventListener('click', () => {
             tiempoFin: tiempoFin,
             votoActivo: true,
             duracionSegundos: duracion,
-            lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP // <--- SEÑAL PARA LIMPIAR VOTOS LOCALES
+            lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
         }).then(() => {
             actualizarTemporizador(tiempoFin);
             estadoRef.update({ ultimoEliminado: null, mensaje: "¡Vota por el Impostor!" });
@@ -528,7 +539,7 @@ continueButton.addEventListener('click', () => {
         configRef.update({
             votoActivo: true,
             tiempoFin: 0,
-            lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP // <--- SEÑAL PARA LIMPIAR VOTOS LOCALES
+            lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
         });
         
         estadoRef.update({ mensaje: "Votación Continuada. ¡Inicia el temporizador!" });
@@ -563,10 +574,22 @@ resetButton.addEventListener('click', () => {
          configRef.update({ 
              votoActivo: true, 
              tiempoFin: 0,
-             lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP // <--- SEÑAL PARA LIMPIAR VOTOS LOCALES
+             lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
          });
 
          estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Vota por el Impostor!" });
          alert("Juego reiniciado. Todos los jugadores están de vuelta y sus roles fueron borrados.");
+    });
+});
+
+// 4. PERMITIR VOTO MÚLTIPLE (Solo Admin - Nuevo botón)
+allowMultipleVoteButton.addEventListener('click', () => {
+    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
+    
+    // Solo actualizamos la señal de limpieza, forzando a todos los clientes a borrar su 'voted' local.
+    configRef.update({
+        lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
+    }).then(() => {
+        alert("¡Votos locales limpiados! Los jugadores pueden votar de nuevo.");
     });
 });
