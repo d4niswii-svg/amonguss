@@ -4,6 +4,7 @@
 // 1. CONFIGURACIÓN DE FIREBASE (¡CLAVES INSERTADAS!)
 // =========================================================
 const firebaseConfig = {
+// ... (configuración sin cambios) ...
   apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
   authDomain: "ango-592a4.firebaseapp.com",
   databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
@@ -64,6 +65,9 @@ const myRoleDisplay = document.getElementById('my-role-display');
 const userIdDisplay = document.getElementById('user-id-display');
 const userNameDisplay = document.getElementById('user-name-display-top');
 
+// NUEVA REFERENCIA DE BOTÓN
+const assignRolesButton = document.getElementById('assign-roles-button');
+
 
 let isAdmin = false;
 let timerInterval = null;
@@ -89,10 +93,8 @@ if (userIdDisplay) userIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
 // LÓGICA DE TIEMPO REAL: VOTACIÓN Y VISUALIZACIÓN (ICONOS)
 // =========================================================
 
-/**
- * Función que actualiza la visualización de votos, barras e iconos.
- */
 function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
+// ... (función sin cambios, usa participantesCache) ...
     const jugadores = jugadoresSnapshot.val();
     const votosDetalle = votosDetalleSnapshot.val() || {};
     const participantesData = participantesCache; 
@@ -184,6 +186,7 @@ votosDetalleRef.on('value', (snapshot) => {
 // =========================================================
 
 function obtenerJugadorMasVotado(jugadoresData) {
+// ... (función sin cambios) ...
     let maxVotos = -1;
     let jugadorMasVotado = 'NADIE';
     let esEmpate = false;
@@ -221,10 +224,8 @@ function obtenerJugadorMasVotado(jugadoresData) {
     return { nombre: jugadorMasVotado, esEliminado: isEliminado };
 }
 
-/**
- * Muestra la animación de expulsión con el mensaje apropiado.
- */
 function showExpulsionResult(ejectedColor, ejectedRole, ejectedName) {
+// ... (función sin cambios) ...
     // Resetear clases de animación y color
     expulsionPopup.classList.remove('impostor-ejected', 'crewmate-ejected', 'skip-ejected');
     ejectedCrewmate.classList.remove(...coloresJugadores);
@@ -258,6 +259,7 @@ function showExpulsionResult(ejectedColor, ejectedRole, ejectedName) {
 }
 
 function finalizarVotacion() {
+// ... (función sin cambios) ...
     clearInterval(timerInterval);
     configRef.update({ votoActivo: false });
     temporizadorElement.textContent = "00:00 - Votación Cerrada";
@@ -300,6 +302,7 @@ function finalizarVotacion() {
 }
 
 function actualizarTemporizador(tiempoFin) {
+// ... (función sin cambios) ...
     clearInterval(timerInterval); 
 
     timerInterval = setInterval(() => {
@@ -320,8 +323,8 @@ function actualizarTemporizador(tiempoFin) {
     }, 1000);
 }
 
-// Controla la visibilidad de los botones de Admin
 function updateAdminButtonsVisibility(config) {
+// ... (función sin cambios) ...
     if (isAdmin) {
         participantPanel.style.display = 'flex';
         adminLoginButton.style.display = 'none';
@@ -337,8 +340,8 @@ function updateAdminButtonsVisibility(config) {
     }
 }
 
-// Función que muestra la notificación de rol a pantalla completa
 function showRoleNotification(rol) {
+// ... (función sin cambios) ...
     roleNotification.textContent = `¡TU ROL ES: ${rol.toUpperCase()}!`;
     roleNotification.classList.remove('crewmate', 'impostor');
     roleNotification.classList.add(rol === 'impostor' ? 'impostor' : 'crewmate');
@@ -755,7 +758,7 @@ startTimerButton.addEventListener('click', () => {
     actualizarTemporizador(tiempoFin);
 });
 
-// 2. CONTINUAR VOTACIÓN (Solo Admin)
+// 2. CONTINUAR VOTACIÓN (Solo Admin - ROLES Y COLORES NO SE RESETEAN)
 continueButton.addEventListener('click', () => {
     if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
 
@@ -768,28 +771,21 @@ continueButton.addEventListener('click', () => {
     jugadoresRef.update(updates).then(() => {
         votosDetalleRef.set(null); // Borrar el detalle de votos
         
-        // 2. Resetear el rol de TODOS los participantes a 'sin asignar' (Preservando nombres y colores)
-        participantesRef.once('value').then(snapshot => {
-            const updatesRoles = {};
-            snapshot.forEach(childSnapshot => {
-                updatesRoles[`${childSnapshot.key}/rol`] = 'sin asignar';
-            });
-            participantesRef.update(updatesRoles);
-        });
+        // 2. Los roles y colores SE MANTIENEN. Solo se limpia el voto.
         
         // 3. Resetear configuración de votación y enviar señal de limpieza
         configRef.update({
-            votoActivo: true, // Votación activa, esperando que se inicie el tiempo
+            votoActivo: true, 
             tiempoFin: 0,
             lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
         });
         
         estadoRef.update({ mensaje: "Votación Continuada. ¡Inicia el temporizador!" });
-        alert("Contadores de voto reiniciados y roles borrados. Los nombres y colores asignados se mantienen.");
+        alert("Contadores de voto reiniciados. Roles y colores asignados se mantienen.");
     });
 });
 
-// 3. Reiniciar JUEGO TOTAL (Solo Admin - COLORES AHORA SE REINICIAN)
+// 3. Reiniciar JUEGO TOTAL (Solo Admin - ROLES Y COLORES SE RESETEAN)
 resetButton.addEventListener('click', () => {
     if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
     
@@ -811,7 +807,7 @@ resetButton.addEventListener('click', () => {
             const updates = {};
             snapshot.forEach(childSnapshot => {
                 updates[`${childSnapshot.key}/rol`] = 'sin asignar';
-                updates[`${childSnapshot.key}/color`] = null; // FIX: Limpiar color
+                updates[`${childSnapshot.key}/color`] = null; // Limpiar color
             });
             participantesRef.update(updates);
         });
@@ -825,6 +821,49 @@ resetButton.addEventListener('click', () => {
          estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Vota por el Impostor!" });
          alert("Juego reiniciado. Todos los jugadores están de vuelta, sus roles y colores fueron borrados.");
     });
+});
+
+/**
+ * Asigna un impostor al azar y el resto como tripulantes entre los jugadores con color asignado.
+ */
+assignRolesButton.addEventListener('click', () => {
+    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
+
+    // 1. Obtener los jugadores que tienen color asignado (activos)
+    const jugadoresActivos = Object.entries(participantesCache)
+        .filter(([id, p]) => p.color && coloresTripulantes.includes(p.color));
+
+    if (jugadoresActivos.length < 2) {
+        alert("Se necesitan al menos 2 jugadores con color asignado para iniciar la asignación de roles.");
+        return;
+    }
+    
+    // 2. Determinar la cantidad de impostores (ej. 1 impostor por cada 5 jugadores)
+    const numJugadores = jugadoresActivos.length;
+    const numImpostores = Math.max(1, Math.floor(numJugadores / 5)); // Al menos 1, 1 por cada 5
+    
+    // 3. Seleccionar IDs de impostores al azar
+    const shuffledPlayers = jugadoresActivos.map(p => p[0]).sort(() => 0.5 - Math.random());
+    const impostorIds = shuffledPlayers.slice(0, numImpostores);
+
+    // 4. Construir el objeto de actualizaciones
+    const updates = {};
+    for (const [id] of jugadoresActivos) {
+        const rol = impostorIds.includes(id) ? 'impostor' : 'tripulante';
+        updates[`${id}/rol`] = rol;
+    }
+    
+    // 5. Aplicar los roles en Firebase
+    participantesRef.update(updates)
+        .then(() => {
+            // Limpiar la señal de voto local para forzar la notificación de rol
+            configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
+            alert(`Roles asignados: ${numImpostores} Impostor(es) y ${numJugadores - numImpostores} Tripulante(s).`);
+        })
+        .catch(error => {
+            console.error("Error al asignar roles:", error);
+            alert("Error al asignar roles.");
+        });
 });
 
 // 4. PERMITIR VOTO MÚLTIPLE (Solo Admin)
