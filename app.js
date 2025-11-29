@@ -60,6 +60,10 @@ const personalRolePanel = document.getElementById('personal-role-panel');
 const myCrewmateIcon = document.getElementById('my-crewmate-icon');
 const myRoleDisplay = document.getElementById('my-role-display');
 
+// REFERENCIAS DE ID/NOMBRE
+const userIdDisplay = document.getElementById('user-id-display');
+const userNameDisplay = document.getElementById('user-name-display');
+
 
 let isAdmin = false;
 let timerInterval = null;
@@ -77,7 +81,8 @@ function getAnonymousUserId() {
     return userId;
 }
 const ANONYMOUS_USER_ID = getAnonymousUserId();
-document.getElementById('user-id-display').textContent = `Tu ID: ${ANONYMOUS_USER_ID}`; 
+// FIX: Mostrar el ID inmediatamente
+userIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`; 
 
 
 // =========================================================
@@ -345,7 +350,7 @@ function showRoleNotification(rol) {
 }
 
 
-// Lógica de Votación (RESTRICCIÓN DE ELIMINADO AÑADIDA)
+// Lógica de Votación (Restricción de voto por Jugador Eliminado y por Votación Activa)
 function votar(personaje) {
     participantesRef.child(ANONYMOUS_USER_ID).once('value').then(participanteSnap => {
         const participante = participanteSnap.val();
@@ -375,10 +380,10 @@ function performVoteChecks(personaje) {
         return;
     }
     
-    // Si la votación está activa
+    // Si la votación está activa (RESTRICCIÓN DE INICIO/CONTINUACIÓN)
     configRef.child('votoActivo').once('value').then(snap => {
         if (!snap.val()) {
-             alert('La votación ha terminado o no ha iniciado.');
+             alert('La votación ha terminado o no ha iniciado. El administrador debe iniciar o continuar la votación.');
              return;
         }
         
@@ -516,19 +521,24 @@ function setupParticipantTracking() {
 }
 
 
-// Escucha el rol asignado al usuario y actualiza el panel personal
+// Escucha el rol asignado al usuario y actualiza el panel personal y el nombre
 participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
     const participante = snapshot.val();
     const localRole = localStorage.getItem('currentRole');
     
-    if (participante && participante.rol) {
+    if (participante) {
         
+        // FIX: Mostrar Nombre de usuario
+        const nombreMostrado = participante.nombre || ANONYMOUS_USER_ID;
+        userNameDisplay.textContent = `Tu Nombre: ${nombreMostrado}`;
+
+
         // --- LÓGICA DE NOTIFICACIÓN DE ROL GIGANTE ---
-        if (participante.rol !== localRole && localStorage.getItem('localClearSignal')) {
+        if (participante.rol && participante.rol !== localRole && localStorage.getItem('localClearSignal')) {
             showRoleNotification(participante.rol);
             localStorage.setItem('currentRole', participante.rol); 
         
-        } else if (participante.rol !== 'sin asignar' && !localRole) {
+        } else if (participante.rol && participante.rol !== 'sin asignar' && !localRole) {
             showRoleNotification(participante.rol);
             localStorage.setItem('currentRole', participante.rol);
         } else if (participante.rol) {
@@ -540,7 +550,9 @@ participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
         myCrewmateIcon.classList.remove(...coloresTripulantes);
         myCrewmateIcon.classList.remove('skip');
         
-        if (participante.color && coloresTripulantes.includes(participante.color)) {
+        const tieneColor = participante.color && coloresTripulantes.includes(participante.color);
+
+        if (tieneColor) {
             personalRolePanel.style.display = 'flex';
             myCrewmateIcon.classList.add(participante.color);
             
@@ -600,7 +612,7 @@ function updateParticipantDisplay(participantesData) {
         const pElement = document.createElement('div');
         pElement.classList.add('participant-item');
         pElement.innerHTML = `
-            <span class="user-index-name online">${index}. <strong>${nombreMostrado}</strong></span>
+            <span class="user-index-name online">${index}. <strong>${nombreMostrado}</strong> (ID: ${p.id})</span>
             <span class="user-role-admin">${p.rol ? p.rol.toUpperCase() : 'SIN ASIGNAR'} (${p.color || 'N/A'})</span>
             
             <div class="admin-actions">
@@ -791,7 +803,7 @@ resetButton.addEventListener('click', () => {
             const updates = {};
             snapshot.forEach(childSnapshot => {
                 updates[`${childSnapshot.key}/rol`] = 'sin asignar';
-                updates[`${childSnapshot.key}/color`] = null; // <<< FIX: Limpiar color
+                updates[`${childSnapshot.key}/color`] = null; // FIX: Limpiar color
             });
             participantesRef.update(updates);
         });
