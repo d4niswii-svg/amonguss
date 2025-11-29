@@ -1,3 +1,5 @@
+// app.js
+
 // =========================================================
 // 1. CONFIGURACIÓN DE FIREBASE (¡CLAVES INSERTADAS!)
 // =========================================================
@@ -55,7 +57,7 @@ const ANONYMOUS_USER_ID = getAnonymousUserId();
 document.getElementById('user-id-display').textContent = `Tu ID: ${ANONYMOUS_USER_ID}`; 
 
 // =========================================================
-// LÓGICA DE TIEMPO REAL: VOTACIÓN
+// LÓGICA DE TIEMPO REAL: VOTACIÓN (Sin Cambios)
 // =========================================================
 jugadoresRef.on('value', (snapshot) => {
     const jugadores = snapshot.val();
@@ -158,13 +160,13 @@ function finalizarVotacion() {
                 ultimoEliminado: resultado.nombre,
                 mensaje: `¡${resultado.nombre.toUpperCase()} fue expulsado! No era un Impostor.`
             });
-            continueButton.style.display = isAdmin ? 'inline-block' : 'none'; // Visible solo para Admin
+            continueButton.style.display = isAdmin ? 'inline-block' : 'none';
         } else {
             estadoRef.update({
                 ultimoEliminado: null,
                 mensaje: resultado.nombre === "EMPATE" ? "Votación terminada en empate." : "Nadie fue expulsado. Votación saltada."
             });
-             continueButton.style.display = isAdmin ? 'inline-block' : 'none'; // Visible solo para Admin
+             continueButton.style.display = isAdmin ? 'inline-block' : 'none';
         }
         
         startTimerButton.style.display = 'none';
@@ -173,7 +175,7 @@ function finalizarVotacion() {
 
 
 // =========================================================
-// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL
+// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL (Corregida la visibilidad Admin)
 // =========================================================
 
 function actualizarTemporizador(tiempoFin) {
@@ -287,7 +289,7 @@ botonesVoto.forEach(btn => {
 
 
 // =========================================================
-// LÓGICA DE PARTICIPANTES Y ROLES
+// LÓGICA DE PARTICIPANTES Y ROLES (FIXED)
 // =========================================================
 
 // Muestra el mensaje de notificación de rol
@@ -333,19 +335,18 @@ participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
 });
 
 
-// 3. Muestra la lista de participantes (SOLO ADMIN - FILTRADO)
-participantesRef.on('value', (snapshot) => {
+// 3. Función para renderizar la lista (Aislada para ser llamada manualmente)
+function updateParticipantDisplay(participantesData) {
     if (!isAdmin) {
         participantListContainer.innerHTML = '<p class="admin-message">Inicia sesión como Admin para ver la lista.</p>';
         return;
     }
 
-    const participantes = snapshot.val();
     participantListContainer.innerHTML = ''; 
     let index = 1;
     
     // Convertir el objeto de participantes a un array y FILTRAR por conectados
-    const participantesArray = Object.entries(participantes || {})
+    const participantesArray = Object.entries(participantesData || {})
         .map(([id, data]) => ({ id, ...data }))
         .filter(p => p.conectado === true); 
     
@@ -388,15 +389,21 @@ participantesRef.on('value', (snapshot) => {
             asignarNombre(userId, inputElement.value);
         });
     });
+}
+
+// 3.1 Listener de participantes que llama a la función de renderizado
+participantesRef.on('value', (snapshot) => {
+    updateParticipantDisplay(snapshot.val());
 });
 
-// 5. Función de asignación de rol (para el ADMIN)
+
+// 4. Función de asignación de rol (para el ADMIN)
 function asignarRol(userId, rol) {
     participantesRef.child(userId).update({ rol: rol, asignadoPor: ANONYMOUS_USER_ID });
     console.log(`Rol de ${userId} actualizado a ${rol.toUpperCase()}`);
 }
 
-// 6. Función de asignación de nombre (para el ADMIN)
+// 5. Función de asignación de nombre (para el ADMIN)
 function asignarNombre(userId, nombre) {
     const trimmedName = nombre.trim() || null;
     participantesRef.child(userId).update({ nombre: trimmedName });
@@ -411,17 +418,22 @@ setupParticipantTracking();
 // FUNCIONES DE ADMINISTRADOR (CLAVE ZXZ)
 // =========================================================
 
-// Manejar el botón de Login Admin
+// Manejar el botón de Login Admin (FIXED)
 adminLoginButton.addEventListener('click', () => {
     const clave = prompt("Introduce la clave de administrador:");
     if (clave === 'zxz') { // CLAVE ZXZ
         isAdmin = true;
         participantPanel.style.display = 'flex'; // Muestra el panel de participantes
         adminLoginButton.style.display = 'none';
-        alert("Acceso de administrador concedido.");
-        // Forzar una actualización de la UI del administrador
+        
+        // CORRECCIÓN: Forzar la actualización inmediata de la UI de participantes
+        participantesRef.once('value').then(snapshot => {
+            updateParticipantDisplay(snapshot.val()); 
+        });
+        
+        // Forzar la actualización de los botones de control (Start/Continue/Reset)
         configRef.once('value'); 
-        participantesRef.once('value'); 
+        alert("Acceso de administrador concedido.");
     } else if (clave !== null) { 
         alert("Clave incorrecta. Acceso denegado.");
     }
@@ -482,7 +494,7 @@ resetButton.addEventListener('click', () => {
     }
     
     jugadoresRef.set(jugadoresReset).then(() => {
-         participantesRef.set(null); // Borrar participantes y roles
+         participantesRef.set(null); 
          configRef.update({ votoActivo: true, tiempoFin: 0 });
          localStorage.removeItem('voted');
          localStorage.removeItem('currentRole');
