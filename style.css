@@ -154,7 +154,7 @@ body {
     min-width: 100px; 
 }
 
-/* --- ICONOS GRANDES DE JUGADOR (FIX y MEJORA) --- */
+/* --- ICONOS GRANDES DE JUGADOR --- */
 .crewmate-icon {
     width: 30px; 
     height: 40px; 
@@ -223,7 +223,7 @@ body {
 .eliminado .voto-iconos-container { opacity: 0; }
 
 
-/* --- PANEL DE ROL PERSONAL (AÑADIDO Y FIXEADO) --- */
+/* --- PANEL DE ROL PERSONAL --- */
 .personal-role-panel {
     position: fixed;
     bottom: 20px;
@@ -403,6 +403,52 @@ body {
 .expulsion-popup.crewmate-ejected .expulsion-message {
     color: var(--color-neón-cian);
     text-shadow: 0 0 10px var(--color-neón-cian);
+}
+
+
+/* --- LOGIN ADMIN & INFO PERSONAL (MEJORADO) --- */
+.admin-login-button { 
+    position: fixed; /* Cambiado a fixed para que se quede en su sitio */
+    top: 15px; 
+    right: 20px; 
+    padding: 10px 20px; 
+    border-radius: 8px; 
+    border: 2px solid var(--color-borde-panel); 
+    background-color: #3498db; 
+    color: white; 
+    font-weight: 900; 
+    cursor: pointer; 
+    box-shadow: 0 4px 0 #2980b9; 
+    transition: all 0.1s;
+    z-index: 100; 
+    font-family: 'Roboto', sans-serif;
+}
+.admin-login-button:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #2980b9;
+}
+
+.personal-info-box {
+    position: fixed;
+    top: 15px;
+    left: 20px;
+    z-index: 100;
+    font-family: 'Roboto', sans-serif;
+}
+
+.my-id-label-top { 
+    font-size: 0.9em; 
+    color: #7f8c8d; 
+    font-weight: 700;
+    display: block;
+    line-height: 1.2;
+}
+.my-id-label-center { 
+    font-size: 0.9em; 
+    color: #7f8c8d; 
+    font-family: 'Roboto', sans-serif; 
+    font-weight: 700; 
+    margin-top: 10px;
 }
 
 
