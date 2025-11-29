@@ -20,7 +20,7 @@ const database = firebase.database();
 const jugadoresRef = database.ref('jugadores'); 
 const configRef = database.ref('config');
 const estadoRef = database.ref('estado');
-const chatRef = database.ref('chat'); // ¡NUEVA REFERENCIA PARA CHAT!
+const chatRef = database.ref('chat'); 
 
 // Referencias a la UI
 const botonesVoto = document.querySelectorAll('.boton-voto');
@@ -41,10 +41,23 @@ let totalVotos = 0;
 let timerInterval = null;
 const coloresJugadores = ['amarillo', 'azul', 'blanco', 'rojo', 'verde', 'skip']; 
 
+// Función para obtener un ID único de navegador (anonimato)
+function getAnonymousUserId() {
+    let userId = localStorage.getItem('anonymousUserId');
+    if (!userId) {
+        // Generar un ID simple y guardar
+        userId = 'user_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('anonymousUserId', userId);
+    }
+    return userId;
+}
+const ANONYMOUS_USER_ID = getAnonymousUserId();
+
 // =========================================================
 // LÓGICA DE TIEMPO REAL: VOTACIÓN
 // =========================================================
 jugadoresRef.on('value', (snapshot) => {
+    // ... [Tu lógica de actualización de jugadores y barras] ...
     const jugadores = snapshot.val();
     let maxVotos = -1;
     let jugadorMasVotado = null;
@@ -55,26 +68,28 @@ jugadoresRef.on('value', (snapshot) => {
         const votosActuales = jugador ? jugador.votos || 0 : 0;
         totalVotos += votosActuales;
 
-        // Actualizar UI, Barras, y Estilos
+        // 1. Actualizar UI
         const contadorElement = document.getElementById(`contador-${color}`);
         const barraElement = document.getElementById(`barra-${color}`);
         const botonElement = document.getElementById(`votar-${color}`);
 
         if (contadorElement) contadorElement.textContent = votosActuales;
         
+        // 2. Aplicar estilo de eliminado
         if (jugador && jugador.eliminado === true && botonElement) {
             botonElement.classList.add('eliminado');
         } else if (botonElement) {
              botonElement.classList.remove('eliminado');
         }
         
+        // 3. Barras
         if (barraElement && totalVotos > 0) {
             barraElement.style.width = `${(votosActuales / totalVotos) * 100}%`;
         } else if (barraElement) {
             barraElement.style.width = '0%';
         }
         
-        // Lógica del Más Votado
+        // 4. Lógica del Más Votado
         if (color !== 'skip' && !(jugador && jugador.eliminado) && votosActuales > maxVotos) {
             maxVotos = votosActuales;
             jugadorMasVotado = color;
@@ -83,7 +98,7 @@ jugadoresRef.on('value', (snapshot) => {
         }
     }
 
-    // Mostrar el resultado (Líder Actual)
+    // 5. Mostrar el resultado (Líder Actual)
     let liderTexto = jugadorMasVotado === "EMPATE" 
         ? "EMPATE" 
         : jugadorMasVotado ? jugadorMasVotado.toUpperCase() : "NADIE";
@@ -106,7 +121,7 @@ chatRef.on('child_added', (snapshot) => {
     const messageElement = document.createElement('div');
     messageElement.classList.add('chat-message');
     
-    // Muestra el mensaje (anónimo)
+    // Muestra el mensaje anónimo
     messageElement.textContent = messageData.mensaje; 
     
     chatMessagesContainer.appendChild(messageElement);
@@ -120,11 +135,11 @@ chatForm.addEventListener('submit', (e) => {
     const mensaje = chatInput.value.trim();
 
     if (mensaje) {
-        chatRef.push({ // Agrega un nuevo mensaje con ID único
+        chatRef.push({ 
             mensaje: mensaje,
             tiempo: Date.now()
         });
-        chatInput.value = ''; // Limpiar el input
+        chatInput.value = ''; 
     }
 });
 
@@ -191,17 +206,19 @@ function finalizarVotacion() {
 
 
 // =========================================================
-// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL
+// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL (CORREGIDA)
 // =========================================================
 
 function actualizarTemporizador(tiempoFin) {
     clearInterval(timerInterval); 
     timerInterval = setInterval(() => {
-        const tiempoRestanteMs = tiempoFin - Date.now();
-        if (tiempoRestanteMs <= 0) {
+        // Usar Math.max para evitar números negativos y comparaciones fallidas
+        const tiempoRestanteMs = Math.max(0, tiempoFin - Date.now()); 
+        
+        if (tiempoRestanteMs === 0) {
             clearInterval(timerInterval);
             temporizadorElement.textContent = "00:00 - Votación Cerrada";
-            finalizarVotacion();
+            finalizarVotacion(); // Se llama al terminar el tiempo
         } else {
             const segundosRestantes = Math.floor(tiempoRestanteMs / 1000);
             const minutos = Math.floor(segundosRestantes / 60);
@@ -220,10 +237,17 @@ configRef.on('value', (snapshot) => {
         btn.disabled = !puedeVotar;
     });
     
-    if (config.tiempoFin > 0 && config.votoActivo) {
+    // Iniciar el temporizador solo si hay un tiempo de fin válido en el futuro
+    if (config.tiempoFin > Date.now() && config.votoActivo) { 
         actualizarTemporizador(config.tiempoFin);
+    } else if (config.tiempoFin === 0 && config.votoActivo) {
+        // Si se acaba de iniciar, esperamos el tiempoFin real del botón Admin
     } else if (!config.votoActivo) {
         clearInterval(timerInterval);
+        // Si el voto está inactivo pero el tiempo es > 0, significa que ya terminó
+        if (config.tiempoFin > 0) {
+             temporizadorElement.textContent = "00:00 - Votación Cerrada";
+        }
     }
 });
 
@@ -323,7 +347,7 @@ startTimerButton.addEventListener('click', () => {
     });
 });
 
-// 2. CONTINUAR VOTACIÓN (Reinicia solo los contadores)
+// 2. CONTINUAR VOTACIÓN (Reinicia contadores Y BORRA CHAT)
 continueButton.addEventListener('click', () => {
     checkAdminKey(() => {
         // Reiniciar contadores de votos
@@ -333,6 +357,9 @@ continueButton.addEventListener('click', () => {
         }
         
         jugadoresRef.update(updates).then(() => {
+            // BORRAR CHAT: Elimina el nodo chat completo
+            chatRef.set(null); 
+            
             // Reiniciar la configuración
             configRef.update({
                 votoActivo: true,
@@ -340,7 +367,7 @@ continueButton.addEventListener('click', () => {
             });
             localStorage.removeItem('voted'); 
             estadoRef.update({ mensaje: "Votación Continuada. ¡Inicia el temporizador!" });
-            alert("Contadores reiniciados. Presiona 'Iniciar Votación' para continuar.");
+            alert("Contadores reiniciados y chat borrado. Presiona 'Iniciar Votación' para continuar.");
             continueButton.style.display = 'none';
             startTimerButton.style.display = 'inline-block';
         });
@@ -350,7 +377,6 @@ continueButton.addEventListener('click', () => {
 // 3. Reiniciar JUEGO TOTAL (Admin)
 resetButton.addEventListener('click', () => {
     checkAdminKey(() => {
-        // Reiniciar TODO: votos, eliminados y estado
         const jugadoresReset = {};
         for (const color of coloresJugadores) {
             if (color === 'skip') {
@@ -361,10 +387,11 @@ resetButton.addEventListener('click', () => {
         }
         
         jugadoresRef.set(jugadoresReset).then(() => {
+             chatRef.set(null); // BORRAR CHAT TOTAL
              configRef.update({ votoActivo: true, tiempoFin: 0 });
              localStorage.removeItem('voted');
              estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Vota por el Impostor!" });
-             alert("Juego reiniciado. Todos los jugadores están de vuelta.");
+             alert("Juego reiniciado. Todos los jugadores están de vuelta y el chat está limpio.");
              continueButton.style.display = 'none';
              startTimerButton.style.display = 'inline-block';
         });
