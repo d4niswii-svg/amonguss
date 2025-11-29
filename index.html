@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergencia - Votación de Impostor HD</title>
+    <!-- Tu estilo CSS para que se vea HD y hermoso -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Fuente HD de Among Us -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@900;400&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="votacion-container">
+        <h1>¡REUNIÓN DE EMERGENCIA!</h1>
+        <!-- Mensaje de estado: "Vota por el Impostor" o "Rojo fue eliminado" -->
+        <p id="mensaje-principal">¡Vota por el Impostor!</p>
+        
+        <!-- TEMPORIZADOR -->
+        <div class="timer-display">
+            Tiempo Restante: <span id="temporizador">00:00</span>
+        </div>
+
+        <div class="opciones" id="opciones-votacion">
+            
+            <!-- ROJO -->
+            <button id="votar-rojo" class="boton-voto player-row" data-color="rojo">
+                <div class="crewmate-icon rojo"></div> 
+                <span class="nombre">ROJO</span>
+                <div class="vote-bar-container"><div class="vote-bar" id="barra-rojo"></div></div>
+                <span class="contador" id="contador-rojo">0</span>
+            </button>
+            
+            <!-- AZUL -->
+            <button id="votar-azul" class="boton-voto player-row" data-color="azul">
+                <div class="crewmate-icon azul"></div>
+                <span class="nombre">AZUL</span>
+                 <div class="vote-bar-container"><div class="vote-bar" id="barra-azul"></div></div>
+                <span class="contador" id="contador-azul">0</span>
+            </button>
+            
+            <!-- BLANCO -->
+            <button id="votar-blanco" class="boton-voto player-row" data-color="blanco">
+                <div class="crewmate-icon blanco"></div>
+                <span class="nombre">BLANCO</span>
+                 <div class="vote-bar-container"><div class="vote-bar" id="barra-blanco"></div></div>
+                <span class="contador" id="contador-blanco">0</span>
+            </button>
+
+            <!-- VERDE -->
+            <button id="votar-verde" class="boton-voto player-row" data-color="verde">
+                <div class="crewmate-icon verde"></div> 
+                <span class="nombre">VERDE</span>
+                <div class="vote-bar-container"><div class="vote-bar" id="barra-verde"></div></div>
+                <span class="contador" id="contador-verde">0</span>
+            </button>
+
+            <!-- AMARILLO -->
+            <button id="votar-amarillo" class="boton-voto player-row" data-color="amarillo">
+                <div class="crewmate-icon amarillo"></div> 
+                <span class="nombre">AMARILLO</span>
+                <div class="vote-bar-container"><div class="vote-bar" id="barra-amarillo"></div></div>
+                <span class="contador" id="contador-amarillo">0</span>
+            </button>
+
+            <!-- Botón de Saltarse el Voto (SKIP) -->
+            <button id="votar-skip" class="boton-voto player-row" data-color="skip">
+                <div class="crewmate-icon skip"></div> 
+                <span class="nombre">SALTAR VOTO</span>
+                <div class="vote-bar-container"><div class="vote-bar" id="barra-skip"></div></div>
+                <span class="contador" id="contador-skip">0</span>
+            </button>
+            
+        </div>
+        
+        <div id="voto-confirmado" class="voto-confirmado">¡Voto Registrado! Gracias.</div>
+        <div id="resultado-final" class="resultado-final"></div>
+
+        <!-- PANEL DE ADMINISTRADOR (Visible por defecto, con clave de seguridad) -->
+        <div class="admin-panel">
+            <button id="start-timer-button">Iniciar Votación</button>
+            <button id="continue-button" style="display:none; background-color: #007bff;">Continuar Votación</button>
+            <button id="reset-button">Reiniciar Juego Total</button>
+        </div>
+
+    </div>
+
+    <!-- Carga del SDK de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    
+    <!-- Tu código de lógica y tiempo real -->
+    <script src="app.js"></script>
+
+</body>
+</html>
