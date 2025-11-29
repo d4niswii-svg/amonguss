@@ -1,12 +1,13 @@
 /* PALETA Y FUENTES HD / Among Us Style */
 :root {
-    --color-fondo-espacio: #0a111f; /* Fondo muy oscuro, como el espacio */
-    --color-panel-amongus: #283747; /* Gris azulado oscuro, como la mesa */
-    --color-neón-cian: #39fffc; /* Cian brillante */
-    --color-neón-rojo: #ff4545; /* Rojo de emergencia */
+    --color-fondo-blanco: #f4f6f7; /* Fondo principal blanco */
+    --color-panel-amongus: #d5dadf; /* Gris claro/plata para los paneles */
+    --color-borde-panel: #2c3e50; /* Gris oscuro para el borde */
+    --color-neón-cian: #39fffc; 
+    --color-neón-rojo: #ff4545; 
     --color-crewmate: #2ecc71;
     --color-impostor: #ff6b6b;
-    --color-texto-claro: #f4f6f7;
+    --color-texto-oscuro: #2c3e50; /* Texto principal oscuro */
     --color-skip: #8395a7;
 }
 
@@ -14,203 +15,169 @@
 body {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; 
     min-height: 100vh;
     margin: 0;
-    background: var(--color-fondo-espacio);
+    padding-top: 50px; 
+    background: var(--color-fondo-blanco); 
     font-family: 'Bungee Outline', 'Roboto', sans-serif;
-    color: var(--color-texto-claro);
+    color: var(--color-texto-oscuro);
     overflow-x: hidden;
 }
 
 #app-container {
     display: flex;
-    gap: 15px; /* Menor separación */
-    max-width: 1400px; /* Más ancho para las 3 columnas */
+    gap: 20px;
+    max-width: 1300px; 
     width: 95%;
-    padding: 20px 0;
 }
 
-/* ESTILO GENERAL DE PANEL (Efecto Holo) */
+/* ESTILO GENERAL DE PANEL (Limpio y 3D) */
 .panel {
     background: var(--color-panel-amongus);
-    border: 3px solid var(--color-neón-cian);
-    border-radius: 20px;
-    padding: 25px;
-    box-shadow: 0 0 40px rgba(57, 255, 252, 0.3), inset 0 0 15px rgba(57, 255, 252, 0.2);
+    border: 5px solid var(--color-borde-panel);
+    border-radius: 25px;
+    padding: 30px;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.7);
     flex: 1; 
     display: flex;
     flex-direction: column;
 }
 
 /* AJUSTE DE COLUMNAS */
-.votacion-container { flex: 2; } /* Más ancho para la votación */
-.chat-container, .participant-panel { flex: 1; }
+.votacion-container { flex: 2; } 
+.participant-panel { flex: 1; display: none; } /* Oculto por defecto, se muestra con Login Admin */
+
 
 /* ENCABEZADOS */
 .panel-header {
     color: var(--color-neón-rojo);
-    text-shadow: 0 0 10px var(--color-neón-rojo);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
     font-size: 2.5em;
-    margin-bottom: 15px;
-    border-bottom: 3px solid var(--color-neón-rojo);
+    margin-bottom: 20px;
+    border-bottom: 4px solid var(--color-neón-rojo);
     padding-bottom: 10px;
     text-align: center;
 }
 .panel-header-small {
-    color: var(--color-neón-cian);
-    text-shadow: 0 0 5px var(--color-neón-cian);
+    color: var(--color-borde-panel);
     font-size: 1.5em;
     margin-bottom: 15px;
-    border-bottom: 2px solid var(--color-neón-cian);
+    border-bottom: 2px solid #7f8c8d;
     padding-bottom: 5px;
 }
 
 .status-message {
     font-size: 1.5em;
     margin-bottom: 20px;
-    color: var(--color-texto-claro);
+    color: var(--color-texto-oscuro);
     font-weight: 900;
     text-align: center;
 }
 
-/* INFO BAR (Timer y Rol del usuario) */
+/* INFO BAR (Timer) */
 .info-bar {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    margin-bottom: 15px;
-    border-bottom: 1px dotted #4a637d;
-    padding-bottom: 10px;
+    margin-bottom: 20px;
 }
 
 /* TEMPORIZADOR */
 .timer-display {
     background-color: #f1c40f;
-    color: #333;
-    padding: 8px 15px;
-    border-radius: 8px;
-    font-size: 1.4em;
+    color: var(--color-texto-oscuro);
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 1.6em;
     font-weight: 900;
     border: 3px solid #e74c3c;
     box-shadow: 0 0 15px rgba(241, 196, 15, 0.7);
 }
 
-/* DISPLAY DE ROL */
-.role-display {
-    padding: 8px 15px;
-    border-radius: 8px;
-    font-size: 1.4em;
-    font-weight: 900;
-    border: 3px solid;
-}
-.role-display.tripulante { background-color: var(--color-crewmate); color: #0a111f; border-color: #1abc9c; }
-.role-display.impostor { background-color: var(--color-impostor); color: #0a111f; border-color: #c0392b; }
-.role-display.sin-asignar { background-color: var(--color-skip); color: #0a111f; border-color: #6c7a89; }
-
-
 .opciones {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* 2 columnas de jugadores */
-    gap: 12px;
+    grid-template-columns: 1fr 1fr; 
+    gap: 15px;
 }
 
-/* --- BOTONES DE VOTO (Among Us Botón de Mesa) --- */
+/* --- BOTONES DE VOTO (Más Vistosos) --- */
 .boton-voto {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 20px;
+    padding: 12px 25px;
     border-radius: 15px;
-    background: var(--color-panel-amongus);
+    background: #ecf0f1; 
     transition: background 0.2s, transform 0.1s;
     cursor: pointer;
-    border: 2px solid var(--color-neón-cian);
-    font-size: 1.2em;
+    border: 2px solid var(--color-borde-panel);
+    font-size: 1.3em;
     font-family: 'Roboto', sans-serif;
     font-weight: 900;
     position: relative;
     overflow: hidden;
-    color: var(--color-texto-claro);
-    box-shadow: 0 5px 0 #1c2630;
+    color: var(--color-texto-oscuro);
+    box-shadow: 0 6px 0 #bdc3c7; 
 }
 
 .boton-voto:hover:not(:disabled) {
-    background: #34495e;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 0 #1c2630;
+    background: #bdc3c7;
+    transform: translateY(-4px);
+    box-shadow: 0 10px 0 #95a5a6;
 }
 
 .boton-voto:disabled {
-    opacity: 0.3;
+    opacity: 0.4;
     cursor: not-allowed;
-    box-shadow: 0 2px 0 #1c2630;
+    box-shadow: 0 2px 0 #95a5a6;
     transform: none;
 }
 
-/* Contenido y Contador */
-.nombre { flex-grow: 1; text-align: left; margin-left: 15px; z-index: 2; }
-.contador { z-index: 2; font-size: 1.5em; color: var(--color-neón-cian); text-shadow: 0 0 10px var(--color-neón-cian); }
+.nombre { flex-grow: 1; text-align: left; margin-left: 15px; z-index: 2; color: inherit; }
+.contador { z-index: 2; font-size: 1.6em; color: var(--color-neón-cian); text-shadow: 0 0 10px #3498db; }
 
 /* --- BARRAS DE PROGRESO --- */
-.vote-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
-.vote-bar { height: 100%; width: 0; transition: width 0.5s ease; opacity: 0.25; }
+.vote-bar { height: 100%; width: 0; transition: width 0.5s ease; opacity: 0.4; }
 
-/* Colores de las Barras */
-#barra-rojo { background-color: #c51111; }
-#barra-azul { background-color: #132ed1; }
-#barra-blanco { background-color: #d6e0f0; } 
-#barra-verde { background-color: #117f2d; } 
-#barra-amarillo { background-color: #f6e58d; }
-#barra-skip { background-color: var(--color-skip); }
 
-/* --- ICONO CREWMATE --- */
+/* --- ICONO CREWMATE (Mejorado) --- */
 .crewmate-icon {
-    width: 30px; height: 45px; border-radius: 50% 50% 10% 10%; position: relative; z-index: 2;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    width: 35px; height: 50px; border-radius: 50% 50% 10% 10%; position: relative; z-index: 2;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4);
+    border: 3px solid white; 
+    clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%); 
 }
 .crewmate-icon::before { 
-    content: ''; position: absolute; top: 8px; left: 10px; width: 10px; height: 10px; border-radius: 50%;
+    content: ''; position: absolute; top: 8px; left: 10px; width: 15px; height: 12px; border-radius: 50%;
     background: linear-gradient(135deg, #a9d4f2, #609bc6); 
     border: 1px solid #333;
+    z-index: 3;
 }
 /* Colores de los Muñecos */
 .rojo { background-color: #c51111; } .azul { background-color: #132ed1; } .blanco { background-color: #d6e0f0; } 
 .verde { background-color: #117f2d; } .amarillo { background-color: #f6e58d; } .skip { background-color: var(--color-skip); }
-/* Hacer que los nombres en colores claros sean más oscuros */
-.blanco-bg .nombre, .amarillo-bg .nombre { color: #333; } 
+
 
 /* ESTADO ELIMINADO (Cuerpo partido) */
-.eliminado { opacity: 0.3 !important; filter: saturate(0%); text-decoration: line-through; box-shadow: none; transform: none; border-color: var(--color-neón-rojo) !important; }
+.eliminado { opacity: 0.2 !important; filter: saturate(0%); text-decoration: none; box-shadow: none; transform: none; border-color: var(--color-neón-rojo) !important; }
 .eliminado .contador { color: var(--color-neón-rojo); text-shadow: none; }
 .eliminado .vote-bar-container { display: none; }
-.eliminado .crewmate-icon::after {
-    content: 'X'; /* Simular que está partido */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(45deg);
-    font-size: 2em;
-    color: var(--color-neón-rojo);
-    font-weight: 900;
-}
 
 
 /* CONFIRMACIÓN Y RESUMEN */
-.confirmation-box, .summary-box { padding: 10px; border-radius: 10px; margin-top: 20px; font-weight: 900; text-align: center; }
-.confirmation-box { background-color: var(--color-crewmate); color: #0a111f; display: none; }
+.confirmation-box { padding: 10px; border-radius: 10px; margin-top: 20px; font-weight: 900; text-align: center; background-color: var(--color-crewmate); color: white; display: none; }
 .summary-box { 
-    background: #1a222f; 
-    border: 2px solid var(--color-neón-cian); 
+    padding: 10px; border-radius: 10px; margin-top: 20px; font-weight: 900; text-align: center;
+    background: #2c3e50; 
+    border: 3px solid var(--color-neón-cian); 
     color: var(--color-neón-cian);
     text-shadow: 0 0 5px var(--color-neón-cian);
-    display: none; 
 }
 
 /* --- PANEL DE ADMINISTRADOR --- */
 .admin-panel { 
-    margin-top: 25px; 
+    margin-top: auto; 
     padding-top: 15px; 
     border-top: 1px dashed #4a637d; 
     display: flex;
@@ -219,117 +186,145 @@ body {
     align-items: center;
     justify-content: center;
 }
-.my-id-label { flex-basis: 100%; text-align: center; font-size: 0.9em; color: #7f8c8d; }
-
 .admin-panel button {
-    padding: 10px 15px; 
-    border: none; 
-    border-radius: 8px; 
-    font-weight: 900; 
-    cursor: pointer;
-    color: white; 
-    transition: background-color 0.2s, box-shadow 0.2s;
-    box-shadow: 0 3px 0 rgba(0,0,0,0.5);
+    padding: 10px 15px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer;
+    color: white; transition: background-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 0 #555;
 }
 .admin-btn-start { background-color: #f39c12; }
-.admin-btn-start:hover { background-color: #e67e22; }
-
 .admin-btn-continue { background-color: #3498db; }
-.admin-btn-continue:hover { background-color: #2980b9; }
-
 .admin-btn-reset { background-color: #c0392b; }
-.admin-btn-reset:hover { background-color: #a31d0d; }
 
-
-/* ==================================== */
-/* CHAT Y PARTICIPANTES */
-/* ==================================== */
-.chat-messages {
-    flex-grow: 1;
-    overflow-y: auto; 
-    padding: 10px;
-    background-color: #1a222f; 
-    border-radius: 8px;
-    margin-bottom: 15px;
-    border: 1px solid #34495e;
-}
-
-.chat-message {
-    padding: 7px 0;
-    border-bottom: 1px dotted #34495e;
-    font-size: 0.95em;
-    color: #bdc3c7;
-    word-wrap: break-word; 
-    font-family: 'Roboto', sans-serif;
-}
-.chat-form { display: flex; gap: 10px; }
-#chat-input {
-    flex-grow: 1;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #4a637d;
-    background-color: #1a222f;
-    color: var(--color-texto-claro);
-    font-size: 1em;
-    font-family: 'Roboto', sans-serif;
-}
-#send-btn {
-    padding: 10px 15px; border: none; border-radius: 6px;
-    background-color: var(--color-crewmate); color: white;
-    font-weight: 900; cursor: pointer;
-    box-shadow: 0 3px 0 #1abc9c;
-}
 
 /* --- PANEL DE PARTICIPANTES --- */
 .participant-list {
     flex-grow: 1;
     overflow-y: auto;
     padding: 10px;
-    background-color: #1a222f;
+    background-color: #ecf0f1;
     border-radius: 8px;
-    border: 1px solid #34495e;
+    border: 1px solid #7f8c8d;
 }
 
 .participant-item {
     padding: 10px 0;
-    border-bottom: 1px dashed #34495e;
+    border-bottom: 1px dashed #bdc3c7;
     font-family: 'Roboto', sans-serif;
 }
 .participant-item:last-child { border-bottom: none; }
 
-.user-id-name {
+/* Nombre del Participante (Índice + Nombre Asignado) */
+.user-index-name {
     font-weight: 900;
     font-size: 1em;
     display: inline-block;
-    width: 60%;
-    color: #bdc3c7;
+    width: 65%; /* Más ancho para el nombre */
+    color: var(--color-texto-oscuro);
 }
-.user-id-name.online { color: var(--color-crewmate); }
-.user-id-name.offline { color: var(--color-neón-rojo); opacity: 0.5; }
+.user-index-name.online { color: var(--color-crewmate); }
 
 .user-role-admin {
     display: inline-block;
-    width: 35%;
+    width: 30%;
     font-weight: 900;
-    font-size: 0.9em;
+    font-size: 0.8em;
     text-align: right;
     color: #f1c40f;
 }
 
-.admin-role-buttons {
+.admin-actions {
     margin-top: 5px;
     display: flex;
-    justify-content: flex-end;
+    flex-wrap: wrap;
+    justify-content: space-between;
     gap: 5px;
 }
-.role-btn {
-    padding: 5px 8px;
+
+.name-input {
+    flex-basis: 60%;
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #7f8c8d;
+    font-size: 0.8em;
+}
+
+.name-btn {
+    flex-basis: 35%;
+    padding: 5px;
     border: none;
     border-radius: 5px;
-    font-size: 0.8em;
+    font-size: 0.75em;
     font-weight: 700;
     cursor: pointer;
     color: white;
+    background-color: #9b59b6; 
+    box-shadow: 0 2px 0 #8e44ad;
+}
+
+.role-btn {
+    flex-basis: 48%; 
+    padding: 5px 8px; 
+    border: none; 
+    border-radius: 5px; 
+    font-size: 0.75em; 
+    font-weight: 700; 
+    cursor: pointer;
+    color: white; 
+    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
 }
 .role-btn.tripulante { background-color: #1abc9c; }
 .role-btn.impostor { background-color: #e74c3c; }
+
+/* --- LOGIN ADMIN & USER ID --- */
+.admin-login-button {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 2px solid var(--color-borde-panel);
+    background-color: #3498db;
+    color: white;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #2980b9;
+    z-index: 100;
+}
+.my-id-label {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 0.9em;
+    color: #7f8c8d;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 400;
+}
+
+/* --- NOTIFICACIÓN DE ROL GIGANTE --- */
+.role-notification-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 6em;
+    font-weight: 900;
+    text-align: center;
+    opacity: 0;
+    animation: fadein 0.5s forwards, pulse 1.5s infinite;
+}
+
+.role-notification-popup.tripulante { color: var(--color-crewmate); text-shadow: 0 0 20px var(--color-crewmate); }
+.role-notification-popup.impostor { color: var(--color-impostor); text-shadow: 0 0 20px var(--color-impostor); }
+
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulse { 
+    0% { transform: scale(1); } 
+    50% { transform: scale(1.05); } 
+    100% { transform: scale(1); } 
+}
