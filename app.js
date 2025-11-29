@@ -19,9 +19,8 @@ try {
     firebase.initializeApp(firebaseConfig);
     database = firebase.database();
 } catch (error) {
-    console.error("Error al inicializar Firebase. ¿Estás ejecutando esto en un servidor web?", error);
-    alert("Error al conectar a la base de datos. Por favor, asegúrate de abrir la página desde un servidor web (o usar Live Server).");
-    // Detener la ejecución si la inicialización falla
+    console.error("Error al inicializar Firebase. Asegúrate de usar un servidor web.", error);
+    alert("Error al conectar a la base de datos. Por favor, asegúrate de abrir la página desde un servidor web.");
     throw new Error("Firebase no inicializado.");
 }
 
@@ -184,7 +183,7 @@ function finalizarVotacion() {
 
 
 // =========================================================
-// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL
+// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL (FIXED VOTE CLEAR)
 // =========================================================
 
 function actualizarTemporizador(tiempoFin) {
@@ -237,6 +236,22 @@ function updateAdminButtonsVisibility(config) {
 
 configRef.on('value', (snapshot) => {
     const config = snapshot.val();
+    
+    // =====================================================
+    // ** FIX: SINCRONIZAR LIMPIEZA DE VOTO LOCAL **
+    // =====================================================
+    const dbClearSignal = config.lastVoteClearSignal || 0;
+    const localClearSignal = parseInt(localStorage.getItem('localClearSignal') || 0);
+
+    if (dbClearSignal > localClearSignal) {
+        // La base de datos tiene una señal más nueva, limpiar voto local y guardar la nueva señal
+        localStorage.removeItem('voted');
+        localStorage.removeItem('currentRole');
+        localStorage.setItem('localClearSignal', dbClearSignal);
+        console.log("Local vote cleared by admin signal.");
+    }
+    // =====================================================
+
     // Lógica clave: solo puede votar si votoActivo es TRUE Y NO ha votado antes
     const puedeVotar = config.votoActivo && localStorage.getItem('voted') !== 'true';
 
@@ -442,7 +457,7 @@ setupParticipantTracking();
 
 
 // =========================================================
-// FUNCIONES DE ADMINISTRADOR (CLAVE ZXZ)
+// FUNCIONES DE ADMINISTRADOR (CLAVE ZXZ - FIXED)
 // =========================================================
 
 // Manejar el botón de Login Admin
@@ -453,12 +468,11 @@ adminLoginButton.addEventListener('click', () => {
         participantPanel.style.display = 'flex'; // Muestra el panel de participantes
         adminLoginButton.style.display = 'none';
         
-        // CORRECCIÓN 1: Forzar la actualización inmediata de la UI de participantes
+        // Forzar la actualización inmediata de la UI de participantes y botones
         participantesRef.once('value').then(snapshot => {
             updateParticipantDisplay(snapshot.val()); 
         });
         
-        // CORRECCIÓN 2: Forzar la actualización inmediata de los botones de control
         configRef.once('value').then(snapshot => {
              updateAdminButtonsVisibility(snapshot.val());
         });
@@ -480,10 +494,10 @@ startTimerButton.addEventListener('click', () => {
         configRef.update({
             tiempoFin: tiempoFin,
             votoActivo: true,
-            duracionSegundos: duracion 
+            duracionSegundos: duracion,
+            lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP // <--- SEÑAL PARA LIMPIAR VOTOS LOCALES
         }).then(() => {
             actualizarTemporizador(tiempoFin);
-            localStorage.removeItem('voted'); 
             estadoRef.update({ ultimoEliminado: null, mensaje: "¡Vota por el Impostor!" });
             alert(`Votación iniciada por ${duracion} segundos.`);
         });
@@ -510,13 +524,13 @@ continueButton.addEventListener('click', () => {
             participantesRef.update(updatesRoles);
         });
         
-        // 3. Resetear configuración de votación
+        // 3. Resetear configuración de votación y enviar señal de limpieza
         configRef.update({
             votoActivo: true,
-            tiempoFin: 0
+            tiempoFin: 0,
+            lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP // <--- SEÑAL PARA LIMPIAR VOTOS LOCALES
         });
-        localStorage.removeItem('voted'); 
-        localStorage.removeItem('currentRole'); 
+        
         estadoRef.update({ mensaje: "Votación Continuada. ¡Inicia el temporizador!" });
         alert("Contadores de voto reiniciados y roles borrados. Los nombres asignados se mantienen.");
     });
@@ -546,9 +560,12 @@ resetButton.addEventListener('click', () => {
             participantesRef.update(updatesRoles);
         });
 
-         configRef.update({ votoActivo: true, tiempoFin: 0 });
-         localStorage.removeItem('voted');
-         localStorage.removeItem('currentRole');
+         configRef.update({ 
+             votoActivo: true, 
+             tiempoFin: 0,
+             lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP // <--- SEÑAL PARA LIMPIAR VOTOS LOCALES
+         });
+
          estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Vota por el Impostor!" });
          alert("Juego reiniciado. Todos los jugadores están de vuelta y sus roles fueron borrados.");
     });
