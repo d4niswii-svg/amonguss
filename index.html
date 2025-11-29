@@ -3,67 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emergencia - Votación de Impostor 4K</title>
+    <title>Emergencia - Votación de Impostor HD</title>
+    <!-- Usamos una fuente más "chunky" si es posible, si no, Roboto 900 -->
+    <link href="https://fonts.googleapis.com/css2?family=Bungee+Outline&family=Roboto:wght@900;400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@900;400&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div id="app-container">
         
-        <!-- COLUMNA IZQUIERDA: Votación -->
+        <!-- COLUMNA CENTRAL: Votación (El foco principal) -->
         <div class="panel votacion-container">
             <h1 class="panel-header">¡REUNIÓN DE EMERGENCIA!</h1>
             <p id="mensaje-principal" class="status-message">¡Vota por el Impostor!</p>
             
-            <!-- TEMPORIZADOR -->
-            <div class="timer-display">
-                Tiempo Restante: <span id="temporizador">00:00</span>
+            <!-- TEMPORIZADOR y ROL PROPIO -->
+            <div class="info-bar">
+                <div class="timer-display">Tiempo: <span id="temporizador">00:00</span></div>
+                <div id="user-role-display" class="role-display sin-asignar">Rol Asignado: ...</div>
             </div>
 
             <div class="opciones">
-                <!-- ROJO -->
-                <button id="votar-rojo" class="boton-voto player-row" data-color="rojo">
+                <!-- Botones de Voto: Estructura mejorada -->
+                <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
                     <div class="crewmate-icon rojo"></div> 
                     <span class="nombre">ROJO</span>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-rojo"></div></div>
                     <span class="contador" id="contador-rojo">0</span>
                 </button>
                 
-                <!-- AZUL -->
-                <button id="votar-azul" class="boton-voto player-row" data-color="azul">
+                <button id="votar-azul" class="boton-voto player-row azul-bg" data-color="azul">
                     <div class="crewmate-icon azul"></div>
                     <span class="nombre">AZUL</span>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-azul"></div></div>
                     <span class="contador" id="contador-azul">0</span>
                 </button>
                 
-                <!-- BLANCO -->
-                <button id="votar-blanco" class="boton-voto player-row" data-color="blanco">
+                <button id="votar-blanco" class="boton-voto player-row blanco-bg" data-color="blanco">
                     <div class="crewmate-icon blanco"></div>
                     <span class="nombre">BLANCO</span>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-blanco"></div></div>
                     <span class="contador" id="contador-blanco">0</span>
                 </button>
 
-                <!-- VERDE -->
-                <button id="votar-verde" class="boton-voto player-row" data-color="verde">
+                <button id="votar-verde" class="boton-voto player-row verde-bg" data-color="verde">
                     <div class="crewmate-icon verde"></div> 
                     <span class="nombre">VERDE</span>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-verde"></div></div>
                     <span class="contador" id="contador-verde">0</span>
                 </button>
 
-                <!-- AMARILLO -->
-                <button id="votar-amarillo" class="boton-voto player-row" data-color="amarillo">
+                <button id="votar-amarillo" class="boton-voto player-row amarillo-bg" data-color="amarillo">
                     <div class="crewmate-icon amarillo"></div> 
                     <span class="nombre">AMARILLO</span>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-amarillo"></div></div>
                     <span class="contador" id="contador-amarillo">0</span>
                 </button>
 
-                <!-- Botón de Saltarse el Voto (SKIP) -->
-                <button id="votar-skip" class="boton-voto player-row" data-color="skip">
+                <button id="votar-skip" class="boton-voto player-row skip-bg" data-color="skip">
                     <div class="crewmate-icon skip"></div> 
                     <span class="nombre">SALTAR VOTO</span>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-skip"></div></div>
@@ -74,29 +71,35 @@
             <div id="voto-confirmado" class="confirmation-box">¡Voto Registrado!</div>
             <div id="resultado-final" class="summary-box"></div>
 
-            <!-- PANEL DE ADMINISTRADOR -->
+            <!-- Panel de Administración y Tu ID -->
             <div class="admin-panel">
-                <button id="start-timer-button">Iniciar Votación</button>
-                <button id="continue-button" style="display:none;">Continuar Votación</button>
-                <button id="reset-button">Reiniciar Juego Total</button>
+                <span id="user-id-display" class="my-id-label">Tu ID: ...</span>
+                <button id="start-timer-button" class="admin-btn-start">Iniciar Votación</button>
+                <button id="continue-button" class="admin-btn-continue" style="display:none;">Continuar Votación</button>
+                <button id="reset-button" class="admin-btn-reset">Reiniciar Juego Total</button>
             </div>
         </div>
         
         <!-- COLUMNA DERECHA: Chat Anónimo -->
         <div class="panel chat-container">
-            <h2 class="panel-header">COMUNICACIÓN ANÓNIMA</h2>
-            
-            <!-- Ventana de Mensajes -->
+            <h2 class="panel-header-small">COMUNICACIÓN ANÓNIMA</h2>
             <div id="chat-messages" class="chat-messages">
                 <!-- Los mensajes se insertarán aquí -->
             </div>
-            
-            <!-- Formulario de Chat -->
             <form id="chat-form" class="chat-form">
-                <input type="text" id="chat-input" placeholder="Escribe tu mensaje anónimo..." required maxlength="100">
+                <input type="text" id="chat-input" placeholder="Discute anónimamente..." required maxlength="100">
                 <button type="submit" id="send-btn">ENVIAR</button>
             </form>
         </div>
+        
+        <!-- COLUMNA IZQUIERDA: Participantes y Roles -->
+        <div class="panel participant-panel">
+            <h2 class="panel-header-small">PARTICIPANTES (Admin)</h2>
+            <div id="participant-list-container" class="participant-list">
+                <!-- La lista de IDs de navegador y la asignación de roles van aquí -->
+            </div>
+        </div>
+
     </div>
 
     <!-- Carga del SDK de Firebase -->
