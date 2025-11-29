@@ -481,6 +481,7 @@ body {
     box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
 }
 
+/* El botón de roles al azar usa admin-btn-start */
 .admin-btn-start { background-color: #f39c12; box-shadow: 0 4px 0 #d35400; }
 .admin-btn-start:active { box-shadow: 0 2px 0 #d35400; }
 
