@@ -51,10 +51,14 @@ const adminLoginButton = document.getElementById('admin-login-button');
 const roleNotification = document.getElementById('role-notification'); 
 const allowMultipleVoteButton = document.getElementById('allow-multiple-vote-button');
 const accessRestrictionMessage = document.getElementById('access-restriction-message'); 
-// NUEVAS REFERENCIAS PARA ANIMACIÓN DE EXPULSIÓN
+// REFERENCIAS DE EXPULSIÓN
 const expulsionPopup = document.getElementById('expulsion-result-popup');
 const ejectedCrewmate = document.getElementById('ejected-crewmate-icon');
 const expulsionMessage = document.getElementById('expulsion-message');
+// REFERENCIAS DE PANEL PERSONAL
+const personalRolePanel = document.getElementById('personal-role-panel');
+const myCrewmateIcon = document.getElementById('my-crewmate-icon');
+const myRoleDisplay = document.getElementById('my-role-display');
 
 
 let isAdmin = false;
@@ -171,7 +175,7 @@ votosDetalleRef.on('value', (snapshot) => {
 
 
 // =========================================================
-// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL (Implementado)
+// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL 
 // =========================================================
 
 function obtenerJugadorMasVotado(jugadoresData) {
@@ -341,15 +345,37 @@ function showRoleNotification(rol) {
 }
 
 
-// Lógica de Votación (RESTRICCIÓN ELIMINADA)
+// Lógica de Votación (RESTRICCIÓN DE ELIMINADO AÑADIDA)
 function votar(personaje) {
-    // Ya no verificamos el color asignado.
-    
+    participantesRef.child(ANONYMOUS_USER_ID).once('value').then(participanteSnap => {
+        const participante = participanteSnap.val();
+        const miColor = participante ? participante.color : null;
+        
+        // --- 1. NUEVA RESTRICCIÓN: Jugador eliminado no puede votar ---
+        if (miColor && coloresTripulantes.includes(miColor)) {
+             jugadoresRef.child(miColor).once('value').then(jugadorSnap => {
+                 if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
+                     alert(`¡Tu personaje (${miColor.toUpperCase()}) ha sido ELIMINADO! No puedes emitir más votos.`);
+                     return;
+                 }
+                 // Si no está eliminado, procede con la votación
+                 performVoteChecks(personaje);
+             });
+        } else {
+            // Si el jugador no tiene color asignado (es observador), puede votar
+            performVoteChecks(personaje);
+        }
+    });
+}
+
+function performVoteChecks(personaje) {
+    // Si ya votó, sale
     if (localStorage.getItem('voted') === 'true') {
         alert('¡Ya has emitido tu voto en esta ronda!');
         return;
     }
     
+    // Si la votación está activa
     configRef.child('votoActivo').once('value').then(snap => {
         if (!snap.val()) {
              alert('La votación ha terminado o no ha iniciado.');
@@ -378,6 +404,7 @@ function votar(personaje) {
             setTimeout(() => { votoConfirmadoElement.style.display = 'none'; }, 3000);
         }
 
+        // Si vota por alguien que ya está eliminado (excluyendo 'skip')
         if (personaje !== 'skip') {
             jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
                 if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
@@ -490,26 +517,54 @@ function setupParticipantTracking() {
 }
 
 
-// Escucha el rol asignado al usuario (FIX de la notificación)
+// Escucha el rol asignado al usuario y actualiza el panel personal
 participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
     const participante = snapshot.val();
     const localRole = localStorage.getItem('currentRole');
     
     if (participante && participante.rol) {
         
-        // 1. Caso de Cambio de Rol forzado por Admin (hay nueva señal de limpieza)
+        // --- LÓGICA DE NOTIFICACIÓN DE ROL GIGANTE ---
         if (participante.rol !== localRole && localStorage.getItem('localClearSignal')) {
             showRoleNotification(participante.rol);
             localStorage.setItem('currentRole', participante.rol); 
         
-        // 2. Caso de Primera Carga (si no hay rol local guardado, se muestra el de DB)
         } else if (participante.rol !== 'sin asignar' && !localRole) {
             showRoleNotification(participante.rol);
             localStorage.setItem('currentRole', participante.rol);
         } else if (participante.rol) {
-             // Mantener el rol actualizado localmente
              localStorage.setItem('currentRole', participante.rol);
         }
+        
+        
+        // --- LÓGICA DE PANEL PERSONAL ---
+        personalRolePanel.style.display = 'flex';
+        
+        // 1. Mostrar Rol
+        myRoleDisplay.classList.remove('crewmate', 'impostor', 'sin-asignar');
+        
+        if (participante.rol === 'impostor') {
+            myRoleDisplay.classList.add('impostor');
+            myRoleDisplay.textContent = 'IMPOSTOR';
+        } else if (participante.rol === 'tripulante') {
+            myRoleDisplay.classList.add('crewmate');
+            myRoleDisplay.textContent = 'TRIPULANTE';
+        } else {
+             myRoleDisplay.classList.add('sin-asignar');
+             myRoleDisplay.textContent = 'ESPERANDO ROL';
+        }
+        
+        // 2. Mostrar Muñeco Asignado
+        myCrewmateIcon.classList.remove(...coloresTripulantes);
+        myCrewmateIcon.classList.remove('skip');
+        if (participante.color && coloresTripulantes.includes(participante.color)) {
+            myCrewmateIcon.classList.add(participante.color);
+        } else {
+            myCrewmateIcon.classList.add('skip'); // Color genérico para no asignado
+        }
+
+    } else {
+         personalRolePanel.style.display = 'none';
     }
 });
 
