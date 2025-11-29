@@ -41,7 +41,7 @@ const temporizadorElement = document.getElementById('temporizador');
 const votoConfirmadoElement = document.getElementById('voto-confirmado');
 const resultadoFinalElement = document.getElementById('resultado-final');
 const resetButton = document.getElementById('reset-button');
-const startTimerButton = document.getElementById('start-timer-button');
+const startTimerButton = document.getElementById('start-timer-button'); // Este ya no se usa directamente para iniciar, pero se mantiene la ref
 const continueButton = document.getElementById('continue-button'); 
 const mensajePrincipal = document.getElementById('mensaje-principal'); 
 
@@ -69,6 +69,11 @@ const userNameDisplay = document.getElementById('user-name-display-top');
 const assignRolesButton = document.getElementById('assign-roles-button');
 // ** NUEVA REFERENCIA: Voto Secreto **
 const toggleSecretVoteButton = document.getElementById('toggle-secret-vote-button');
+
+// ** NUEVAS REFERENCIAS DE UI MODAL **
+const votingModalContainer = document.getElementById('voting-modal-container');
+const showVotingModalButton = document.getElementById('show-voting-modal-button');
+const adminFixedPanel = document.getElementById('admin-fixed-panel');
 
 
 let isAdmin = false;
@@ -198,6 +203,21 @@ votosDetalleRef.on('value', (snapshot) => {
     if (currentJugadoresSnapshot) updateVoteDisplay(currentJugadoresSnapshot, currentVotosDetalleSnapshot);
 });
 // ----------------------------------------------------
+
+
+// =========================================================
+// ** LÓGICA DE VISIBILIDAD DE MODAL DE VOTACIÓN **
+// =========================================================
+
+function showVotingModal() {
+    votingModalContainer.style.display = 'flex';
+    document.body.classList.add('emergency-meeting'); // EFECTO: Pantalla de emergencia
+}
+
+function hideVotingModal() {
+    votingModalContainer.style.display = 'none';
+    document.body.classList.remove('emergency-meeting');
+}
 
 
 // =========================================================
@@ -394,7 +414,6 @@ function actualizarTemporizador(tiempoFin) {
 
         if (tiempoRestante <= 0) {
             finalizarVotacion();
-            document.body.classList.remove('emergency-meeting'); // Quitar efecto
             return;
         }
 
@@ -411,28 +430,38 @@ function actualizarTemporizador(tiempoFin) {
 // ** FUNCIÓN MEJORADA: Controla la visibilidad de los botones de Admin **
 function updateAdminButtonsVisibility(config) {
     if (isAdmin) {
+        // Mostrar el panel de admin en la esquina superior derecha
         participantPanel.style.display = 'flex';
         adminLoginButton.style.display = 'none';
-        assignRolesButton.style.display = 'block';
-        toggleSecretVoteButton.style.display = 'block'; // Nuevo botón
 
         const isVotingActive = config.votoActivo && config.tiempoFin > Date.now();
         const isFinished = !config.votoActivo && config.tiempoFin > 0;
         const isReadyToStart = !config.votoActivo || config.tiempoFin === 0;
 
+        // Mostrar u ocultar el modal de votación (para todos)
+        if (config.votoActivo) {
+            showVotingModal(); // Muestra el modal si la votación está activa en DB
+        } else {
+             hideVotingModal(); // Oculta el modal si la votación terminó
+        }
+
+        // Lógica de botones de Admin dentro del panel (solo para el admin)
+        assignRolesButton.style.display = isReadyToStart ? 'block' : 'none';
+        showVotingModalButton.style.display = isReadyToStart ? 'block' : 'none'; // NUEVO BOTÓN
+        
+        // startTimerButton.style.display = 'none'; // Ya no se usa
+
         if (isVotingActive) { 
-            startTimerButton.style.display = 'none';
             continueButton.style.display = 'none';
         } else if (isFinished) {
-            startTimerButton.style.display = 'none';
             continueButton.style.display = 'block';
         } else if (isReadyToStart) {
-            startTimerButton.style.display = 'block';
             continueButton.style.display = 'none';
         }
 
         resetButton.style.display = 'block';
         allowMultipleVoteButton.style.display = 'block';
+        toggleSecretVoteButton.style.display = 'block';
         
         // Actualizar texto del botón de voto secreto
         toggleSecretVoteButton.textContent = config.votoSecreto ? "Voto Secreto: ON" : "Voto Secreto: OFF";
@@ -441,6 +470,7 @@ function updateAdminButtonsVisibility(config) {
     } else {
          participantPanel.style.display = 'none';
          adminLoginButton.style.display = 'block';
+         hideVotingModal(); // Asegurarse de que el modal esté oculto para no admins
     }
 }
 
@@ -548,10 +578,8 @@ configRef.on('value', (snapshot) => {
     }
     // ------------------------------------------------------------------
 
-    // Lógica clave: solo puede votar si votoActivo es TRUE, el tiempo está corriendo (tiempoFin > Date.now()) 
-    // Y NO ha votado antes.
     const votoTiempoCorriendo = config.votoActivo && config.tiempoFin > Date.now();
-    const puedeVotar = votoTiempoCorriendo && localStorage.getItem('voted') !== 'true'; // <--- FIX LÓGICO
+    const puedeVotar = votoTiempoCorriendo && localStorage.getItem('voted') !== 'true'; 
 
     botonesVoto.forEach(btn => {
         btn.disabled = !puedeVotar;
@@ -560,17 +588,15 @@ configRef.on('value', (snapshot) => {
     updateAdminButtonsVisibility(config); 
     
     // Control del temporizador
-    if (votoTiempoCorriendo) { // Usamos la nueva variable para sincronizar el temporizador y el botón
+    if (votoTiempoCorriendo) { 
         actualizarTemporizador(config.tiempoFin);
-        document.body.classList.add('emergency-meeting'); // EFECTO: Pantalla de emergencia
+        // showVotingModal() ya está llamado en updateAdminButtonsVisibility(config)
     } else if (config.votoActivo && config.tiempoFin === 0) {
         clearInterval(timerInterval);
-        temporizadorElement.textContent = "---"; // Votación activa, esperando inicio de tiempo
-        document.body.classList.remove('emergency-meeting');
+        temporizadorElement.textContent = "---"; 
     } else if (!config.votoActivo) {
         clearInterval(timerInterval);
         temporizadorElement.textContent = "00:00 - Votación Cerrada";
-        document.body.classList.remove('emergency-meeting');
     }
 });
 
@@ -604,17 +630,13 @@ function checkAndRestrictAccess(participantesData) {
     // Si hay 5 jugadores con color Y yo no soy uno de ellos
     if (jugadoresConColor >= 5 && !tieneColor && !isAdmin) {
         accessRestrictionMessage.style.display = 'flex';
-        document.getElementById('app-container').style.display = 'none';
+        // document.getElementById('app-container').style.display = 'none'; // Ya no usamos app-container
         // Se asegura de que el ID/Nombre se muestre en el panel de restricción
         const centerIdDisplay = document.getElementById('user-id-display-center');
         if(centerIdDisplay) centerIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
         return true;
     } else {
         accessRestrictionMessage.style.display = 'none';
-        // Solo mostrar app-container si NO es admin (el admin controla su panel con otra lógica)
-        if (!isAdmin) {
-            document.getElementById('app-container').style.display = 'flex';
-        }
         return false;
     }
 }
@@ -874,21 +896,25 @@ adminLoginButton.addEventListener('click', () => {
     }
 });
 
-// 1. Iniciar Votación (Solo Admin)
-startTimerButton.addEventListener('click', () => {
+// ** NUEVO LISTENER: Botón de Reunión de Emergencia (Admin) **
+showVotingModalButton.addEventListener('click', () => {
     if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
     
-    // 60 segundos por defecto
-    const durationSeconds = 60; 
-    const tiempoFin = Date.now() + (durationSeconds * 1000); 
+    configRef.once('value', (snapshot) => {
+        const duracion = snapshot.val().duracionSegundos || 60; // Usa 60s por defecto
+        const tiempoFin = Date.now() + (duracion * 1000); 
 
-    configRef.update({
-        votoActivo: true, 
-        tiempoFin: tiempoFin
+        configRef.update({
+            votoActivo: true, 
+            tiempoFin: tiempoFin
+        }).then(() => {
+            // El listener de config ya llama a showVotingModal()
+            estadoRef.update({ mensaje: "¡A VOTAR! El tiempo corre..." });
+            alert(`Votación iniciada por ${duracion} segundos.`);
+        });
     });
-    estadoRef.update({ mensaje: "¡A VOTAR! El tiempo corre..." });
-    actualizarTemporizador(tiempoFin);
 });
+
 
 // 2. CONTINUAR VOTACIÓN (Solo Admin - ROLES Y COLORES NO SE RESETEAN)
 continueButton.addEventListener('click', () => {
