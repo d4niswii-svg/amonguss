@@ -1,5 +1,3 @@
-// app.js
-
 // =========================================================
 // 1. CONFIGURACIÓN DE FIREBASE (¡CLAVES INSERTADAS!)
 // =========================================================
@@ -14,9 +12,19 @@ const firebaseConfig = {
   measurementId: "G-0N3PESVFHR"
 };
 
-// Inicializa Firebase con tu configuración (Sintaxis compatible)
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+let database;
+
+try {
+    // Inicializa Firebase con tu configuración (Sintaxis compatible)
+    firebase.initializeApp(firebaseConfig);
+    database = firebase.database();
+} catch (error) {
+    console.error("Error al inicializar Firebase. ¿Estás ejecutando esto en un servidor web?", error);
+    alert("Error al conectar a la base de datos. Por favor, asegúrate de abrir la página desde un servidor web (o usar Live Server).");
+    // Detener la ejecución si la inicialización falla
+    throw new Error("Firebase no inicializado.");
+}
+
 
 // Referencias a la Base de Datos
 const jugadoresRef = database.ref('jugadores'); 
@@ -229,6 +237,7 @@ function updateAdminButtonsVisibility(config) {
 
 configRef.on('value', (snapshot) => {
     const config = snapshot.val();
+    // Lógica clave: solo puede votar si votoActivo es TRUE Y NO ha votado antes
     const puedeVotar = config.votoActivo && localStorage.getItem('voted') !== 'true';
 
     botonesVoto.forEach(btn => {
@@ -507,7 +516,7 @@ continueButton.addEventListener('click', () => {
             tiempoFin: 0
         });
         localStorage.removeItem('voted'); 
-        localStorage.removeItem('currentRole'); // Borrar rol local para que aparezca la notificacion si se reasigna
+        localStorage.removeItem('currentRole'); 
         estadoRef.update({ mensaje: "Votación Continuada. ¡Inicia el temporizador!" });
         alert("Contadores de voto reiniciados y roles borrados. Los nombres asignados se mantienen.");
     });
