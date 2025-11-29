@@ -252,7 +252,7 @@ function actualizarTemporizador(tiempoFin) {
     }, 1000);
 }
 
-// NUEVA FUNCIÓN: Controla la visibilidad de los botones de Admin
+// Controla la visibilidad de los botones de Admin
 function updateAdminButtonsVisibility(config) {
     if (isAdmin) {
         participantPanel.style.display = 'flex';
@@ -269,6 +269,7 @@ function updateAdminButtonsVisibility(config) {
     }
 }
 
+// Función que muestra la notificación de rol a pantalla completa
 function showRoleNotification(rol) {
     roleNotification.textContent = `¡TU ROL ES: ${rol.toUpperCase()}!`;
     roleNotification.classList.remove('crewmate', 'impostor');
@@ -286,7 +287,7 @@ function votar(personaje) {
     participantesRef.child(ANONYMOUS_USER_ID).once('value').then(participanteSnap => {
         const participante = participanteSnap.val();
         
-        // RESTRICCIÓN SOLICITADA: Solo los 5 jugadores principales con color asignado pueden votar.
+        // RESTRICCIÓN: Solo los 5 jugadores principales con color asignado pueden votar.
         if (!participante || !coloresTripulantes.includes(participante.color)) {
             alert('Solo los 5 jugadores principales pueden emitir un voto. El administrador debe asignarte un color.');
             return;
@@ -351,7 +352,7 @@ configRef.on('value', (snapshot) => {
 
     if (dbClearSignal > localClearSignal) {
         localStorage.removeItem('voted');
-        localStorage.removeItem('currentRole');
+        // No borramos currentRole aquí, lo gestionamos en el listener de participantes
         localStorage.setItem('localClearSignal', dbClearSignal);
     }
     // ------------------------------------------------------------------
@@ -435,20 +436,26 @@ function setupParticipantTracking() {
 }
 
 
-// Escucha el rol asignado al usuario
+// Escucha el rol asignado al usuario (FIX de la notificación)
 participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
     const participante = snapshot.val();
-    // SOLO muestra notificación si el rol CAMBIA y el local storage se limpió
     const localRole = localStorage.getItem('currentRole');
     
-    if (participante && participante.rol && participante.rol !== localRole) {
-        // Solo muestra el popup si hay una señal de limpieza reciente o si es el primer rol asignado
-        if (localStorage.getItem('localClearSignal') || !localRole) {
+    if (participante && participante.rol) {
+        
+        // 1. Caso de Cambio de Rol forzado por Admin (hay nueva señal de limpieza)
+        if (participante.rol !== localRole && localStorage.getItem('localClearSignal')) {
             showRoleNotification(participante.rol);
+            localStorage.setItem('currentRole', participante.rol); 
+        
+        // 2. Caso de Primera Carga (si no hay rol local guardado, se muestra el de DB)
+        } else if (participante.rol !== 'sin asignar' && !localRole) {
+            showRoleNotification(participante.rol);
+            localStorage.setItem('currentRole', participante.rol);
+        } else if (participante.rol) {
+             // Mantener el rol actualizado localmente
+             localStorage.setItem('currentRole', participante.rol);
         }
-        localStorage.setItem('currentRole', participante.rol); 
-    } else if (participante && participante.rol) {
-         localStorage.setItem('currentRole', participante.rol);
     }
 });
 
