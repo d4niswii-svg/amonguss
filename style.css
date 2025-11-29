@@ -9,6 +9,11 @@
     --color-impostor: #ff6b6b;
     --color-texto-oscuro: #2c3e50; /* Texto principal oscuro */
     --color-skip: #8395a7;
+    --color-rojo-amongus: #c51111;
+    --color-azul-amongus: #132ed1;
+    --color-blanco-amongus: #d6e0f0;
+    --color-verde-amongus: #117f2d;
+    --color-amarillo-amongus: #f6e58d;
 }
 
 /* FONT: Usar Bungee si está disponible, si no, Roboto 900 */
@@ -51,7 +56,7 @@ body {
 
 /* AJUSTE DE COLUMNAS */
 .votacion-container { flex: 2; } 
-.participant-panel { flex: 1; display: none; } /* Oculto por defecto, se muestra con Login Admin */
+.participant-panel { flex: 1; display: none; }
 
 
 /* ENCABEZADOS */
@@ -106,11 +111,12 @@ body {
     gap: 15px;
 }
 
-/* --- BOTONES DE VOTO (Más Vistosos) --- */
+/* --- BOTONES DE VOTO --- */
 .boton-voto {
+    /* ... (Estilos de botón sin cambios) ... */
     display: flex;
-    flex-wrap: wrap; /* Permite que los elementos se muevan a la siguiente línea */
-    justify-content: space-between;
+    flex-wrap: wrap; 
+    justify-content: flex-start; /* Alineación cambiada para mejor visualización */
     align-items: center;
     padding: 12px 25px;
     border-radius: 15px;
@@ -140,8 +146,37 @@ body {
     transform: none;
 }
 
-.nombre { flex-grow: 1; text-align: left; margin-left: 15px; z-index: 2; color: inherit; }
+.nombre { 
+    flex-grow: 1; 
+    text-align: left; 
+    margin-left: 15px; 
+    z-index: 2; 
+    color: inherit; 
+    min-width: 100px; /* Asegura espacio para el nombre */
+}
 
+/* --- ICONOS GRANDES DE JUGADOR (FIX y MEJORA) --- */
+.crewmate-icon {
+    width: 30px; 
+    height: 40px; 
+    border-radius: 50% 50% 10% 10%; 
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    border: 2px solid white;
+    position: relative;
+    flex-shrink: 0; 
+}
+
+.crewmate-icon::before { 
+    content: ''; 
+    position: absolute; 
+    top: 5px; 
+    left: 8px; 
+    width: 14px; 
+    height: 10px; 
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a9d4f2, #609bc6); 
+    border: 1px solid #333;
+}
 
 /* --- ICONOS DE VOTO (Amongusitos) --- */
 .voto-iconos-container {
@@ -174,9 +209,9 @@ body {
     background: linear-gradient(135deg, #a9d4f2, #609bc6); 
     border: 1px solid #333;
 }
-/* Colores de los Iconos */
-.rojo { background-color: #c51111; } .azul { background-color: #132ed1; } .blanco { background-color: #d6e0f0; } 
-.verde { background-color: #117f2d; } .amarillo { background-color: #f6e58d; } .skip { background-color: var(--color-skip); }
+/* Colores de los Iconos (tanto grandes como pequeños) */
+.rojo { background-color: var(--color-rojo-amongus); } .azul { background-color: var(--color-azul-amongus); } .blanco { background-color: var(--color-blanco-amongus); } 
+.verde { background-color: var(--color-verde-amongus); } .amarillo { background-color: var(--color-amarillo-amongus); } .skip { background-color: var(--color-skip); }
 
 
 /* --- BARRAS DE PROGRESO --- */
@@ -189,114 +224,7 @@ body {
 .eliminado .voto-iconos-container { opacity: 0; }
 
 
-/* --- PANEL DE ADMINISTRADOR --- */
-.admin-panel { 
-    margin-top: auto; 
-    padding-top: 15px; 
-    border-top: 1px dashed #4a637d; 
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    justify-content: center;
-}
-.admin-panel button {
-    padding: 10px 15px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer;
-    color: white; transition: background-color 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 0 #555;
-    flex-basis: 48%; 
-}
-.admin-btn-start { background-color: #f39c12; }
-.admin-btn-continue { background-color: #3498db; }
-.admin-btn-reset { background-color: #c0392b; }
-.admin-btn-permit-vote { 
-    background-color: #008080; 
-    flex-basis: 100%; 
-}
-
-
-/* --- PANEL DE PARTICIPANTES --- */
-.color-assignment {
-    flex-basis: 100%;
-    margin-top: 5px;
-    display: flex;
-    justify-content: space-between;
-    gap: 3px;
-    border-top: 1px dotted #ccc;
-    padding-top: 5px;
-}
-.color-btn {
-    padding: 5px 8px;
-    border: none;
-    border-radius: 5px;
-    font-size: 0.6em;
-    font-weight: 700;
-    cursor: pointer;
-    color: white;
-    width: 18%; 
-}
-.color-btn.rojo { background-color: #c51111; }
-.color-btn.azul { background-color: #132ed1; }
-.color-btn.blanco { background-color: #d6e0f0; color: #333; }
-.color-btn.verde { background-color: #117f2d; }
-.color-btn.amarillo { background-color: #f6e58d; color: #333; }
-.color-btn.skip { background-color: #333; }
-.color-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-/* Otros estilos de panel de participantes sin cambios... */
-.participant-list { flex-grow: 1; overflow-y: auto; padding: 10px; background-color: #ecf0f1; border-radius: 8px; border: 1px solid #7f8c8d; }
-.participant-item { padding: 10px 0; border-bottom: 1px dashed #bdc3c7; font-family: 'Roboto', sans-serif; }
-.participant-item:last-child { border-bottom: none; }
-.user-index-name { font-weight: 900; font-size: 1em; display: inline-block; width: 65%; color: var(--color-texto-oscuro); }
-.user-index-name.online { color: var(--color-crewmate); }
-.user-role-admin { display: inline-block; width: 30%; font-weight: 900; font-size: 0.8em; text-align: right; color: #f1c40f; }
-.admin-actions { margin-top: 5px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; }
-.name-input { flex-basis: 60%; padding: 5px; border-radius: 5px; border: 1px solid #7f8c8d; font-size: 0.8em; }
-.name-btn { flex-basis: 35%; padding: 5px; border: none; border-radius: 5px; font-size: 0.75em; font-weight: 700; cursor: pointer; color: white; background-color: #9b59b6; box-shadow: 0 2px 0 #8e44ad; }
-.role-btn { flex-basis: 48%; padding: 5px 8px; border: none; border-radius: 5px; font-size: 0.75em; font-weight: 700; cursor: pointer; color: white; box-shadow: 0 2px 0 rgba(0,0,0,0.5); }
-.role-btn.tripulante { background-color: #1abc9c; }
-.role-btn.impostor { background-color: #e74c3c; }
-
-
-/* --- LOGIN ADMIN & USER ID --- */
-.admin-login-button { position: absolute; top: 15px; right: 20px; padding: 10px 20px; border-radius: 8px; border: 2px solid var(--color-borde-panel); background-color: #3498db; color: white; font-weight: 900; cursor: pointer; box-shadow: 0 4px 0 #2980b9; z-index: 100; }
-.my-id-label { position: absolute; top: 20px; left: 20px; font-size: 0.9em; color: #7f8c8d; font-family: 'Roboto', sans-serif; font-weight: 400; }
-.my-id-label-center { 
-    font-size: 0.9em; 
-    color: #7f8c8d; 
-    font-family: 'Roboto', sans-serif; 
-    font-weight: 400; 
-    margin-top: 10px;
-}
-
-/* --- RESTRICCIÓN DE ACCESO --- */
-.access-restriction-message {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: var(--color-fondo-blanco);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    font-family: 'Roboto', sans-serif;
-}
-.access-restriction-message h1 {
-    color: var(--color-neón-rojo);
-    font-size: 4em;
-    text-shadow: 0 0 10px var(--color-neón-rojo);
-    animation: pulse 1s infinite;
-}
-.access-restriction-message p {
-    font-size: 1.5em;
-    color: var(--color-texto-oscuro);
-}
-
-/* --- NOTIFICACIÓN DE ROL GIGANTE (Implementado) --- */
+/* --- NOTIFICACIÓN DE ROL GIGANTE (NEON FIX) --- */
 .role-notification-popup {
     position: fixed;
     top: 0;
@@ -310,24 +238,115 @@ body {
     font-family: 'Bungee Outline', sans-serif;
     font-size: 5vw;
     text-align: center;
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.9);
     animation: fadein 0.5s;
     transition: background-color 0.5s;
     color: white;
 }
 .role-notification-popup.impostor {
-    background-color: rgba(231, 76, 60, 0.9);
-    text-shadow: 0 0 20px var(--color-neón-rojo);
+    background-color: rgba(231, 76, 60, 0.95);
+    color: #fff;
+    text-shadow: 0 0 10px var(--color-neón-rojo), 0 0 20px var(--color-neón-rojo);
 }
 .role-notification-popup.crewmate {
-    background-color: rgba(26, 188, 156, 0.9);
-    text-shadow: 0 0 20px var(--color-neón-cian);
+    background-color: rgba(26, 188, 156, 0.95);
+    color: #fff;
+    text-shadow: 0 0 10px var(--color-neón-cian), 0 0 20px var(--color-neón-cian);
 }
 
 
+/* --- POPUP DE EXPULSIÓN (ANIMACIÓN) --- */
+.expulsion-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95);
+    z-index: 3000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    color: white;
+    font-family: 'Roboto', sans-serif;
+}
+
+.expulsion-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 90%;
+    max-width: 600px;
+    min-height: 400px;
+}
+
+.ejected-crewmate {
+    /* Mismo estilo de base que crewmate-icon, pero más grande */
+    width: 100px; 
+    height: 130px; 
+    border-radius: 50% 50% 10% 10%; 
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+    border: 5px solid white;
+    position: absolute; /* Para que vuele */
+    top: 50%;
+    left: 50%;
+    margin-top: -65px; /* Centrado vertical */
+    margin-left: -50px; /* Centrado horizontal */
+}
+.ejected-crewmate::before {
+    /* Estilo de la visera */
+    content: ''; 
+    position: absolute; 
+    top: 15px; 
+    left: 25px; 
+    width: 50px; 
+    height: 35px; 
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a9d4f2, #609bc6); 
+    border: 2px solid #333;
+}
+
+/* Animación: Vuelta rápida y expulsión */
+.expulsion-popup.impostor-ejected .ejected-crewmate,
+.expulsion-popup.crewmate-ejected .ejected-crewmate {
+    animation: eject 4s ease-in-out forwards;
+}
+
+.expulsion-message {
+    font-size: 2.5em;
+    font-weight: 900;
+    position: absolute;
+    bottom: 20%;
+    text-align: center;
+}
+
+.expulsion-popup.impostor-ejected .expulsion-message {
+    color: var(--color-neón-rojo);
+    text-shadow: 0 0 10px var(--color-neón-rojo);
+}
+
+.expulsion-popup.crewmate-ejected .expulsion-message {
+    color: var(--color-neón-cian);
+    text-shadow: 0 0 10px var(--color-neón-cian);
+}
+
+/* KEYFRAMES */
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulse { 
     0% { transform: scale(1); } 
     50% { transform: scale(1.05); } 
     100% { transform: scale(1); } 
+}
+@keyframes eject {
+    0% { 
+        transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    }
+    10% { 
+        transform: translate(-50%, -50%) rotate(360deg) scale(1.1);
+    }
+    100% { 
+        transform: translate(300vw, -300vh) rotate(3600deg) scale(0.1); /* Vuela lejos y gira */
+    }
 }
