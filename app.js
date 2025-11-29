@@ -356,7 +356,7 @@ function votar(personaje) {
         const participante = participanteSnap.val();
         const miColor = participante ? participante.color : null;
         
-        // --- RESTRICCIÓN PRINCIPAL: Solo jugadores con color asignado pueden votar ---
+        // --- RESTRICCIÓN PRINCIPAL: Solo jugadores con color asignado (rojo, azul, etc.) pueden votar ---
         if (!miColor || !coloresTripulantes.includes(miColor)) {
             alert('No puedes votar. El administrador debe asignarte un color de jugador (rojo, azul, etc.).');
             return;
