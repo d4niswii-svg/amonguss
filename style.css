@@ -408,7 +408,7 @@ body {
 
 /* --- LOGIN ADMIN & INFO PERSONAL (MEJORADO) --- */
 .admin-login-button { 
-    position: fixed; /* Cambiado a fixed para que se quede en su sitio */
+    position: fixed; 
     top: 15px; 
     right: 20px; 
     padding: 10px 20px; 
@@ -422,6 +422,7 @@ body {
     transition: all 0.1s;
     z-index: 100; 
     font-family: 'Roboto', sans-serif;
+    text-transform: uppercase; /* MEJORA VISUAL */
 }
 .admin-login-button:active {
     transform: translateY(2px);
