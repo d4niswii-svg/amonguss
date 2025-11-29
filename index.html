@@ -1,5 +1,3 @@
-<!-- index.html -->
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -11,7 +9,7 @@
 </head>
 <body>
 
-    <!-- MENSAJE DE RESTRICCIÓN DE ACCESO (NUEVO) -->
+    <!-- MENSAJE DE RESTRICCIÓN DE ACCESO -->
     <div id="access-restriction-message" class="access-restriction-message" style="display:none;">
         <h1>ACCESO DENEGADO</h1>
         <p>Ya hay 5 jugadores activos. Espera a que el administrador inicie una nueva partida.</p>
@@ -19,8 +17,16 @@
     </div>
 
 
-    <!-- NOTIFICACIÓN DE ROL GIGANTE (Inicialmente oculta) -->
+    <!-- NOTIFICACIÓN DE ROL GIGANTE (NEON) -->
     <div id="role-notification" class="role-notification-popup" style="display: none;"></div>
+    
+    <!-- NUEVO POPUP DE EXPULSIÓN (ANIMACIÓN) -->
+    <div id="expulsion-result-popup" class="expulsion-popup" style="display:none;">
+        <div class="expulsion-content">
+            <div id="ejected-crewmate-icon" class="ejected-crewmate"></div>
+            <p id="expulsion-message" class="expulsion-message"></p>
+        </div>
+    </div>
 
     <div id="app-container">
         
