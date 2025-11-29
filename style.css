@@ -23,13 +23,77 @@ body {
     align-items: flex-start; 
     min-height: 100vh;
     margin: 0;
-    padding-top: 50px; 
+    padding-top: 0; /* Ya no necesitamos padding superior */
     background: var(--color-fondo-blanco); 
     font-family: 'Bungee Outline', 'Roboto', sans-serif;
     color: var(--color-texto-oscuro);
     overflow-x: hidden;
     transition: background-color 0.5s; 
 }
+
+/* ** NUEVO: IFRAME A PANTALLA COMPLETA (KEKOCITY) ** */
+.fullscreen-iframe {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1; /* Detrás de todos los elementos de la UI */
+    border: none !important;
+}
+
+
+/* ** NUEVO: CONTENEDOR MODAL DE VOTACIÓN ** */
+.voting-modal-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7); /* Fondo oscuro transparente */
+    z-index: 100; /* Delante de Kekocity, detrás de los popups */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px); /* Efecto de desenfoque */
+    /* El display:none/flex se controla en JS */
+}
+/* El panel de votación dentro del modal, para que se centre */
+.votacion-container {
+    max-width: 700px;
+    width: 90%;
+    margin: auto; /* Centrado dentro del modal flex */
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+    transform: scale(0.8);
+    opacity: 0;
+    animation: modal-fadein 0.5s forwards;
+}
+
+/* Animación de entrada del modal */
+@keyframes modal-fadein {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* ** NUEVO: PANEL DE ADMINISTRADOR FLOTANTE FIJO (ESQUINA) ** */
+.admin-fixed-panel {
+    position: fixed;
+    top: 50px; /* Separado del borde superior */
+    right: 20px;
+    z-index: 200; /* Delante de todo lo normal */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+/* Estilo del panel de participantes dentro del contenedor fijo */
+.participant-panel { 
+    width: 350px; /* Ancho fijo para el panel de admin */
+    max-height: 80vh;
+    margin-top: 10px;
+    padding: 15px;
+    /* Se oculta con JS: display:none; */
+}
+
 
 /* ** EFECTO JODIDAMENTE BUENO: ALARMA DE EMERGENCIA (body shake) ** */
 body.emergency-meeting {
@@ -44,18 +108,6 @@ body.emergency-meeting {
     100% { transform: translate(1px, 1px) rotate(0deg); }
 }
 
-#app-container {
-    display: flex;
-    gap: 20px;
-    max-width: 1300px; 
-    width: 95%;
-}
-/* Estilo para ocultar la app cuando la restricción esté activa */
-#app-container[style*="display: none"] {
-    display: none !important;
-}
-
-
 /* ESTILO GENERAL DE PANEL (Limpio y 3D) */
 .panel {
     background: var(--color-panel-amongus);
@@ -63,15 +115,8 @@ body.emergency-meeting {
     border-radius: 25px;
     padding: 30px;
     box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2), inset 0 0 10px rgba(255, 255, 255, 0.7);
-    flex: 1; 
-    display: flex;
     flex-direction: column;
 }
-
-/* AJUSTE DE COLUMNAS */
-.votacion-container { flex: 2; } 
-.participant-panel { flex: 1; display: none; }
-
 
 /* ENCABEZADOS */
 .panel-header {
@@ -214,7 +259,7 @@ body.emergency-meeting {
     gap: 3px;
     justify-content: flex-start;
     z-index: 2;
-    min-height: 25px; /* Para mantener el espacio aunque no haya iconos */
+    min-height: 25px; 
 }
 
 /* ** NUEVO ESTILO: VOTO SECRETO ** */
@@ -271,7 +316,7 @@ body.emergency-meeting {
     border-radius: 15px;
     padding: 10px 20px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    z-index: 101; /* Delante del iFrame */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -443,7 +488,7 @@ body.emergency-meeting {
     top: 15px;
     left: 20px;
     font-family: 'Roboto', sans-serif;
-    z-index: 500;
+    z-index: 101;
 }
 .my-id-label-top {
     font-size: 0.9em;
@@ -452,20 +497,12 @@ body.emergency-meeting {
     margin-bottom: 3px;
 }
 .admin-login-button {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: 2px solid var(--color-borde-panel);
-    background-color: #3498db;
-    color: white;
-    font-weight: 900;
-    cursor: pointer;
-    box-shadow: 0 4px 0 #2980b9;
-    z-index: 100;
+    /* El botón se mueve dentro de admin-fixed-panel */
+    position: static;
+    margin-bottom: 10px; 
+    z-index: 200;
 }
-/* --- PANELES DE ADMINISTRACIÓN --- */
+/* Los botones de admin ahora están en .admin-fixed-panel */
 .admin-panel {
     margin-top: 15px;
     padding-top: 15px;
@@ -482,8 +519,8 @@ body.emergency-meeting {
     box-shadow: 0 4px 0 #555;
     flex-basis: 48%; 
 }
-.admin-btn-assign { background-color: #2c3e50; } /* Asignar Roles */
-.admin-btn-start { background-color: #f39c12; }
+.admin-btn-assign { background-color: #2c3e50; } 
+.admin-btn-start { background-color: #f39c12; } /* Botón Reunión de Emergencia */
 .admin-btn-continue { background-color: #3498db; }
 .admin-btn-reset { background-color: #c0392b; }
 .admin-btn-permit-vote { background-color: #9b59b6; flex-basis: 100%; }
@@ -603,8 +640,7 @@ body.emergency-meeting {
 }
 
 /* Estilo opcional para la ventana de juego */
+/* Ya no se usa, pero se mantiene la clase para evitar errores de sintaxis */
 .optional-game-iframe {
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px dashed #4a637d;
+    display: none;
 }
