@@ -21,6 +21,7 @@ const jugadoresRef = database.ref('jugadores');
 const configRef = database.ref('config');
 const estadoRef = database.ref('estado');
 const chatRef = database.ref('chat'); 
+const participantesRef = database.ref('participantes'); // NUEVA REFERENCIA
 
 // Referencias a la UI
 const botonesVoto = document.querySelectorAll('.boton-voto');
@@ -37,6 +38,10 @@ const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const chatMessagesContainer = document.getElementById('chat-messages');
 
+// UI de Participantes
+const userRoleElement = document.getElementById('user-role-display'); // Nuevo
+const participantListContainer = document.getElementById('participant-list-container'); // Nuevo
+
 let totalVotos = 0;
 let timerInterval = null;
 const coloresJugadores = ['amarillo', 'azul', 'blanco', 'rojo', 'verde', 'skip']; 
@@ -52,6 +57,7 @@ function getAnonymousUserId() {
     return userId;
 }
 const ANONYMOUS_USER_ID = getAnonymousUserId();
+document.getElementById('user-id-display').textContent = `Tu ID: ${ANONYMOUS_USER_ID}`; // Muestra el ID
 
 // =========================================================
 // LÓGICA DE TIEMPO REAL: VOTACIÓN
@@ -155,11 +161,12 @@ function obtenerJugadorMasVotado(jugadoresData) {
     for (const color of coloresJugadores) {
         const jugador = jugadoresData[color];
         if (color !== 'skip' && !(jugador && jugador.eliminado)) {
-            if (jugador.votos > maxVotos) {
-                maxVotos = jugador.votos;
+            const votos = jugador ? jugador.votos || 0 : 0;
+            if (votos > maxVotos) {
+                maxVotos = votos;
                 masVotado = color;
                 empate = false;
-            } else if (jugador.votos === maxVotos && maxVotos > 0) {
+            } else if (votos === maxVotos && maxVotos > 0) {
                 empate = true;
             }
         }
@@ -167,6 +174,7 @@ function obtenerJugadorMasVotado(jugadoresData) {
     
     const votosSkip = jugadoresData.skip.votos || 0;
     
+    // Si el más votado (o el empate) tiene menos votos que SKIP
     if (maxVotos <= votosSkip || masVotado === null) {
         return { nombre: 'NADIE', esEliminado: false };
     }
@@ -189,7 +197,7 @@ function finalizarVotacion() {
             jugadoresRef.child(`${resultado.nombre}/eliminado`).set(true);
             estadoRef.update({
                 ultimoEliminado: resultado.nombre,
-                mensaje: `¡${resultado.nombre.toUpperCase()} fue expulsado!`
+                mensaje: `¡${resultado.nombre.toUpperCase()} fue expulsado! No era un Impostor.`
             });
             continueButton.style.display = 'inline-block';
         } else {
@@ -206,13 +214,13 @@ function finalizarVotacion() {
 
 
 // =========================================================
-// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL (CORREGIDA)
+// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL
 // =========================================================
 
 function actualizarTemporizador(tiempoFin) {
     clearInterval(timerInterval); 
     timerInterval = setInterval(() => {
-        // Usar Math.max para evitar números negativos y comparaciones fallidas
+        // Usar Math.max para evitar números negativos
         const tiempoRestanteMs = Math.max(0, tiempoFin - Date.now()); 
         
         if (tiempoRestanteMs === 0) {
@@ -231,6 +239,7 @@ function actualizarTemporizador(tiempoFin) {
 
 configRef.on('value', (snapshot) => {
     const config = snapshot.val();
+    // Solo puede votar si la votación está activa Y no ha votado aún en este dispositivo
     const puedeVotar = config.votoActivo && localStorage.getItem('voted') !== 'true';
 
     botonesVoto.forEach(btn => {
@@ -240,14 +249,16 @@ configRef.on('value', (snapshot) => {
     // Iniciar el temporizador solo si hay un tiempo de fin válido en el futuro
     if (config.tiempoFin > Date.now() && config.votoActivo) { 
         actualizarTemporizador(config.tiempoFin);
-    } else if (config.tiempoFin === 0 && config.votoActivo) {
-        // Si se acaba de iniciar, esperamos el tiempoFin real del botón Admin
+        startTimerButton.style.display = 'none';
+    } else if (config.votoActivo && config.tiempoFin === 0) {
+        // Votación activa, esperando que el admin inicie el tiempo
+        temporizadorElement.textContent = "---";
+        startTimerButton.style.display = 'inline-block';
     } else if (!config.votoActivo) {
         clearInterval(timerInterval);
-        // Si el voto está inactivo pero el tiempo es > 0, significa que ya terminó
-        if (config.tiempoFin > 0) {
-             temporizadorElement.textContent = "00:00 - Votación Cerrada";
-        }
+        // Si el voto está inactivo, el botón de 'Continuar' debería aparecer si hubo una votación
+        continueButton.style.display = 'inline-block'; 
+        startTimerButton.style.display = 'none';
     }
 });
 
@@ -313,12 +324,84 @@ botonesVoto.forEach(btn => {
 
 
 // =========================================================
-// FUNCIONES DE ADMINISTRADOR (CLAVE 787)
+// LÓGICA DE PARTICIPANTES Y ROLES (NUEVO)
+// =========================================================
+
+// 1. Rastrea al usuario al cargar la página
+function setupParticipantTracking() {
+    // Almacena la ID del usuario en la base de datos
+    const userRef = participantesRef.child(ANONYMOUS_USER_ID);
+    userRef.set({
+        id: ANONYMOUS_USER_ID,
+        conectado: true,
+        rol: 'sin asignar',
+        ultimaConexion: Date.now()
+    });
+
+    // Remueve al usuario si se desconecta (cierra la pestaña)
+    userRef.onDisconnect().update({ conectado: false });
+}
+
+// 2. Muestra el rol asignado al usuario
+participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
+    const participante = snapshot.val();
+    if (participante && participante.rol) {
+        userRoleElement.textContent = `Rol Asignado: ${participante.rol.toUpperCase()}`;
+        userRoleElement.className = `role-display ${participante.rol}`; // Para estilos CSS
+    }
+});
+
+
+// 3. Muestra la lista de participantes para el ADMIN
+participantesRef.on('value', (snapshot) => {
+    const participantes = snapshot.val();
+    participantListContainer.innerHTML = ''; // Limpiar lista
+    
+    for (const userId in participantes) {
+        if (participantes.hasOwnProperty(userId)) {
+            const p = participantes[userId];
+            const pElement = document.createElement('div');
+            pElement.classList.add('participant-item');
+            pElement.innerHTML = `
+                <span class="user-id-name ${p.conectado ? 'online' : 'offline'}">${userId}</span>
+                <span class="user-role-admin">${p.rol ? p.rol.toUpperCase() : 'SIN ASIGNAR'}</span>
+                <div class="admin-role-buttons">
+                    <button class="role-btn tripulante" data-id="${userId}" data-rol="tripulante">Tripulante</button>
+                    <button class="role-btn impostor" data-id="${userId}" data-rol="impostor">Impostor</button>
+                </div>
+            `;
+            participantListContainer.appendChild(pElement);
+        }
+    }
+    
+    // Agregar event listeners a los nuevos botones
+    document.querySelectorAll('.role-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            checkAdminKey(() => {
+                asignarRol(e.target.dataset.id, e.target.dataset.rol);
+            });
+        });
+    });
+});
+
+// 4. Función de asignación de rol (para el ADMIN)
+function asignarRol(userId, rol) {
+    participantesRef.child(userId).update({ rol: rol, asignadoPor: ANONYMOUS_USER_ID });
+    alert(`Rol de ${userId} actualizado a ${rol.toUpperCase()}`);
+}
+
+// Inicializar el rastreo de participantes al cargar
+setupParticipantTracking();
+
+
+// =========================================================
+// FUNCIONES DE ADMINISTRADOR (CLAVE ZXZ)
 // =========================================================
 
 function checkAdminKey(action) {
+    // CLAVE CAMBIADA A 'zxz'
     const clave = prompt("Introduce la clave de administrador:");
-    if (clave === '787') {
+    if (clave === 'zxz') { 
         action();
     } else if (clave !== null) { 
         alert("Clave incorrecta. Acceso denegado.");
@@ -329,18 +412,19 @@ function checkAdminKey(action) {
 startTimerButton.addEventListener('click', () => {
     checkAdminKey(() => {
         configRef.once('value', (snapshot) => {
-            const duracion = snapshot.val().duracionSegundos || 60;
+            const duracion = snapshot.val().duracionSegundos || 60; // Usar la duración predefinida
             const tiempoFin = Date.now() + (duracion * 1000);
             
             configRef.update({
                 tiempoFin: tiempoFin,
-                votoActivo: true
+                votoActivo: true,
+                duracionSegundos: duracion // Asegura que la duración se guarde
             }).then(() => {
                 actualizarTemporizador(tiempoFin);
                 localStorage.removeItem('voted'); 
                 estadoRef.update({ ultimoEliminado: null, mensaje: "¡Vota por el Impostor!" });
                 alert(`Votación iniciada por ${duracion} segundos.`);
-                startTimerButton.style.display = 'inline-block';
+                startTimerButton.style.display = 'none'; // Se oculta al iniciar
                 continueButton.style.display = 'none';
             });
         });
@@ -357,17 +441,15 @@ continueButton.addEventListener('click', () => {
         }
         
         jugadoresRef.update(updates).then(() => {
-            // BORRAR CHAT: Elimina el nodo chat completo
-            chatRef.set(null); 
+            chatRef.set(null); // BORRAR CHAT
             
-            // Reiniciar la configuración
             configRef.update({
                 votoActivo: true,
                 tiempoFin: 0
             });
             localStorage.removeItem('voted'); 
             estadoRef.update({ mensaje: "Votación Continuada. ¡Inicia el temporizador!" });
-            alert("Contadores reiniciados y chat borrado. Presiona 'Iniciar Votación' para continuar.");
+            alert("Contadores reiniciados y chat borrado. Presiona 'Iniciar Votación' para comenzar la nueva ronda.");
             continueButton.style.display = 'none';
             startTimerButton.style.display = 'inline-block';
         });
@@ -388,6 +470,7 @@ resetButton.addEventListener('click', () => {
         
         jugadoresRef.set(jugadoresReset).then(() => {
              chatRef.set(null); // BORRAR CHAT TOTAL
+             // participantesRef.set(null); // Opcional: limpiar participantes
              configRef.update({ votoActivo: true, tiempoFin: 0 });
              localStorage.removeItem('voted');
              estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Vota por el Impostor!" });
