@@ -1,54 +1,55 @@
-/* PALETA DE COLORES */
+/* PALETA Y FUENTES */
 :root {
-    --color-fondo-base: #1f2735;
-    --color-fondo-degradado: #0d1218;
-    --color-ventana-base: #2c3e50;
-    --color-borde-cian: #00ffff; /* Cian HD */
+    --color-fondo-base: #101825; /* Fondo más oscuro */
+    --color-panel-base: #1f2735; /* Color de la ventana (elegante) */
+    --color-borde-cian: #00ffff;
     --color-rojo-amongus: #ff6b6b;
-    --color-texto-principal: #ecf0f1;
+    --color-verde-confirm: #2ecc71;
+    --color-texto-claro: #ecf0f1;
 }
 
-/* BASE y FONDO HD */
+/* ESTRUCTURA GENERAL (HD) */
 body {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    background: linear-gradient(135deg, var(--color-fondo-base) 0%, var(--color-fondo-degradado) 100%);
+    background: var(--color-fondo-base);
     font-family: 'Roboto', sans-serif;
-    padding: 20px;
+    color: var(--color-texto-claro);
 }
 
-/* CONTENEDOR PRINCIPAL (Ventana de Votación HD) */
-.votacion-container {
-    background-color: var(--color-ventana-base);
-    color: var(--color-texto-principal);
-    border: 4px solid var(--color-borde-cian); 
-    border-radius: 20px;
+#app-container {
+    display: flex;
+    gap: 25px; /* Separación entre los dos paneles */
+    max-width: 1200px;
+    width: 95%;
+}
+
+/* ESTILO GENERAL DE PANEL */
+.panel {
+    background: var(--color-panel-base);
+    border: 3px solid var(--color-borde-cian);
+    border-radius: 15px;
     padding: 30px;
-    box-shadow: 0 0 40px rgba(0, 255, 255, 0.5), 0 0 20px #000;
-    text-align: center;
-    width: 90%;
-    max-width: 500px;
-    text-shadow: 1px 1px 3px #000;
-    transition: all 0.5s ease;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2), inset 0 0 10px rgba(0, 255, 255, 0.1);
+    flex: 1; /* Ocupa el mismo ancho */
 }
 
-/* TÍTULO Y TEXTO */
-h1 {
+/* ENCABEZADOS */
+.panel-header {
     color: var(--color-rojo-amongus);
-    text-shadow: 0 0 10px var(--color-rojo-amongus), 0 0 5px #000;
-    margin-bottom: 5px;
-    font-size: 2.5em;
-    letter-spacing: 1px;
+    text-shadow: 0 0 8px var(--color-rojo-amongus);
+    font-size: 2.2em;
+    margin-bottom: 20px;
     border-bottom: 2px solid #34495e;
     padding-bottom: 10px;
 }
 
-p {
-    font-size: 1.1em;
-    margin-bottom: 25px;
+.status-message {
+    font-size: 1.2em;
+    margin-bottom: 20px;
     color: #bdc3c7;
     font-weight: 400;
 }
@@ -57,13 +58,12 @@ p {
 .timer-display {
     background-color: #34495e;
     color: #f1c40f;
-    padding: 12px;
-    border-radius: 10px;
-    font-size: 1.8em;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 1.6em;
     font-weight: 900;
-    margin-bottom: 20px;
-    border: 2px solid #f1c40f;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    margin-bottom: 15px;
+    border: 1px solid #f1c40f;
 }
 
 .opciones {
@@ -72,105 +72,45 @@ p {
     gap: 8px;
 }
 
-/* BOTONES DE VOTO (Filas de Jugadores) */
+/* --- BOTONES DE VOTO (PREMIUM) --- */
 .boton-voto {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 15px;
+    padding: 8px 15px;
     border-radius: 10px;
-    background: #34495e; 
-    transition: background 0.3s;
+    background: #34495e;
+    transition: background 0.3s, transform 0.1s;
     cursor: pointer;
     border: 1px solid #4a637d;
     font-size: 1.1em;
     font-weight: 900;
     position: relative;
     overflow: hidden;
-    color: var(--color-texto-principal);
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.5);
+    color: var(--color-texto-claro);
+    box-shadow: 0 4px 0 #1f2735; /* Sombra sutil de botón */
 }
 
 .boton-voto:hover:not(:disabled) {
     background: #4a637d;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #1f2735;
 }
 
 .boton-voto:disabled {
-    pointer-events: none;
-    opacity: 0.5;
-    box-shadow: none;
-    background: #34495e;
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: 0 2px 0 #1f2735;
+    transform: none;
 }
 
-/* Contenido dentro del botón */
-.nombre {
-    flex-grow: 1;
-    text-align: left;
-    margin-left: 10px;
-    z-index: 2;
-}
+/* Contenido y Contador */
+.nombre { flex-grow: 1; text-align: left; margin-left: 10px; z-index: 2; }
+.contador { z-index: 2; font-size: 1.1em; color: var(--color-borde-cian); text-shadow: 0 0 5px var(--color-borde-cian); }
 
-/* Contador de Votos (Tally) */
-.contador {
-    z-index: 2;
-    font-size: 1.2em;
-    font-weight: bold;
-    width: 20px;
-    color: var(--color-borde-cian); 
-    text-shadow: 0 0 5px var(--color-borde-cian);
-}
-
-/* --- ICONO DEL CREWMATE (Tripulante) --- */
-.crewmate-icon {
-    width: 25px;
-    height: 35px;
-    border-radius: 50% 50% 10% 10%;
-    position: relative;
-    margin-right: 10px;
-    box-shadow: 0 0 5px var(--color);
-    z-index: 2;
-}
-
-.crewmate-icon::before { 
-    content: '';
-    position: absolute;
-    top: 6px;
-    left: 8px;
-    width: 12px;
-    height: 8px;
-    background: #a9d4f2;
-    border-radius: 50%;
-    border: 1px solid #333;
-}
-
-/* Colores de los Muñecos */
-.rojo { background-color: #c51111; }
-.azul { background-color: #132ed1; }
-.blanco { background-color: #d6e0f0; box-shadow: 0 0 5px #d6e0f0; } 
-.verde { background-color: #117f2d; } 
-.amarillo { background-color: #f6e58d; box-shadow: 0 0 5px #f6e58d; }
-.amarillo + .nombre, .blanco + .nombre { color: #333; } 
-.skip { background-color: #8395a7; } 
-
-/* --- BARRA DE PROGRESO --- */
-.vote-bar-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    overflow: hidden;
-}
-
-.vote-bar {
-    height: 100%;
-    width: 0; 
-    transition: width 0.5s ease;
-    opacity: 0.2; 
-}
-
-/* Colores de las barras */
+/* --- BARRAS DE PROGRESO (DETALLADAS) --- */
+.vote-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
+.vote-bar { height: 100%; width: 0; transition: width 0.5s ease; opacity: 0.15; /* MUY sutil */ }
 #barra-rojo { background-color: #c51111; }
 #barra-azul { background-color: #132ed1; }
 #barra-blanco { background-color: #d6e0f0; } 
@@ -178,77 +118,97 @@ p {
 #barra-amarillo { background-color: #f6e58d; }
 #barra-skip { background-color: #8395a7; }
 
-/* CONFIRMACIÓN DE VOTO */
-.voto-confirmado {
-    background-color: #2ecc71;
-    color: white;
-    padding: 15px;
-    border-radius: 10px;
-    margin-top: 20px;
-    font-weight: 900;
-    display: none; 
-    border: 2px solid white;
+/* --- ICONO CREWMATE (Detallado) --- */
+.crewmate-icon {
+    width: 25px; height: 35px; border-radius: 50% 50% 10% 10%; position: relative; margin-right: 10px; z-index: 2;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
-
-/* RESULTADO FINAL */
-.resultado-final {
-    margin-top: 35px;
-    padding: 20px;
-    background: linear-gradient(90deg, #1c2833, #27ae60, #1c2833);
-    border-radius: 15px;
-    font-size: 1.5em;
-    font-weight: 900;
-    display: none; 
-    border: 4px solid #fff;
-    text-shadow: 2px 2px 0 #000;
+.crewmate-icon::before { /* Visor (Goggle) */
+    content: ''; position: absolute; top: 6px; left: 8px; width: 12px; height: 8px; border-radius: 50%;
+    background: linear-gradient(135deg, #a9d4f2, #609bc6); /* Degradado del visor */
+    border: 1px solid #333;
 }
+/* Colores de los Muñecos */
+.rojo { background-color: #c51111; } .azul { background-color: #132ed1; } .blanco { background-color: #d6e0f0; } 
+.verde { background-color: #117f2d; } .amarillo { background-color: #f6e58d; } .skip { background-color: #8395a7; }
+.amarillo + .nombre, .blanco + .nombre { color: #333; } /* Texto oscuro para fondos claros */
 
-/* PANEL DE ADMINISTRADOR */
-.admin-panel {
-    margin-top: 20px;
-    display: block; /* VISIBLE POR DEFECTO */
-    padding-top: 20px;
-    border-top: 1px dashed #4a637d;
-}
+/* ESTADO ELIMINADO */
+.eliminado { opacity: 0.2; filter: grayscale(100%); text-decoration: line-through; box-shadow: none; transform: none; }
+.eliminado .contador { color: var(--color-rojo-amongus); background-color: transparent; }
+.eliminado .vote-bar-container { display: none; }
 
+/* CONFIRMACIÓN Y RESUMEN */
+.confirmation-box, .summary-box { padding: 10px; border-radius: 8px; margin-top: 15px; font-weight: 900; }
+.confirmation-box { background-color: var(--color-verde-confirm); color: white; display: none; }
+.summary-box { background: #34495e; border: 2px solid var(--color-borde-cian); display: none; }
+
+/* --- PANEL DE ADMINISTRADOR --- */
+.admin-panel { margin-top: 25px; padding-top: 15px; border-top: 1px dashed #4a637d; display: block; }
 .admin-panel button {
-    margin: 5px;
+    margin: 5px; padding: 8px 12px; border: none; border-radius: 6px; font-weight: 900; cursor: pointer;
+    background-color: #f39c12; color: white; transition: background-color 0.2s;
+}
+#continue-button { background-color: #007bff !important; }
+
+/* ==================================== */
+/* CHAT ANÓNIMO (REALISTA) */
+/* ==================================== */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 650px; /* Altura fija para la ventana de chat */
+}
+
+.chat-messages {
+    flex-grow: 1;
+    overflow-y: auto; /* Scroll para mensajes */
+    padding: 10px;
+    background-color: #1a222f; /* Fondo de chat más oscuro */
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #34495e;
+    text-align: left;
+}
+
+/* Estilo individual de mensaje */
+.chat-message {
+    padding: 7px 0;
+    border-bottom: 1px dotted #34495e;
+    font-size: 0.95em;
+    color: #bdc3c7;
+    word-wrap: break-word; /* Para mensajes largos */
+}
+
+.chat-message:last-child {
+    border-bottom: none;
+}
+
+.chat-form {
+    display: flex;
+    gap: 10px;
+}
+
+#chat-input {
+    flex-grow: 1;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #4a637d;
+    background-color: #1a222f;
+    color: var(--color-texto-claro);
+    font-size: 1em;
+}
+
+#send-btn {
     padding: 10px 15px;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
+    background-color: var(--color-verde-confirm);
+    color: white;
     font-weight: 900;
     cursor: pointer;
-    background-color: #f39c12;
-    color: white;
-    transition: background-color 0.2s;
 }
-.admin-panel button:hover {
-    background-color: #e67e22;
-}
-
-/* === ESTADO ELIMINADO === */
-.eliminado {
-    pointer-events: none; /* No clickable */
-    background: #1c2833; 
-    opacity: 0.3;
-    filter: grayscale(100%);
-    box-shadow: none;
-    text-decoration: line-through;
-    transition: all 0.5s ease;
-}
-
-.eliminado .contador {
-    color: #e74c3c;
-    background-color: transparent;
-    text-shadow: none;
-}
-.eliminado .vote-bar-container {
-    display: none;
-}
-/* Estilo para el nuevo botón de Continuar */
-#continue-button {
-    background-color: #007bff !important;
-}
-#continue-button:hover {
-    background-color: #0056b3 !important;
+#send-btn:hover {
+    background-color: #27ae60;
 }
