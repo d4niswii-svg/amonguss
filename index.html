@@ -4,27 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emergencia - Votación de Impostor HD</title>
-    <!-- Usamos una fuente más "chunky" si es posible, si no, Roboto 900 -->
     <link href="https://fonts.googleapis.com/css2?family=Bungee+Outline&family=Roboto:wght@900;400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+    <!-- NOTIFICACIÓN DE ROL GIGANTE (Inicialmente oculta) -->
+    <div id="role-notification" class="role-notification-popup" style="display: none;"></div>
+
     <div id="app-container">
         
-        <!-- COLUMNA CENTRAL: Votación (El foco principal) -->
+        <!-- COLUMNA IZQUIERDA: Votación (El foco principal) -->
         <div class="panel votacion-container">
             <h1 class="panel-header">¡REUNIÓN DE EMERGENCIA!</h1>
             <p id="mensaje-principal" class="status-message">¡Vota por el Impostor!</p>
             
-            <!-- TEMPORIZADOR y ROL PROPIO -->
+            <!-- TEMPORIZADOR -->
             <div class="info-bar">
-                <div class="timer-display">Tiempo: <span id="temporizador">00:00</span></div>
-                <div id="user-role-display" class="role-display sin-asignar">Rol Asignado: ...</div>
+                <div class="timer-display">TIEMPO: <span id="temporizador">00:00</span></div>
             </div>
 
             <div class="opciones">
-                <!-- Botones de Voto: Estructura mejorada -->
+                <!-- Botones de Voto -->
                 <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
                     <div class="crewmate-icon rojo"></div> 
                     <span class="nombre">ROJO</span>
@@ -70,43 +71,35 @@
 
             <div id="voto-confirmado" class="confirmation-box">¡Voto Registrado!</div>
             <div id="resultado-final" class="summary-box"></div>
-
-            <!-- Panel de Administración y Tu ID -->
-            <div class="admin-panel">
-                <span id="user-id-display" class="my-id-label">Tu ID: ...</span>
-                <button id="start-timer-button" class="admin-btn-start">Iniciar Votación</button>
-                <button id="continue-button" class="admin-btn-continue" style="display:none;">Continuar Votación</button>
-                <button id="reset-button" class="admin-btn-reset">Reiniciar Juego Total</button>
-            </div>
+            
         </div>
         
-        <!-- COLUMNA DERECHA: Chat Anónimo -->
-        <div class="panel chat-container">
-            <h2 class="panel-header-small">COMUNICACIÓN ANÓNIMA</h2>
-            <div id="chat-messages" class="chat-messages">
-                <!-- Los mensajes se insertarán aquí -->
-            </div>
-            <form id="chat-form" class="chat-form">
-                <input type="text" id="chat-input" placeholder="Discute anónimamente..." required maxlength="100">
-                <button type="submit" id="send-btn">ENVIAR</button>
-            </form>
-        </div>
-        
-        <!-- COLUMNA IZQUIERDA: Participantes y Roles -->
-        <div class="panel participant-panel">
-            <h2 class="panel-header-small">PARTICIPANTES (Admin)</h2>
+        <!-- COLUMNA DERECHA: Participantes y Administrador -->
+        <div id="participant-panel" class="panel participant-panel" style="display:none;">
+            <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
             <div id="participant-list-container" class="participant-list">
-                <!-- La lista de IDs de navegador y la asignación de roles van aquí -->
+                <!-- La lista se genera aquí (Admin) -->
             </div>
+            
+             <!-- Panel de Administración -->
+            <div class="admin-panel">
+                <button id="start-timer-button" class="admin-btn-start" style="display:none;">Iniciar Votación</button>
+                <button id="continue-button" class="admin-btn-continue" style="display:none;">Continuar Votación</button>
+                <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
+            </div>
+            
         </div>
-
+        
     </div>
+    
+    <!-- Botón de Login Admin (Visible por defecto, fuera de las columnas) -->
+    <button id="admin-login-button" class="admin-login-button">Login Admin</button>
+    <div id="user-id-display" class="my-id-label">Tu ID: ...</div>
 
     <!-- Carga del SDK de Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     
-    <!-- Tu código de lógica y tiempo real -->
     <script src="app.js"></script>
 
 </body>
