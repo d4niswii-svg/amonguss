@@ -60,9 +60,9 @@ const personalRolePanel = document.getElementById('personal-role-panel');
 const myCrewmateIcon = document.getElementById('my-crewmate-icon');
 const myRoleDisplay = document.getElementById('my-role-display');
 
-// REFERENCIAS DE ID/NOMBRE (CORREGIDAS)
+// REFERENCIAS DE ID/NOMBRE
 const userIdDisplay = document.getElementById('user-id-display');
-const userNameDisplay = document.getElementById('user-name-display-top'); // ID corregido
+const userNameDisplay = document.getElementById('user-name-display-top');
 
 
 let isAdmin = false;
@@ -350,26 +350,27 @@ function showRoleNotification(rol) {
 }
 
 
-// Lógica de Votación (Restricción de voto por Jugador Eliminado y por Votación Activa)
+// Lógica de Votación (Restricción por color asignado y eliminado)
 function votar(personaje) {
     participantesRef.child(ANONYMOUS_USER_ID).once('value').then(participanteSnap => {
         const participante = participanteSnap.val();
         const miColor = participante ? participante.color : null;
         
-        // --- 1. RESTRICCIÓN: Jugador eliminado no puede votar ---
-        if (miColor && coloresTripulantes.includes(miColor)) {
-             jugadoresRef.child(miColor).once('value').then(jugadorSnap => {
-                 if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
-                     alert(`¡Tu personaje (${miColor.toUpperCase()}) ha sido ELIMINADO! No puedes emitir más votos.`);
-                     return;
-                 }
-                 // Si no está eliminado, procede con la votación
-                 performVoteChecks(personaje);
-             });
-        } else {
-            // Si el jugador no tiene color asignado (es observador), puede votar
-            performVoteChecks(personaje);
+        // --- RESTRICCIÓN PRINCIPAL: Solo jugadores con color asignado pueden votar ---
+        if (!miColor || !coloresTripulantes.includes(miColor)) {
+            alert('No puedes votar. El administrador debe asignarte un color de jugador (rojo, azul, etc.).');
+            return;
         }
+
+        // --- RESTRICCIÓN: Jugador eliminado no puede votar ---
+        jugadoresRef.child(miColor).once('value').then(jugadorSnap => {
+            if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
+                alert(`¡Tu personaje (${miColor.toUpperCase()}) ha sido ELIMINADO! No puedes emitir más votos.`);
+                return;
+            }
+            // Si no está eliminado, procede con la votación
+            performVoteChecks(personaje);
+        });
     });
 }
 
@@ -491,6 +492,8 @@ function checkAndRestrictAccess(participantesData) {
     if (jugadoresConColor >= 5 && !tieneColor && !isAdmin) {
         accessRestrictionMessage.style.display = 'flex';
         document.getElementById('app-container').style.display = 'none';
+        // Se asegura de que el ID/Nombre se muestre en el panel de restricción
+        document.getElementById('user-id-display-center').textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
         return true;
     } else {
         accessRestrictionMessage.style.display = 'none';
