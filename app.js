@@ -214,12 +214,12 @@ votosDetalleRef.on('value', (snapshot) => {
 
 function showVotingModal() {
     votingModalContainer.style.display = 'flex';
-    // document.body.classList.add('emergency-meeting'); // ELIMINADO para evitar el temblor
+    // Se elimina document.body.classList.add('emergency-meeting')
 }
 
 function hideVotingModal() {
     votingModalContainer.style.display = 'none';
-    // document.body.classList.remove('emergency-meeting'); // ELIMINADO
+    // Se elimina document.body.classList.remove('emergency-meeting')
 }
 
 
