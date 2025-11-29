@@ -11,11 +11,19 @@
 </head>
 <body>
 
+    <!-- ** 1. IFRAME DE KEKOCITY (Fondo de pantalla completa) ** -->
+    <iframe 
+        id="kekocity-iframe"
+        src="https://kekocity.es/es/" 
+        frameborder="0" 
+        class="fullscreen-iframe"
+        title="Juego en Línea Kekocity"
+    ></iframe>
+
     <!-- MENSAJE DE RESTRICCIÓN DE ACCESO -->
     <div id="access-restriction-message" class="access-restriction-message" style="display:none;">
         <h1>ACCESO DENEGADO</h1>
         <p>Ya hay 5 jugadores activos. Espera a que el administrador inicie una nueva partida.</p>
-        <!-- ID para mostrar en el mensaje de restricción -->
         <div id="user-id-display-center" class="my-id-label-center">Tu ID: ...</div>
     </div>
 
@@ -44,9 +52,11 @@
         <div id="user-id-display" class="my-id-label-top">Tu ID: ...</div>
     </div>
     
-    <div id="app-container" style="display: flex;">
+    <!-- ** 2. CONTENEDOR MODAL DE VOTACIÓN (Visible solo en Emergencia) ** -->
+    <!-- Se muestra/oculta con JS/CSS y la clase 'active' -->
+    <div id="voting-modal-container" class="voting-modal-container" style="display: none;">
         
-        <!-- COLUMNA IZQUIERDA: Votación (El foco principal) -->
+        <!-- Contenido principal de votación (el panel que tenías) -->
         <div class="panel votacion-container">
             <h1 class="panel-header">¡REUNIÓN DE EMERGENCIA!</h1>
             <p id="mensaje-principal" class="status-message">¡Vota por el Impostor!</p>
@@ -57,7 +67,7 @@
             </div>
 
             <div class="opciones">
-                <!-- Botones de Voto -->
+                <!-- Botones de Voto (SIN CAMBIOS) -->
                 <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
                     <div class="crewmate-icon rojo"></div> 
                     <span class="nombre">ROJO</span>
@@ -106,7 +116,17 @@
             
         </div>
         
-        <!-- COLUMNA DERECHA: Participantes y Administrador -->
+    </div>
+
+    
+    <!-- ** 3. PANEL DE ADMINISTRADOR (Contenedor Fijo) ** -->
+    <!-- Mantenemos el panel de admin por separado para que el admin pueda acceder a él sin votar -->
+    <div id="admin-fixed-panel" class="admin-fixed-panel">
+        
+        <!-- Botón de Login Admin (Siempre visible si no es admin) -->
+        <button id="admin-login-button" class="admin-login-button">Login Admin</button>
+
+        <!-- COLUMNA DERECHA: Participantes y Administrador (Se muestra/oculta con JS/CSS) -->
         <div id="participant-panel" class="panel participant-panel" style="display:none;">
             <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
             <div id="participant-list-container" class="participant-list">
@@ -117,7 +137,8 @@
             <div class="admin-panel">
                 <!-- NUEVOS BOTONES DE ADMIN -->
                 <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles</button>
-                <button id="start-timer-button" class="admin-btn-start" style="display:none;">Iniciar Votación</button>
+                <!-- ** NUEVO BOTÓN: EMERGENGIA (INICIA EL MODAL) ** -->
+                <button id="show-voting-modal-button" class="admin-btn-start">Reunión de Emergencia</button> 
                 
                 <!-- Botones de Control de Voto -->
                 <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
@@ -127,30 +148,12 @@
                 <button id="continue-button" class="admin-btn-continue" style="display:none;">Continuar Votación</button>
                 <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
             </div>
-
-            <!-- ** IMPLEMENTACIÓN DE KEKOCITY.ES ** -->
-            <div class="optional-game-iframe">
-                <h2 class="panel-header-small">VENTANA DE JUEGO (KEKOCITY.ES)</h2>
-                <!-- INTENTO DE INCRUSTAR EL JUEGO -->
-                <iframe 
-                    id="kekocity-iframe"
-                    src="https://kekocity.es/es/" 
-                    frameborder="0" 
-                    style="width:100%; height: 500px; border: 3px solid #7f8c8d; border-radius: 8px;"
-                    title="Juego en Línea Kekocity"
-                ></iframe>
-                <p class="warning-message" style="color:red; font-size: 0.8em; margin-top: 5px;">
-                    Advertencia: Si el juego no carga, su servidor lo está bloqueando por seguridad.
-                </p>
-            </div>
-            <!-- FIN DE IMPLEMENTACIÓN DE KEKOCITY -->
+            
         </div>
-        
     </div>
 
-    <!-- Botón de Login Admin (Visible por defecto, fuera de las columnas) -->
-    <button id="admin-login-button" class="admin-login-button">Login Admin</button>
-
+    <!-- Contenedor anterior (vacío, solo para evitar errores en el CSS existente) -->
+    <div id="app-container" style="display: none;"></div>
 
     <!-- Carga del SDK de Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
