@@ -1,721 +1,150 @@
-// app.js
-// =========================================================
-// 1. CONFIGURACIÓN DE FIREBASE (¡CLAVES INSERTADAS!)
-// =========================================================
-const firebaseConfig = {
-    apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
-    authDomain: "ango-592a4.firebaseapp.com",
-    databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
-    projectId: "ango-592a4",
-    storageBucket: "ango-592a4.firebasestorage.app",
-    messagingSenderId: "234305709468",
-    appId: "1:234305709468:web:18e64d68b5b8f9e89dd459",
-    measurementId: "G-0N3PESVFHR"
-};
-let database;
-try {
-    // Inicializa Firebase con tu configuración (Sintaxis compatible)
-    firebase.initializeApp(firebaseConfig);
-    database = firebase.database();
-} catch (error) {
-    console.error("Error al inicializar Firebase. Asegúrate de usar un servidor web.", error);
-    alert("Error al conectar a la base de datos. Por favor, asegúrate de abrir la página desde un servidor web.");
-    throw new Error("Firebase no inicializado.");
-}
-// Referencias a la Base de Datos
-const jugadoresRef = database.ref('jugadores');
-const configRef = database.ref('config');
-const estadoRef = database.ref('estado');
-const participantesRef = database.ref('participantes');
-// Referencias a la UI
-const botonesVoto = document.querySelectorAll('.boton-voto');
-const temporizadorElement = document.getElementById('temporizador');
-const votoConfirmadoElement = document.getElementById('voto-confirmado');
-const resultadoFinalElement = document.getElementById('resultado-final');
-const resetButton = document.getElementById('reset-button');
-const startTimerButton = document.getElementById('start-timer-button');
-const continueButton = document.getElementById('continue-button');
-const mensajePrincipal = document.getElementById('mensaje-principal');
-// UI de Administrador/Roles
-const participantPanel = document.getElementById('participant-panel');
-const participantListContainer = document.getElementById('participant-list-container');
-const adminLoginButton = document.getElementById('admin-login-button');
-const roleNotification = document.getElementById('role-notification');
-// NUEVA REFERENCIA DE BOTÓN
-const allowMultipleVoteButton = document.getElementById('allow-multiple-vote-button');
-// ** NUEVA REFERENCIA ADMIN (para la asignación de Impostor) **
-const assignImpostorButton = document.getElementById('assign-impostor-button');
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergencia - Votación de Impostor HD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee+Outline&family=Roboto:wght@900;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- MENSAJE DE RESTRICCIÓN DE ACCESO -->
+    <div id="access-restriction-message" class="access-restriction-message" style="display:none;">
+        <h1>ACCESO DENEGADO</h1>
+        <p>Ya hay 5 jugadores activos. Espera a que el administrador inicie una nueva partida.</p>
+        <!-- ID para mostrar en el mensaje de restricción -->
+        <div id="user-id-display-center" class="my-id-label-center">Tu ID: ...</div>
+    </div>
 
 
-let isAdmin = false;
-let timerInterval = null;
-const coloresJugadores = ['amarillo', 'azul', 'blanco', 'rojo', 'verde', 'skip'];
-// Función para obtener un ID único de navegador (anonimato)
-function getAnonymousUserId() {
-    let userId = localStorage.getItem('anonymousUserId');
-    if (!userId) {
-        userId = 'user_' + Math.random().toString(36).substring(2, 9);
-        localStorage.setItem('anonymousUserId', userId);
-    }
-    return userId;
-}
-const ANONYMOUS_USER_ID = getAnonymousUserId();
-document.getElementById('user-id-display').textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
-// =========================================================
-// LÓGICA DE TIEMPO REAL: VOTACIÓN
-// =========================================================
-jugadoresRef.on('value', (snapshot) => {
-    const jugadores = snapshot.val();
-    let maxVotos = -1;
-    let jugadorMasVotado = null;
-    let totalVotos = 0;
-
-    for (const color of coloresJugadores) {
-        const jugador = jugadores[color];
-        const votosActuales = jugador ? jugador.votos || 0 : 0;
-        totalVotos += votosActuales;
-
-        // 1. Actualizar UI
-        const contadorElement = document.getElementById(`contador-${color}`);
-        const barraElement = document.getElementById(`barra-${color}`);
-        const botonElement = document.getElementById(`votar-${color}`);
-        const crewmateIcon = botonElement ? botonElement.querySelector('.crewmate-icon') : null;
-
-        if (contadorElement) contadorElement.textContent = votosActuales;
-
-        // 2. Aplicar estilo de eliminado
-        if (jugador && jugador.eliminado === true && botonElement) {
-            botonElement.classList.add('eliminado');
-            if (crewmateIcon) crewmateIcon.classList.add('ejected'); // Nuevo estilo de ojo muerto
-        } else if (botonElement) {
-            botonElement.classList.remove('eliminado');
-            if (crewmateIcon) crewmateIcon.classList.remove('ejected');
-        }
-
-        // 3. Barras
-        if (barraElement && totalVotos > 0) {
-            barraElement.style.width = `${(votosActuales / totalVotos) * 100}%`;
-        } else if (barraElement) {
-            barraElement.style.width = '0%';
-        }
-
-        // 4. Lógica del Más Votado
-        if (color !== 'skip' && !(jugador && jugador.eliminado) && votosActuales > maxVotos) {
-            maxVotos = votosActuales;
-            jugadorMasVotado = color;
-        } else if (color !== 'skip' && !(jugador && jugador.eliminado) && votosActuales === maxVotos && maxVotos > 0) {
-            jugadorMasVotado = "EMPATE";
-        }
-    }
-
-    // 5. Mostrar el resultado (Líder Actual)
-    let liderTexto = jugadorMasVotado === "EMPATE"
-        ? "EMPATE"
-        : jugadorMasVotado ? jugadorMasVotado.toUpperCase() : "NADIE";
-
-    if (totalVotos === 0) {
-        resultadoFinalElement.style.display = 'none';
-        // Limpiar estilos de resultado anterior si no hay votos
-        resultadoFinalElement.classList.remove('impostor-found', 'crewmate-ejected');
-    } else {
-        resultadoFinalElement.style.display = 'block';
-        resultadoFinalElement.textContent = `VOTOS TOTALES: ${totalVotos} | LÍDER ACTUAL: ${liderTexto}`;
-    }
-});
-// Lógica de finalización de votación
-function obtenerJugadorMasVotado(jugadoresData) {
-    let maxVotos = -1;
-    let masVotado = null;
-    let empate = false;
-
-    for (const color of coloresJugadores) {
-        const jugador = jugadoresData[color];
-        if (color !== 'skip' && !(jugador && jugador.eliminado)) {
-            const votos = jugador ? jugador.votos || 0 : 0;
-            if (votos > maxVotos) {
-                maxVotos = votos;
-                masVotado = color;
-                empate = false;
-            } else if (votos === maxVotos && maxVotos > 0) {
-                empate = true;
-            }
-        }
-    }
-
-    const votosSkip = jugadoresData.skip.votos || 0;
-
-    if (maxVotos <= votosSkip || masVotado === null) {
-        return { nombre: 'NADIE', esEliminado: false };
-    }
-
-    if (empate) {
-        return { nombre: 'EMPATE', esEliminado: false };
-    }
-
-    return { nombre: masVotado, esEliminado: true };
-}
-
-// =========================================================
-// ** NUEVA FUNCIÓN JODIDAMENTE BUENA: Verificar Condición de Victoria **
-// =========================================================
-function verificarFinDePartida() {
-    jugadoresRef.once('value').then(snapshot => {
-        const jugadores = snapshot.val();
-        let impostoresRestantes = 0;
-        let tripulantesRestantes = 0;
-
-        for (const color of coloresJugadores) {
-            const jugador = jugadores[color];
-            // Solo contamos jugadores NO ELIMINADOS y no 'skip'
-            if (color !== 'skip' && jugador && !jugador.eliminado) {
-                if (jugador.esImpostor) {
-                    impostoresRestantes++;
-                } else {
-                    tripulantesRestantes++;
-                }
-            }
-        }
-
-        let mensajeVictoria = null;
-        let juegoTerminado = false;
-
-        // 1. Victoria de Tripulantes: No quedan Impostores
-        if (impostoresRestantes === 0) {
-            mensajeVictoria = "¡VICTORIA DE LOS TRIPULANTES! Todos los Impostores han sido expulsados.";
-            juegoTerminado = true;
-        } 
-        // 2. Victoria de Impostores: Impostores superan o igualan a Tripulantes
-        else if (impostoresRestantes >= tripulantesRestantes) {
-            mensajeVictoria = "¡VICTORIA DE LOS IMPOSTORES! Superan en número a los Tripulantes.";
-            juegoTerminado = true;
-        }
-
-        if (juegoTerminado) {
-            configRef.update({ votoActivo: false, tiempoFin: 0 }); // Detener todo
-            estadoRef.update({ mensaje: mensajeVictoria });
-            alert(mensajeVictoria);
-        }
-    });
-}
-
-
-function finalizarVotacion() {
-    // 1. Desactivar votoActivo
-    configRef.child('votoActivo').set(false);
+    <!-- NOTIFICACIÓN DE ROL GIGANTE -->
+    <div id="role-notification" class="role-notification-popup" style="display: none;"></div>
     
-    jugadoresRef.once('value').then(snapshot => {
-        const jugadoresData = snapshot.val();
-        const resultado = obtenerJugadorMasVotado(jugadoresData);
+    <!-- POPUP DE EXPULSIÓN (ANIMACIÓN) -->
+    <div id="expulsion-result-popup" class="expulsion-popup" style="display:none;">
+        <div class="expulsion-content">
+            <div id="ejected-crewmate-icon" class="ejected-crewmate"></div>
+            <p id="expulsion-message" class="expulsion-message"></p>
+        </div>
+    </div>
 
-        // Limpiar el color de resultado anterior
-        resultadoFinalElement.classList.remove('impostor-found', 'crewmate-ejected');
+    <!-- PANEL DE ROL PERSONAL -->
+    <div id="personal-role-panel" class="personal-role-panel" style="display:none;">
+        <p class="panel-label">TÚ ERES:</p>
+        <div id="my-crewmate-icon" class="my-crewmate-icon"></div>
+        <div id="my-role-display" class="my-role-display"></div>
+    </div>
 
-        if (resultado.esEliminado) {
-            jugadoresRef.child(`${resultado.nombre}`).once('value').then(jugadorSnap => {
-                // ** Lógica clave: Determinar si el expulsado era Impostor **
-                const esImpostor = jugadorSnap.val().esImpostor || false;
-
-                // 1. Marcar como eliminado
-                jugadoresRef.child(`${resultado.nombre}/eliminado`).set(true);
-
-                // 2. Determinar el mensaje final y el estilo CSS
-                const mensajeImpostor = esImpostor 
-                    ? `¡${resultado.nombre.toUpperCase()} fue el Impostor! ENCONTRADO.`
-                    : `¡${resultado.nombre.toUpperCase()} fue expulsado! No era un Impostor.`;
-                
-                // Aplicar la clase de efecto visual al resultado FINAL
-                resultadoFinalElement.classList.add(esImpostor ? 'impostor-found' : 'crewmate-ejected');
-
-                // 3. Actualizar estado y verificar victoria
-                estadoRef.update({
-                    ultimoEliminado: resultado.nombre,
-                    mensaje: mensajeImpostor
-                }).then(() => {
-                    verificarFinDePartida(); // Verificar después de la expulsión
-                });
-            });
-        } else {
-            estadoRef.update({
-                ultimoEliminado: null,
-                mensaje: resultado.nombre === "EMPATE" ? "Votación terminada en empate." : "Nadie fue expulsado. Votación saltada."
-            });
-        }
-
-        // Llama a la función de visibilidad para actualizar los botones
-        configRef.once('value').then(snap => {
-            updateAdminButtonsVisibility(snap.val());
-        });
-    });
-}
-// =========================================================
-// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL (FIXED VOTE CLEAR)
-// =========================================================
-function actualizarTemporizador(tiempoFin) {
-    clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-        const tiempoRestanteMs = Math.max(0, tiempoFin - Date.now());
-
-        if (tiempoRestanteMs === 0) {
-            clearInterval(timerInterval);
-            temporizadorElement.textContent = "00:00 - Votación Cerrada";
-            finalizarVotacion();
-            document.body.classList.remove('emergency-meeting'); // Quitar efecto
-        } else {
-            const segundosRestantes = Math.floor(tiempoRestanteMs / 1000);
-            const minutos = Math.floor(segundosRestantes / 60);
-            const segundos = segundosRestantes % 60;
-            const formatoTiempo = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
-            temporizadorElement.textContent = formatoTiempo;
-        }
-    }, 1000);
-}
-// NUEVA FUNCIÓN: Controla la visibilidad de los botones de Admin
-function updateAdminButtonsVisibility(config) {
-    if (!isAdmin) {
-        startTimerButton.style.display = 'none';
-        continueButton.style.display = 'none';
-        resetButton.style.display = 'none';
-        allowMultipleVoteButton.style.display = 'none';
-        assignImpostorButton.style.display = 'none'; // NUEVO BOTÓN
-        return;
-    }
-
-    const isVoting = config.votoActivo && config.tiempoFin > Date.now();
-    const isFinished = !config.votoActivo && config.tiempoFin > 0;
-    const isReadyToStart = (config.votoActivo && config.tiempoFin === 0) || (!config.votoActivo && config.tiempoFin === 0);
-
-    if (isVoting) {
-        startTimerButton.style.display = 'none';
-        continueButton.style.display = 'none';
-        allowMultipleVoteButton.style.display = 'inline-block'; // Permitir voto múltiple durante la votación
-        assignImpostorButton.style.display = 'none';
-    } else if (isFinished) {
-        startTimerButton.style.display = 'none';
-        continueButton.style.display = 'inline-block';
-        allowMultipleVoteButton.style.display = 'none';
-        assignImpostorButton.style.display = 'inline-block';
-    } else if (isReadyToStart) {
-        startTimerButton.style.display = 'inline-block';
-        continueButton.style.display = 'none';
-        allowMultipleVoteButton.style.display = 'none';
-        assignImpostorButton.style.display = 'inline-block';
-    }
-
-    // Reset Button siempre visible para el admin logueado
-    resetButton.style.display = 'inline-block';
-}
-configRef.on('value', (snapshot) => {
-    const config = snapshot.val();
-
-    // =====================================================
-    // ** FIX: SINCRONIZAR LIMPIEZA DE VOTO LOCAL **
-    // =====================================================
-    const dbClearSignal = config.lastVoteClearSignal || 0;
-    const localClearSignal = parseInt(localStorage.getItem('localClearSignal') || 0);
-
-    if (dbClearSignal > localClearSignal) {
-        // La base de datos tiene una señal más nueva, limpiar voto local y guardar la nueva señal
-        localStorage.removeItem('voted');
-        localStorage.removeItem('currentRole');
-        localStorage.setItem('localClearSignal', dbClearSignal);
-        console.log("Local vote cleared by admin signal. Now users can vote again.");
-    }
-    // =====================================================
-
-    // Lógica clave: solo puede votar si votoActivo es TRUE Y NO ha votado antes
-    // Si el local storage se limpió, 'voted' será null y 'puedeVotar' será true.
-    const puedeVotar = config.votoActivo && localStorage.getItem('voted') !== 'true';
-
-    botonesVoto.forEach(btn => {
-        btn.disabled = !puedeVotar;
-    });
-
-    // Llama a la nueva función de visibilidad de botones (si es admin)
-    updateAdminButtonsVisibility(config);
-
-    // Control del temporizador (SIEMPRE para todos los usuarios)
-    if (config.tiempoFin > Date.now() && config.votoActivo) {
-        actualizarTemporizador(config.tiempoFin);
-        document.body.classList.add('emergency-meeting'); // EFECTO: Pantalla de emergencia
-    } else if (config.votoActivo && config.tiempoFin === 0) {
-        temporizadorElement.textContent = "---";
-        document.body.classList.remove('emergency-meeting');
-    } else if (!config.votoActivo && config.tiempoFin > 0) {
-        clearInterval(timerInterval);
-        temporizadorElement.textContent = "00:00 - Votación Cerrada";
-        document.body.classList.remove('emergency-meeting');
-    }
-});
-estadoRef.on('value', (snapshot) => {
-    const estado = snapshot.val();
-    if (estado && estado.mensaje) {
-        mensajePrincipal.textContent = estado.mensaje;
-    }
-});
-function votar(personaje) {
-    if (localStorage.getItem('voted') === 'true') {
-        // Este mensaje solo se verá si el admin NO ha limpiado el voto.
-        alert('¡Ya has emitido tu voto en este dispositivo!');
-        return;
-    }
-
-    configRef.child('votoActivo').once('value').then(snap => {
-        if (!snap.val()) {
-            alert('La votación ha terminado o no ha iniciado.');
-            return;
-        }
-
-        const votoRef = (personaje === 'skip')
-            ? jugadoresRef.child('skip/votos')
-            : jugadoresRef.child(`${personaje}/votos`);
-
-        const performVote = () => {
-            votoRef.transaction(function (currentVotes) {
-                return (currentVotes || 0) + 1;
-            });
-
-            // Marcar como votado localmente para evitar voto múltiple HASTA el próximo clear
-            localStorage.setItem('voted', 'true');
-            botonesVoto.forEach(btn => btn.disabled = true);
-            votoConfirmadoElement.style.display = 'block';
-            setTimeout(() => { votoConfirmadoElement.style.display = 'none'; }, 3000);
-        }
-
-        if (personaje !== 'skip') {
-            jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
-                if (jugadorSnap.val().eliminado) {
-                    alert(`¡${personaje.toUpperCase()} ya ha sido eliminado! No puedes votar por él.`);
-                    return;
-                }
-                performVote();
-            });
-        } else {
-            performVote();
-        }
-    });
-}
-// Asignar eventos de click a los botones de voto
-botonesVoto.forEach(btn => {
-    btn.addEventListener('click', () => {
-        votar(btn.getAttribute('data-color'));
-    });
-});
-// =========================================================
-// LÓGICA DE PARTICIPANTES Y ROLES
-// =========================================================
-// Muestra el mensaje de notificación de rol
-function showRoleNotification(rol) {
-    participantesRef.child(ANONYMOUS_USER_ID).once('value').then(snap => {
-        const nombre = snap.val() ? snap.val().nombre || "Jugador" : "Jugador";
-
-        const text = rol === 'impostor' ? `¡ERES EL IMPOSTOR, ${nombre.toUpperCase()}!` : `ERES UN TRIPULANTE, ${nombre.toUpperCase()}`;
-
-        roleNotification.textContent = text;
-        roleNotification.className = `role-notification-popup ${rol}`;
-        roleNotification.style.display = 'flex';
-
-        setTimeout(() => {
-            roleNotification.style.display = 'none';
-        }, 5000);
-    });
-}
-// 1. Rastrea al usuario al cargar la página
-function setupParticipantTracking() {
-    const userRef = participantesRef.child(ANONYMOUS_USER_ID);
-    userRef.once('value').then(snap => {
-        userRef.update({
-            conectado: true,
-            ultimaConexion: Date.now(),
-            rol: snap.val() ? snap.val().rol || 'sin asignar' : 'sin asignar',
-            nombre: snap.val() ? snap.val().nombre || null : null
-        });
-    });
-    userRef.onDisconnect().update({ conectado: false });
-}
-// 2. Escucha el rol asignado al usuario
-participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
-    const participante = snapshot.val();
-    if (participante && participante.rol && participante.rol !== localStorage.getItem('currentRole')) {
-        showRoleNotification(participante.rol);
-        localStorage.setItem('currentRole', participante.rol);
-    } else if (participante && participante.rol) {
-        localStorage.setItem('currentRole', participante.rol);
-    }
-});
-
-// ** NUEVO LISTENER JODIDAMENTE BUENO: Sincronizar Impostor de Jugadores a Participantes **
-jugadoresRef.on('value', (snapshot) => {
-    const jugadores = snapshot.val();
-    let impostorColor = null;
-
-    // 1. Encontrar el color asignado como Impostor
-    for (const color of coloresJugadores) {
-        if (jugadores[color] && jugadores[color].esImpostor) {
-            impostorColor = color;
-            break;
-        }
-    }
-
-    if (impostorColor) {
-        // 2. Recorrer participantes y asignar el rol de Impostor a quien tenga ese color como nombre
-        participantesRef.once('value').then(pSnap => {
-            const updatesRoles = {};
-            pSnap.forEach(childSnap => {
-                const participante = childSnap.val();
-                const currentId = childSnap.key;
-
-                // ** Lógica de sincronización: si el nombre es igual al color del impostor **
-                if (participante.nombre && participante.nombre.toLowerCase() === impostorColor) {
-                    if (participante.rol !== 'impostor') {
-                        updatesRoles[`${currentId}/rol`] = 'impostor';
-                    }
-                } else {
-                    // Asegurar que si ya no es el impostor por color, vuelva a tripulante
-                    if (participante.rol === 'impostor') {
-                        updatesRoles[`${currentId}/rol`] = 'tripulante';
-                    }
-                }
-            });
-
-            if (Object.keys(updatesRoles).length > 0) {
-                participantesRef.update(updatesRoles);
-            }
-        });
-    }
-});
-
-
-// 3. Función para renderizar la lista
-function updateParticipantDisplay(participantesData) {
-    if (!isAdmin) {
-        participantListContainer.innerHTML = '<p class="admin-message">Inicia sesión como Admin para ver la lista.</p>';
-        return;
-    }
-
-    participantListContainer.innerHTML = '';
-    let index = 1;
-
-    // Convertir el objeto de participantes a un array y FILTRAR por conectados
-    const participantesArray = Object.entries(participantesData || {})
-        .map(([id, data]) => ({ id, ...data }))
-        .filter(p => p.conectado === true);
-
-    if (participantesArray.length === 0) {
-        participantListContainer.innerHTML = '<p class="admin-message">No hay participantes conectados actualmente.</p>';
-        return;
-    }
-
-    participantesArray.forEach(p => {
-        const nombreMostrado = p.nombre || `Participante ${index}`;
-
-        const pElement = document.createElement('div');
-        pElement.classList.add('participant-item');
-        pElement.innerHTML = `
-            <span class="user-index-name online">${index}. <strong>${nombreMostrado}</strong></span>
-            <span class="user-role-admin">${p.rol ? p.rol.toUpperCase() : 'SIN ASIGNAR'}</span>
-
-            <div class="admin-actions">
-                <input type="text" class="name-input" data-id="${p.id}" placeholder="Nuevo Nombre" value="${p.nombre || ''}">
-                <button class="name-btn" data-id="${p.id}">Asignar Nombre</button>
-                <button class="role-btn tripulante" data-id="${p.id}" data-rol="tripulante">Tripulante</button>
-                <button class="role-btn impostor" data-id="${p.id}" data-rol="impostor">Impostor</button>
+    <!-- INFORMACIÓN PERSONAL (ID/NOMBRE) - Ubicación fija superior izquierda -->
+    <div class="personal-info-box">
+        <div id="user-name-display-top" class="my-id-label-top">Tu Nombre: ...</div>
+        <div id="user-id-display" class="my-id-label-top">Tu ID: ...</div>
+    </div>
+    
+    <div id="app-container" style="display: flex;">
+        
+        <!-- COLUMNA IZQUIERDA: Votación (El foco principal) -->
+        <div class="panel votacion-container">
+            <h1 class="panel-header">¡REUNIÓN DE EMERGENCIA!</h1>
+            <p id="mensaje-principal" class="status-message">¡Vota por el Impostor!</p>
+            
+            <!-- TEMPORIZADOR -->
+            <div class="info-bar">
+                <div class="timer-display">TIEMPO: <span id="temporizador">---</span></div>
             </div>
-        `;
-        participantListContainer.appendChild(pElement);
-        index++;
-    });
 
-    // 4. Agregar listeners para roles y nombres
-    document.querySelectorAll('.role-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            asignarRol(e.target.dataset.id, e.target.dataset.rol);
-        });
-    });
+            <div class="opciones">
+                <!-- Botones de Voto -->
+                <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
+                    <div class="crewmate-icon rojo"></div> 
+                    <span class="nombre">ROJO</span>
+                    <div class="voto-iconos-container" id="voto-iconos-rojo"></div>
+                    <div class="vote-bar-container"><div class="vote-bar" id="barra-rojo"></div></div>
+                </button>
+                
+                <button id="votar-azul" class="boton-voto player-row azul-bg" data-color="azul">
+                    <div class="crewmate-icon azul"></div>
+                    <span class="nombre">AZUL</span>
+                    <div class="voto-iconos-container" id="voto-iconos-azul"></div>
+                    <div class="vote-bar-container"><div class="vote-bar" id="barra-azul"></div></div>
+                </button>
+                
+                <button id="votar-blanco" class="boton-voto player-row blanco-bg" data-color="blanco">
+                    <div class="crewmate-icon blanco"></div>
+                    <span class="nombre">BLANCO</span>
+                    <div class="voto-iconos-container" id="voto-iconos-blanco"></div>
+                    <div class="vote-bar-container"><div class="vote-bar" id="barra-blanco"></div></div>
+                </button>
 
-    document.querySelectorAll('.name-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const userId = e.target.dataset.id;
-            const inputElement = document.querySelector(`.name-input[data-id="${userId}"]`);
-            asignarNombre(userId, inputElement.value);
-        });
-    });
-}
-// 3.1 Listener de participantes que llama a la función de renderizado
-participantesRef.on('value', (snapshot) => {
-    updateParticipantDisplay(snapshot.val());
-});
-// 4. Función de asignación de rol (para el ADMIN)
-function asignarRol(userId, rol) {
-    participantesRef.child(userId).update({ rol: rol, asignadoPor: ANONYMOUS_USER_ID });
-    console.log(`Rol de ${userId} actualizado a ${rol.toUpperCase()}`);
-}
-// 5. Función de asignación de nombre (para el ADMIN)
-function asignarNombre(userId, nombre) {
-    const trimmedName = nombre.trim() || null;
-    participantesRef.child(userId).update({ nombre: trimmedName });
-    alert(`Nombre de ${userId} actualizado a ${trimmedName || 'Sin Nombre'}`);
-}
-// Inicializar el rastreo de participantes al cargar
-setupParticipantTracking();
-// =========================================================
-// FUNCIONES DE ADMINISTRADOR (CLAVE ZXZ)
-// =========================================================
-// Manejar el botón de Login Admin
-adminLoginButton.addEventListener('click', () => {
-    const clave = prompt("Introduce la clave de administrador:");
-    if (clave === 'zxz') { // CLAVE ZXZ
-        isAdmin = true;
-        participantPanel.style.display = 'flex'; // Muestra el panel de participantes
-        adminLoginButton.style.display = 'none';
+                <button id="votar-verde" class="boton-voto player-row verde-bg" data-color="verde">
+                    <div class="crewmate-icon verde"></div> 
+                    <span class="nombre">VERDE</span>
+                    <div class="voto-iconos-container" id="voto-iconos-verde"></div>
+                    <div class="vote-bar-container"><div class="vote-bar" id="barra-verde"></div></div>
+                </button>
 
-        // Forzar la actualización inmediata de la UI de participantes y botones
-        participantesRef.once('value').then(snapshot => {
-            updateParticipantDisplay(snapshot.val());
-        });
+                <button id="votar-amarillo" class="boton-voto player-row amarillo-bg" data-color="amarillo">
+                    <div class="crewmate-icon amarillo"></div> 
+                    <span class="nombre">AMARILLO</span>
+                    <div class="voto-iconos-container" id="voto-iconos-amarillo"></div>
+                    <div class="vote-bar-container"><div class="vote-bar" id="barra-amarillo"></div></div>
+                </button>
 
-        configRef.once('value').then(snapshot => {
-            updateAdminButtonsVisibility(snapshot.val());
-        });
+                <button id="votar-skip" class="boton-voto player-row skip-bg" data-color="skip">
+                    <div class="crewmate-icon skip"></div> 
+                    <span class="nombre">SALTAR VOTO</span>
+                    <div class="voto-iconos-container" id="voto-iconos-skip"></div>
+                    <div class="vote-bar-container"><div class="vote-bar" id="barra-skip"></div></div>
+                </button>
+            </div>
 
-        alert("Acceso de administrador concedido.");
-    } else if (clave !== null) {
-        alert("Clave incorrecta. Acceso denegado.");
-    }
-});
-// 1. Iniciar Votación (Solo Admin)
-startTimerButton.addEventListener('click', () => {
-    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
-
-    configRef.once('value', (snapshot) => {
-        const duracion = snapshot.val().duracionSegundos || 60;
-        const tiempoFin = Date.now() + (duracion * 1000);
-
-        configRef.update({
-            tiempoFin: tiempoFin,
-            votoActivo: true,
-            duracionSegundos: duracion,
-            lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-            actualizarTemporizador(tiempoFin);
-            estadoRef.update({ ultimoEliminado: null, mensaje: "¡Vota por el Impostor!" });
-            alert(`Votación iniciada por ${duracion} segundos.`);
-        });
-    });
-});
-// 2. CONTINUAR VOTACIÓN (Solo Admin - Nombres Persistentes)
-continueButton.addEventListener('click', () => {
-    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
-
-    const updates = {};
-    for (const color of coloresJugadores) {
-        updates[`${color}/votos`] = 0;
-    }
-
-    // 1. Resetear votos
-    jugadoresRef.update(updates).then(() => {
-        // 2. Resetear el rol de TODOS los participantes a 'sin asignar' (Preservando nombres)
-        participantesRef.once('value').then(snapshot => {
-            const updatesRoles = {};
-            snapshot.forEach(childSnapshot => {
-                updatesRoles[`${childSnapshot.key}/rol`] = 'sin asignar';
-            });
-            participantesRef.update(updatesRoles);
-        });
-
-        // 3. Resetear configuración de votación y enviar señal de limpieza
-        configRef.update({
-            votoActivo: true,
-            tiempoFin: 0,
-            lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP
-        });
+            <div id="voto-confirmado" class="confirmation-box">¡Voto Registrado!</div>
+            <div id="resultado-final" class="summary-box"></div>
+            
+        </div>
         
-        // Limpiar estilos de resultado visual
-        resultadoFinalElement.classList.remove('impostor-found', 'crewmate-ejected');
+        <!-- COLUMNA DERECHA: Participantes y Administrador -->
+        <div id="participant-panel" class="panel participant-panel" style="display:none;">
+            <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
+            <div id="participant-list-container" class="participant-list">
+                <!-- La lista se genera aquí (Admin) -->
+            </div>
+            
+            <!-- Panel de Administración -->
+            <div class="admin-panel">
+                <!-- NUEVOS BOTONES DE ADMIN -->
+                <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles</button>
+                <button id="start-timer-button" class="admin-btn-start" style="display:none;">Iniciar Votación</button>
+                
+                <!-- Botones de Control de Voto -->
+                <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
+                <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
+                
+                <!-- Botones de Control de Partida -->
+                <button id="continue-button" class="admin-btn-continue" style="display:none;">Continuar Votación</button>
+                <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
+            </div>
 
-        estadoRef.update({ mensaje: "Votación Continuada. ¡Inicia el temporizador!" });
-        alert("Contadores de voto reiniciados y roles borrados. Los nombres asignados se mantienen.");
-    });
-});
-// 3. Reiniciar JUEGO TOTAL (Solo Admin - Nombres Persistentes)
-resetButton.addEventListener('click', () => {
-    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
-
-    const jugadoresReset = {};
-    for (const color of coloresJugadores) {
-        if (color === 'skip') {
-            jugadoresReset[color] = { votos: 0 };
-        } else {
-            // ** RESETEAMOS también el flag esImpostor a false **
-            jugadoresReset[color] = { votos: 0, eliminado: false, esImpostor: false }; 
-        }
-    }
-
-    // 1. Resetear jugadores (votos, eliminado, esImpostor)
-    jugadoresRef.set(jugadoresReset).then(() => {
-        // 2. Resetear el rol de TODOS los participantes a 'sin asignar' (Preservando nombres)
-        participantesRef.once('value').then(snapshot => {
-            const updatesRoles = {};
-            snapshot.forEach(childSnapshot => {
-                updatesRoles[`${childSnapshot.key}/rol`] = 'sin asignar';
-            });
-            participantesRef.update(updatesRoles);
-        });
-
-        configRef.update({
-            votoActivo: true,
-            tiempoFin: 0,
-            lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP
-        });
+            <!-- Opcional: iFrame para otro juego o contenido -->
+            <div class="optional-game-iframe">
+                <h2 class="panel-header-small">VENTANA SECUNDARIA (OPCIONAL)</h2>
+                <!-- Si quieres incrustar otro contenido, descomenta y usa un src válido: -->
+                <!-- <iframe src="URL_DE_TU_OTRO_JUEGO" frameborder="0" style="width:100%; height: 300px; border: 3px solid #7f8c8d; border-radius: 8px;"></iframe> -->
+                <p style="text-align: center; color: #7f8c8d;">Aquí iría tu contenido incrustado.</p>
+            </div>
+        </div>
         
-        // Limpiar estilos de resultado visual
-        resultadoFinalElement.classList.remove('impostor-found', 'crewmate-ejected');
+    </div>
 
-        estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Asigna un Impostor!" });
-        alert("Juego reiniciado. Todos los jugadores están de vuelta y sus roles fueron borrados.");
-    });
-});
-// 4. PERMITIR VOTO MÚLTIPLE (Solo Admin - Nuevo botón)
-allowMultipleVoteButton.addEventListener('click', () => {
-    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
+    <!-- Botón de Login Admin (Visible por defecto, fuera de las columnas) -->
+    <button id="admin-login-button" class="admin-login-button">Login Admin</button>
 
-    // Solo actualizamos la señal de limpieza, forzando a todos los clientes a borrar su 'voted' local.
-    configRef.update({
-        lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-        alert("¡Votos locales limpiados! Los jugadores pueden votar de nuevo.");
-    });
-});
 
-// =========================================================
-// ** NUEVA FUNCIÓN: ASIGNAR IMPOSTOR POR COLOR (Admin) **
-// =========================================================
-assignImpostorButton.addEventListener('click', () => {
-    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
-    
-    // 1. Preguntar por el color
-    const colorImpostor = prompt("Introduce el color (ej: rojo) del nuevo Impostor:");
-    
-    // Validación básica de color
-    if (!coloresJugadores.includes(colorImpostor) || colorImpostor === 'skip') {
-        alert("Color no válido. Introduce un color de jugador (amarillo, azul, blanco, rojo, verde).");
-        return;
-    }
+    <!-- Carga del SDK de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
-    // 2. Resetear todos los 'esImpostor' a false y asignar el nuevo
-    jugadoresRef.once('value').then(snapshot => {
-        const updates = {};
-        const jugadores = snapshot.val();
-        
-        // Desmarcar al impostor anterior y marcar al nuevo
-        for (const color of coloresJugadores) {
-            if (color !== 'skip') {
-                updates[`${color}/esImpostor`] = (color === colorImpostor);
-            }
-        }
-        
-        jugadoresRef.update(updates).then(() => {
-             alert(`¡El Impostor ha sido asignado al color ${colorImpostor.toUpperCase()}! (¡Se mantiene oculto!)`);
-             estadoRef.update({ mensaje: `El Impostor ha sido asignado. ¡A votar!` });
-        });
-    });
-});
+    <script src="app.js"></script>
+</body>
+</html>
