@@ -60,9 +60,9 @@ const personalRolePanel = document.getElementById('personal-role-panel');
 const myCrewmateIcon = document.getElementById('my-crewmate-icon');
 const myRoleDisplay = document.getElementById('my-role-display');
 
-// REFERENCIAS DE ID/NOMBRE
+// REFERENCIAS DE ID/NOMBRE (CORREGIDAS)
 const userIdDisplay = document.getElementById('user-id-display');
-const userNameDisplay = document.getElementById('user-name-display');
+const userNameDisplay = document.getElementById('user-name-display-top'); // ID corregido
 
 
 let isAdmin = false;
@@ -82,7 +82,7 @@ function getAnonymousUserId() {
 }
 const ANONYMOUS_USER_ID = getAnonymousUserId();
 // FIX: Mostrar el ID inmediatamente
-userIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`; 
+if (userIdDisplay) userIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`; 
 
 
 // =========================================================
@@ -528,9 +528,9 @@ participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
     
     if (participante) {
         
-        // FIX: Mostrar Nombre de usuario
-        const nombreMostrado = participante.nombre || ANONYMOUS_USER_ID;
-        userNameDisplay.textContent = `Tu Nombre: ${nombreMostrado}`;
+        // FIX: Mostrar Nombre de usuario en la esquina superior
+        const nombreMostrado = participante.nombre || 'Incognito';
+        if (userNameDisplay) userNameDisplay.textContent = `Tu Nombre: ${nombreMostrado}`;
 
 
         // --- LÓGICA DE NOTIFICACIÓN DE ROL GIGANTE ---
