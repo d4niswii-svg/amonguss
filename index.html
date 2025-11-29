@@ -1,5 +1,3 @@
-<!-- index.html -->
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,133 +8,108 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<!-- NOTIFICACIÓN DE ROL GIGANTE (Inicialmente oculta) -->
+<div id="role-notification" class="role-notification-popup" style="display: none;"></div>
 
-    <!-- MENSAJE DE RESTRICCIÓN DE ACCESO -->
-    <div id="access-restriction-message" class="access-restriction-message" style="display:none;">
-        <h1>ACCESO DENEGADO</h1>
-        <p>Ya hay 5 jugadores activos. Espera a que el administrador inicie una nueva partida.</p>
-        <!-- ID para mostrar en el mensaje de restricción -->
-        <div id="user-id-display-center" class="my-id-label-center">Tu ID: ...</div>
-    </div>
-
-
-    <!-- NOTIFICACIÓN DE ROL GIGANTE -->
-    <div id="role-notification" class="role-notification-popup" style="display: none;"></div>
+<div id="app-container">
     
-    <!-- POPUP DE EXPULSIÓN (ANIMACIÓN) -->
-    <div id="expulsion-result-popup" class="expulsion-popup" style="display:none;">
-        <div class="expulsion-content">
-            <div id="ejected-crewmate-icon" class="ejected-crewmate"></div>
-            <p id="expulsion-message" class="expulsion-message"></p>
-        </div>
-    </div>
-
-    <!-- PANEL DE ROL PERSONAL -->
-    <div id="personal-role-panel" class="personal-role-panel" style="display:none;">
-        <p class="panel-label">TÚ ERES:</p>
-        <div id="my-crewmate-icon" class="my-crewmate-icon"></div>
-        <div id="my-role-display" class="my-role-display"></div>
-    </div>
-
-    <!-- INFORMACIÓN PERSONAL (ID/NOMBRE) - Ubicación fija superior izquierda -->
-    <div class="personal-info-box">
-        <div id="user-name-display-top" class="my-id-label-top">Tu Nombre: ...</div>
-        <div id="user-id-display" class="my-id-label-top">Tu ID: ...</div>
-    </div>
-    
-    <div id="app-container">
+    <!-- COLUMNA IZQUIERDA: Votación (El foco principal) -->
+    <div class="panel votacion-container">
+        <h1 class="panel-header">¡REUNIÓN DE EMERGENCIA!</h1>
+        <p id="mensaje-principal" class="status-message">¡Vota por el Impostor!</p>
         
-        <!-- COLUMNA IZQUIERDA: Votación (El foco principal) -->
-        <div class="panel votacion-container">
-            <h1 class="panel-header">¡REUNIÓN DE EMERGENCIA!</h1>
-            <p id="mensaje-principal" class="status-message">¡Vota por el Impostor!</p>
+        <!-- TEMPORIZADOR -->
+        <div class="info-bar">
+            <div class="timer-display">TIEMPO: <span id="temporizador">00:00</span></div>
+        </div>
+
+        <div class="opciones">
+            <!-- Botones de Voto -->
+            <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
+                <div class="crewmate-icon rojo"></div> 
+                <span class="nombre">ROJO</span>
+                <div class="vote-bar-container"><div class="vote-bar" id="barra-rojo"></div></div>
+                <span class="contador" id="contador-rojo">0</span>
+            </button>
             
-            <!-- TEMPORIZADOR -->
-            <div class="info-bar">
-                <div class="timer-display">TIEMPO: <span id="temporizador">---</span></div>
-            </div>
-
-            <div class="opciones">
-                <!-- Botones de Voto -->
-                <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
-                    <div class="crewmate-icon rojo"></div> 
-                    <span class="nombre">ROJO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-rojo"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-rojo"></div></div>
-                </button>
-                
-                <button id="votar-azul" class="boton-voto player-row azul-bg" data-color="azul">
-                    <div class="crewmate-icon azul"></div>
-                    <span class="nombre">AZUL</span>
-                    <div class="voto-iconos-container" id="voto-iconos-azul"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-azul"></div></div>
-                </button>
-                
-                <button id="votar-blanco" class="boton-voto player-row blanco-bg" data-color="blanco">
-                    <div class="crewmate-icon blanco"></div>
-                    <span class="nombre">BLANCO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-blanco"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-blanco"></div></div>
-                </button>
-
-                <button id="votar-verde" class="boton-voto player-row verde-bg" data-color="verde">
-                    <div class="crewmate-icon verde"></div> 
-                    <span class="nombre">VERDE</span>
-                    <div class="voto-iconos-container" id="voto-iconos-verde"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-verde"></div></div>
-                </button>
-
-                <button id="votar-amarillo" class="boton-voto player-row amarillo-bg" data-color="amarillo">
-                    <div class="crewmate-icon amarillo"></div> 
-                    <span class="nombre">AMARILLO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-amarillo"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-amarillo"></div></div>
-                </button>
-
-                <button id="votar-skip" class="boton-voto player-row skip-bg" data-color="skip">
-                    <div class="crewmate-icon skip"></div> 
-                    <span class="nombre">SALTAR VOTO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-skip"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-skip"></div></div>
-                </button>
-            </div>
-
-            <div id="voto-confirmado" class="confirmation-box">¡Voto Registrado!</div>
-            <div id="resultado-final" class="summary-box"></div>
+            <button id="votar-azul" class="boton-voto player-row azul-bg" data-color="azul">
+                <div class="crewmate-icon azul"></div>
+                <span class="nombre">AZUL</span>
+                <div class="vote-bar-container"><div class="vote-bar" id="barra-azul"></div></div>
+                <span class="contador" id="contador-azul">0</span>
+            </button>
             
+            <button id="votar-blanco" class="boton-voto player-row blanco-bg" data-color="blanco">
+                <div class="crewmate-icon blanco"></div>
+                <span class="nombre">BLANCO</span>
+                <div class="vote-bar-container"><div class="vote-bar" id="barra-blanco"></div></div>
+                <span class="contador" id="contador-blanco">0</span>
+            </button>
+
+            <button id="votar-verde" class="boton-voto player-row verde-bg" data-color="verde">
+                <div class="crewmate-icon verde"></div> 
+                <span class="nombre">VERDE</span>
+                <div class="vote-bar-container"><div class="vote-bar" id="barra-verde"></div></div>
+                <span class="contador" id="contador-verde">0</span>
+            </button>
+
+            <button id="votar-amarillo" class="boton-voto player-row amarillo-bg" data-color="amarillo">
+                <div class="crewmate-icon amarillo"></div> 
+                <span class="nombre">AMARILLO</span>
+                <div class="vote-bar-container"><div class="vote-bar" id="barra-amarillo"></div></div>
+                <span class="contador" id="contador-amarillo">0</span>
+            </button>
+
+            <button id="votar-skip" class="boton-voto player-row skip-bg" data-color="skip">
+                <div class="crewmate-icon skip"></div> 
+                <span class="nombre">SALTAR VOTO</span>
+                <div class="vote-bar-container"><div class="vote-bar" id="barra-skip"></div></div>
+                <span class="contador" id="contador-skip">0</span>
+            </button>
+        </div>
+
+        <div id="voto-confirmado" class="confirmation-box">¡Voto Registrado!</div>
+        <!-- El resultado final ahora cambia de color con la clase CSS -->
+        <div id="resultado-final" class="summary-box"></div>
+        
+    </div>
+    
+    <!-- COLUMNA DERECHA: Participantes y Administrador -->
+    <div id="participant-panel" class="panel participant-panel" style="display:none;">
+        <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
+        <div id="participant-list-container" class="participant-list">
+            <!-- La lista se genera aquí (Admin) -->
         </div>
         
-        <!-- COLUMNA DERECHA: Participantes y Administrador -->
-        <div id="participant-panel" class="panel participant-panel" style="display:none;">
-            <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
-            <div id="participant-list-container" class="participant-list">
-                <!-- La lista se genera aquí (Admin) -->
-            </div>
-            
-             <!-- Panel de Administración -->
-            <div class="admin-panel">
-                <!-- NUEVO BOTÓN PARA ASIGNAR ROLES -->
-                <button id="assign-roles-button" class="admin-btn-start">Asignar Roles Al Azar</button> 
-                
-                <button id="start-timer-button" class="admin-btn-start" style="display:none;">Iniciar Votación</button>
-                <button id="continue-button" class="admin-btn-continue" style="display:none;">Continuar Votación</button>
-                <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
-                <!-- BOTÓN EXISTENTE -->
-                <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
-            </div>
-            
+         <!-- Panel de Administración -->
+        <div class="admin-panel">
+            <button id="assign-impostor-button" class="admin-btn-assign" style="display:none;">Asignar Impostor (Color)</button> <!-- NUEVO -->
+            <button id="start-timer-button" class="admin-btn-start" style="display:none;">Iniciar Votación</button>
+            <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
+            <button id="continue-button" class="admin-btn-continue" style="display:none;">Continuar Votación</button>
+            <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
+        </div>
+
+        <!-- OPCIONAL: Ventana de Juego (iFrame) -->
+        <div class="optional-game-iframe">
+             <h2 class="panel-header-small">VENTANA SECUNDARIA (OPCIONAL)</h2>
+             <!-- Reemplaza el src con la URL de tu juego/contenido -->
+             <!-- <iframe src="https://example.com/otro-juego" frameborder="0" style="width:100%; height: 300px; border: 3px solid #7f8c8d; border-radius: 8px;"></iframe> -->
+             <p style="text-align: center; color: #7f8c8d;">Aquí iría tu contenido incrustado.</p>
         </div>
         
     </div>
     
-    <!-- Botón de Login Admin (Visible por defecto, fuera de las columnas) -->
-    <button id="admin-login-button" class="admin-login-button">Login Admin</button>
+</div>
 
-    <!-- Carga del SDK de Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    
-    <script src="app.js"></script>
+<!-- Botón de Login Admin (Visible por defecto, fuera de las columnas) -->
+<button id="admin-login-button" class="admin-login-button">Login Admin</button>
+<div id="user-id-display" class="my-id-label">Tu ID: ...</div>
 
+<!-- Carga del SDK de Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+<script src="app.js"></script>
 </body>
 </html>
