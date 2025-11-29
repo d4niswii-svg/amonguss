@@ -130,6 +130,7 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
              
              votantes.forEach(votanteId => {
                  const participante = participantesData[votanteId];
+                 // El color del votante es su color asignado o 'skip' si no tiene uno
                  const colorVotante = participante && coloresTripulantes.includes(participante.color) ? participante.color : 'skip';
                  
                  const icon = document.createElement('div');
@@ -310,7 +311,7 @@ function actualizarTemporizador(tiempoFin) {
     }, 1000);
 }
 
-// Controla la visibilidad de los botones de Admin (RESTAURADO)
+// Controla la visibilidad de los botones de Admin
 function updateAdminButtonsVisibility(config) {
     if (isAdmin) {
         participantPanel.style.display = 'flex';
@@ -327,7 +328,7 @@ function updateAdminButtonsVisibility(config) {
     }
 }
 
-// Función que muestra la notificación de rol a pantalla completa (RESTAURADO)
+// Función que muestra la notificación de rol a pantalla completa
 function showRoleNotification(rol) {
     roleNotification.textContent = `¡TU ROL ES: ${rol.toUpperCase()}!`;
     roleNotification.classList.remove('crewmate', 'impostor');
@@ -340,62 +341,54 @@ function showRoleNotification(rol) {
 }
 
 
-// Lógica de Votación (Asegura que SOLO los que tienen color asignado voten)
+// Lógica de Votación (RESTRICCIÓN ELIMINADA)
 function votar(personaje) {
-    participantesRef.child(ANONYMOUS_USER_ID).once('value').then(participanteSnap => {
-        const participante = participanteSnap.val();
+    // Ya no verificamos el color asignado.
+    
+    if (localStorage.getItem('voted') === 'true') {
+        alert('¡Ya has emitido tu voto en esta ronda!');
+        return;
+    }
+    
+    configRef.child('votoActivo').once('value').then(snap => {
+        if (!snap.val()) {
+             alert('La votación ha terminado o no ha iniciado.');
+             return;
+        }
         
-        // RESTRICCIÓN: Solo los 5 jugadores principales con color asignado pueden votar.
-        if (!participante || !coloresTripulantes.includes(participante.color)) {
-            alert('Solo los 5 jugadores principales pueden emitir un voto. El administrador debe asignarte un color.');
-            return;
+        const votoRef = (personaje === 'skip') 
+            ? jugadoresRef.child('skip/votos') 
+            : jugadoresRef.child(`${personaje}/votos`);
+        
+        const performVote = () => {
+             // 1. Voto en el contador total
+             votoRef.transaction(function (currentVotes) {
+                return (currentVotes || 0) + 1;
+            });
+            
+            // 2. Voto en el detalle (para los iconos)
+            votosDetalleRef.child(ANONYMOUS_USER_ID).set({
+                voto: personaje,
+                tiempo: Date.now()
+            });
+            
+            localStorage.setItem('voted', 'true');
+            botonesVoto.forEach(btn => btn.disabled = true);
+            votoConfirmadoElement.style.display = 'block';
+            setTimeout(() => { votoConfirmadoElement.style.display = 'none'; }, 3000);
         }
 
-        if (localStorage.getItem('voted') === 'true') {
-            alert('¡Ya has emitido tu voto en esta ronda!');
-            return;
-        }
-        
-        configRef.child('votoActivo').once('value').then(snap => {
-            if (!snap.val()) {
-                 alert('La votación ha terminado o no ha iniciado.');
-                 return;
-            }
-            
-            const votoRef = (personaje === 'skip') 
-                ? jugadoresRef.child('skip/votos') 
-                : jugadoresRef.child(`${personaje}/votos`);
-            
-            const performVote = () => {
-                 // 1. Voto en el contador total
-                 votoRef.transaction(function (currentVotes) {
-                    return (currentVotes || 0) + 1;
-                });
-                
-                // 2. Voto en el detalle (para los iconos)
-                votosDetalleRef.child(ANONYMOUS_USER_ID).set({
-                    voto: personaje,
-                    tiempo: Date.now()
-                });
-                
-                localStorage.setItem('voted', 'true');
-                botonesVoto.forEach(btn => btn.disabled = true);
-                votoConfirmadoElement.style.display = 'block';
-                setTimeout(() => { votoConfirmadoElement.style.display = 'none'; }, 3000);
-            }
-
-            if (personaje !== 'skip') {
-                jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
-                    if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
-                        alert(`¡${personaje.toUpperCase()} ya ha sido eliminado! No puedes votar por él.`);
-                        return;
-                    }
-                    performVote();
-                });
-            } else {
+        if (personaje !== 'skip') {
+            jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
+                if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
+                    alert(`¡${personaje.toUpperCase()} ya ha sido eliminado! No puedes votar por él.`);
+                    return;
+                }
                 performVote();
-            }
-        });
+            });
+        } else {
+            performVote();
+        }
     });
 }
 
@@ -460,6 +453,7 @@ botonesVoto.forEach(btn => {
 // Muestra el mensaje de restricción de acceso si hay 5 jugadores asignados
 function checkAndRestrictAccess(participantesData) {
     const jugadoresConColor = Object.values(participantesData || {}).filter(p => coloresTripulantes.includes(p.color)).length;
+    // La restricción de acceso (ocultar la UI) SI se mantiene si hay 5 jugadores con color asignado
     const tieneColor = participantesData[ANONYMOUS_USER_ID] && coloresTripulantes.includes(participantesData[ANONYMOUS_USER_ID].color);
     
     // Si hay 5 jugadores con color Y yo no soy uno de ellos
@@ -475,7 +469,7 @@ function checkAndRestrictAccess(participantesData) {
 }
 
 
-// Listener para el estado de conexión (RESTAURADO)
+// Listener para el estado de conexión
 function setupParticipantTracking() {
     const userRef = participantesRef.child(ANONYMOUS_USER_ID);
     
