@@ -34,10 +34,10 @@ body {
     overflow-x: hidden;
     transition: background-color 0.5s; 
     
-    /* ** NUEVO FONDO: IMAGEN DE GALAXIA ** */
+    /* ** FONDO: IMAGEN DE GALAXIA ** */
     background-image: url('https://wallpapers.com/images/hd/black-galaxy-glowing-earth-eo77rcgn6knba9f6.jpg');
     background-size: cover;
-    background-attachment: fixed; /* Para que la imagen no se mueva con el scroll (aunque no debería haber scroll) */
+    background-attachment: fixed; 
     background-position: center;
 }
 
