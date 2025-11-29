@@ -73,7 +73,10 @@ const toggleSecretVoteButton = document.getElementById('toggle-secret-vote-butto
 // ** NUEVAS REFERENCIAS DE UI MODAL **
 const votingModalContainer = document.getElementById('voting-modal-container');
 const showVotingModalButton = document.getElementById('show-voting-modal-button');
-const adminFixedPanel = document.getElementById('admin-fixed-panel');
+
+// ** NUEVAS REFERENCIAS DE PANEL ADMIN **
+const toggleAdminPanelButton = document.getElementById('toggle-admin-panel-button');
+const adminPanelContainer = document.getElementById('admin-panel-container'); // Nuevo contenedor para ocultar/mostrar
 
 
 let isAdmin = false;
@@ -211,12 +214,12 @@ votosDetalleRef.on('value', (snapshot) => {
 
 function showVotingModal() {
     votingModalContainer.style.display = 'flex';
-    document.body.classList.add('emergency-meeting'); // EFECTO: Pantalla de emergencia
+    // document.body.classList.add('emergency-meeting'); // ELIMINADO para evitar el temblor
 }
 
 function hideVotingModal() {
     votingModalContainer.style.display = 'none';
-    document.body.classList.remove('emergency-meeting');
+    // document.body.classList.remove('emergency-meeting'); // ELIMINADO
 }
 
 
@@ -344,6 +347,7 @@ function finalizarVotacion() {
     clearInterval(timerInterval);
     configRef.update({ votoActivo: false });
     temporizadorElement.textContent = "00:00 - Votación Cerrada";
+    hideVotingModal(); // Ocultar el modal al finalizar
 
     // 1. Limpiar los iconos de voto de la UI localmente (ya que la función updateVoteDisplay no se activará si votoActivo=false)
     coloresJugadores.forEach(color => {
@@ -430,8 +434,8 @@ function actualizarTemporizador(tiempoFin) {
 // ** FUNCIÓN MEJORADA: Controla la visibilidad de los botones de Admin **
 function updateAdminButtonsVisibility(config) {
     if (isAdmin) {
-        // Mostrar el panel de admin en la esquina superior derecha
-        participantPanel.style.display = 'flex';
+        // Mostrar el botón de toggle del panel
+        toggleAdminPanelButton.style.display = 'block';
         adminLoginButton.style.display = 'none';
 
         const isVotingActive = config.votoActivo && config.tiempoFin > Date.now();
@@ -468,7 +472,8 @@ function updateAdminButtonsVisibility(config) {
 
 
     } else {
-         participantPanel.style.display = 'none';
+         toggleAdminPanelButton.style.display = 'none'; // No-admin no ve el botón de toggle
+         adminPanelContainer.style.display = 'none'; // Asegurar que el contenedor esté oculto
          adminLoginButton.style.display = 'block';
          hideVotingModal(); // Asegurarse de que el modal esté oculto para no admins
     }
@@ -630,7 +635,6 @@ function checkAndRestrictAccess(participantesData) {
     // Si hay 5 jugadores con color Y yo no soy uno de ellos
     if (jugadoresConColor >= 5 && !tieneColor && !isAdmin) {
         accessRestrictionMessage.style.display = 'flex';
-        // document.getElementById('app-container').style.display = 'none'; // Ya no usamos app-container
         // Se asegura de que el ID/Nombre se muestre en el panel de restricción
         const centerIdDisplay = document.getElementById('user-id-display-center');
         if(centerIdDisplay) centerIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
@@ -876,6 +880,16 @@ setupParticipantTracking();
 // FUNCIONES DE ADMINISTRADOR (CLAVE ZXZ)
 // =========================================================
 
+// ** NUEVO LISTENER: Botón para Abrir/Ocultar Panel Admin **
+toggleAdminPanelButton.addEventListener('click', () => {
+    if (!isAdmin) { return; } // Solo Admin
+    
+    const currentDisplay = adminPanelContainer.style.display;
+    adminPanelContainer.style.display = currentDisplay === 'flex' ? 'none' : 'flex';
+    toggleAdminPanelButton.textContent = currentDisplay === 'flex' ? 'Mostrar Panel Admin' : 'Ocultar Panel Admin';
+});
+
+
 // Manejar el botón de Login Admin (CLAVE: zxz)
 adminLoginButton.addEventListener('click', () => {
     const password = prompt("Introduce la clave de administrador:");
@@ -889,6 +903,10 @@ adminLoginButton.addEventListener('click', () => {
         participantesRef.once('value').then(snapshot => {
              updateParticipantDisplay(snapshot.val());
         });
+        
+        // Mostrar el panel de admin por defecto al loguearse
+        adminPanelContainer.style.display = 'flex';
+        toggleAdminPanelButton.textContent = 'Ocultar Panel Admin';
         
         alert('¡Acceso de administrador concedido!');
     } else if (password !== null) {
