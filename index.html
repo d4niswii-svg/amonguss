@@ -53,10 +53,9 @@
     </div>
     
     <!-- ** 2. CONTENEDOR MODAL DE VOTACIÓN (Visible solo en Emergencia) ** -->
-    <!-- Se muestra/oculta con JS/CSS y la clase 'active' -->
     <div id="voting-modal-container" class="voting-modal-container" style="display: none;">
         
-        <!-- Contenido principal de votación (el panel que tenías) -->
+        <!-- Contenido principal de votación -->
         <div class="panel votacion-container">
             <h1 class="panel-header">¡REUNIÓN DE EMERGENCIA!</h1>
             <p id="mensaje-principal" class="status-message">¡Vota por el Impostor!</p>
@@ -67,7 +66,7 @@
             </div>
 
             <div class="opciones">
-                <!-- Botones de Voto (SIN CAMBIOS) -->
+                <!-- Botones de Voto -->
                 <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
                     <div class="crewmate-icon rojo"></div> 
                     <span class="nombre">ROJO</span>
@@ -119,14 +118,13 @@
     </div>
 
     
-    <!-- ** 3. PANEL DE ADMINISTRADOR (Contenedor Fijo) ** -->
-    <!-- Mantenemos el panel de admin por separado para que el admin pueda acceder a él sin votar -->
+    <!-- ** 3. PANEL DE ADMINISTRADOR FLOTANTE FIJO ** -->
     <div id="admin-fixed-panel" class="admin-fixed-panel">
         
-        <!-- Botón de Login Admin (Siempre visible si no es admin) -->
+        <!-- Botón de Login Admin (Solo visible si NO es admin) -->
         <button id="admin-login-button" class="admin-login-button">Login Admin</button>
 
-        <!-- COLUMNA DERECHA: Participantes y Administrador (Se muestra/oculta con JS/CSS) -->
+        <!-- COLUMNA DERECHA: Participantes y Administrador (Solo visible para Admin) -->
         <div id="participant-panel" class="panel participant-panel" style="display:none;">
             <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
             <div id="participant-list-container" class="participant-list">
@@ -137,8 +135,7 @@
             <div class="admin-panel">
                 <!-- NUEVOS BOTONES DE ADMIN -->
                 <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles</button>
-                <!-- ** NUEVO BOTÓN: EMERGENGIA (INICIA EL MODAL) ** -->
-                <button id="show-voting-modal-button" class="admin-btn-start">Reunión de Emergencia</button> 
+                <button id="show-voting-modal-button" class="admin-btn-start" style="display:none;">Reunión de Emergencia</button> 
                 
                 <!-- Botones de Control de Voto -->
                 <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
@@ -152,7 +149,7 @@
         </div>
     </div>
 
-    <!-- Contenedor anterior (vacío, solo para evitar errores en el CSS existente) -->
+    <!-- Contenedor anterior (vacío, se mantiene para compatibilidad con CSS) -->
     <div id="app-container" style="display: none;"></div>
 
     <!-- Carga del SDK de Firebase -->
