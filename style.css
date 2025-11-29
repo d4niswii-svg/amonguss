@@ -190,11 +190,15 @@ body {
     padding: 10px 15px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer;
     color: white; transition: background-color 0.2s, box-shadow 0.2s;
     box-shadow: 0 4px 0 #555;
+    flex-basis: 48%; /* Para botones principales */
 }
 .admin-btn-start { background-color: #f39c12; }
 .admin-btn-continue { background-color: #3498db; }
 .admin-btn-reset { background-color: #c0392b; }
-
+.admin-btn-permit-vote { 
+    background-color: #008080; /* Teal/Cian oscuro para destacar */
+    flex-basis: 100%; /* Botón de voto inmediato en toda la línea */
+}
 
 /* --- PANEL DE PARTICIPANTES --- */
 .participant-list {
@@ -218,7 +222,7 @@ body {
     font-weight: 900;
     font-size: 1em;
     display: inline-block;
-    width: 65%; /* Más ancho para el nombre */
+    width: 65%; 
     color: var(--color-texto-oscuro);
 }
 .user-index-name.online { color: var(--color-crewmate); }
