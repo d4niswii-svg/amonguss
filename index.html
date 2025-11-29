@@ -1,3 +1,5 @@
+<!-- index.html -->
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,6 +10,14 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+    <!-- MENSAJE DE RESTRICCIÓN DE ACCESO (NUEVO) -->
+    <div id="access-restriction-message" class="access-restriction-message" style="display:none;">
+        <h1>ACCESO DENEGADO</h1>
+        <p>Ya hay 5 jugadores activos. Espera a que el administrador inicie una nueva partida.</p>
+        <div id="user-id-display" class="my-id-label-center">Tu ID: ...</div>
+    </div>
+
 
     <!-- NOTIFICACIÓN DE ROL GIGANTE (Inicialmente oculta) -->
     <div id="role-notification" class="role-notification-popup" style="display: none;"></div>
@@ -21,7 +31,7 @@
             
             <!-- TEMPORIZADOR -->
             <div class="info-bar">
-                <div class="timer-display">TIEMPO: <span id="temporizador">00:00</span></div>
+                <div class="timer-display">TIEMPO: <span id="temporizador">---</span></div>
             </div>
 
             <div class="opciones">
@@ -29,43 +39,43 @@
                 <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
                     <div class="crewmate-icon rojo"></div> 
                     <span class="nombre">ROJO</span>
+                    <div class="voto-iconos-container" id="voto-iconos-rojo"></div>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-rojo"></div></div>
-                    <span class="contador" id="contador-rojo">0</span>
                 </button>
                 
                 <button id="votar-azul" class="boton-voto player-row azul-bg" data-color="azul">
                     <div class="crewmate-icon azul"></div>
                     <span class="nombre">AZUL</span>
+                    <div class="voto-iconos-container" id="voto-iconos-azul"></div>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-azul"></div></div>
-                    <span class="contador" id="contador-azul">0</span>
                 </button>
                 
                 <button id="votar-blanco" class="boton-voto player-row blanco-bg" data-color="blanco">
                     <div class="crewmate-icon blanco"></div>
                     <span class="nombre">BLANCO</span>
+                    <div class="voto-iconos-container" id="voto-iconos-blanco"></div>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-blanco"></div></div>
-                    <span class="contador" id="contador-blanco">0</span>
                 </button>
 
                 <button id="votar-verde" class="boton-voto player-row verde-bg" data-color="verde">
                     <div class="crewmate-icon verde"></div> 
                     <span class="nombre">VERDE</span>
+                    <div class="voto-iconos-container" id="voto-iconos-verde"></div>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-verde"></div></div>
-                    <span class="contador" id="contador-verde">0</span>
                 </button>
 
                 <button id="votar-amarillo" class="boton-voto player-row amarillo-bg" data-color="amarillo">
                     <div class="crewmate-icon amarillo"></div> 
                     <span class="nombre">AMARILLO</span>
+                    <div class="voto-iconos-container" id="voto-iconos-amarillo"></div>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-amarillo"></div></div>
-                    <span class="contador" id="contador-amarillo">0</span>
                 </button>
 
                 <button id="votar-skip" class="boton-voto player-row skip-bg" data-color="skip">
                     <div class="crewmate-icon skip"></div> 
                     <span class="nombre">SALTAR VOTO</span>
+                    <div class="voto-iconos-container" id="voto-iconos-skip"></div>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-skip"></div></div>
-                    <span class="contador" id="contador-skip">0</span>
                 </button>
             </div>
 
