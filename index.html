@@ -12,6 +12,7 @@
 <body>
 
     <!-- ** 1. IFRAME DE KEKOCITY (Fondo de pantalla completa) ** -->
+    <!-- Esto debería ocupar toda la pantalla del navegador -->
     <iframe 
         id="kekocity-iframe"
         src="https://kekocity.es/es/" 
@@ -119,33 +120,38 @@
 
     
     <!-- ** 3. PANEL DE ADMINISTRADOR FLOTANTE FIJO ** -->
-    <div id="admin-fixed-panel" class="admin-fixed-panel">
+    <div class="admin-fixed-panel">
         
         <!-- Botón de Login Admin (Solo visible si NO es admin) -->
         <button id="admin-login-button" class="admin-login-button">Login Admin</button>
+        
+        <!-- ** NUEVO BOTÓN: Ocultar/Mostrar Panel Admin (Solo visible si es admin) ** -->
+        <button id="toggle-admin-panel-button" class="admin-login-button" style="display:none; margin-bottom: 10px;">Mostrar Panel Admin</button>
 
-        <!-- COLUMNA DERECHA: Participantes y Administrador (Solo visible para Admin) -->
-        <div id="participant-panel" class="panel participant-panel" style="display:none;">
-            <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
-            <div id="participant-list-container" class="participant-list">
-                <!-- La lista se genera aquí (Admin) -->
-            </div>
-            
-            <!-- Panel de Administración -->
-            <div class="admin-panel">
-                <!-- NUEVOS BOTONES DE ADMIN -->
-                <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles</button>
-                <button id="show-voting-modal-button" class="admin-btn-start" style="display:none;">Reunión de Emergencia</button> 
+        <!-- Contenedor del Panel (Se oculta/muestra con el botón) -->
+        <div id="admin-panel-container" style="display:none;">
+            <div id="participant-panel" class="panel participant-panel">
+                <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
+                <div id="participant-list-container" class="participant-list">
+                    <!-- La lista se genera aquí (Admin) -->
+                </div>
                 
-                <!-- Botones de Control de Voto -->
-                <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
-                <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
+                <!-- Panel de Administración -->
+                <div class="admin-panel">
+                    <!-- NUEVOS BOTONES DE ADMIN -->
+                    <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles</button>
+                    <button id="show-voting-modal-button" class="admin-btn-start" style="display:none;">Reunión de Emergencia</button> 
+                    
+                    <!-- Botones de Control de Voto -->
+                    <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
+                    <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
+                    
+                    <!-- Botones de Control de Partida -->
+                    <button id="continue-button" class="admin-btn-continue" style="display:none;">Continuar Votación</button>
+                    <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
+                </div>
                 
-                <!-- Botones de Control de Partida -->
-                <button id="continue-button" class="admin-btn-continue" style="display:none;">Continuar Votación</button>
-                <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
             </div>
-            
         </div>
     </div>
 
