@@ -113,10 +113,9 @@ body {
 
 /* --- BOTONES DE VOTO --- */
 .boton-voto {
-    /* ... (Estilos de botón sin cambios) ... */
     display: flex;
     flex-wrap: wrap; 
-    justify-content: flex-start; /* Alineación cambiada para mejor visualización */
+    justify-content: flex-start;
     align-items: center;
     padding: 12px 25px;
     border-radius: 15px;
@@ -152,7 +151,7 @@ body {
     margin-left: 15px; 
     z-index: 2; 
     color: inherit; 
-    min-width: 100px; /* Asegura espacio para el nombre */
+    min-width: 100px; 
 }
 
 /* --- ICONOS GRANDES DE JUGADOR (FIX y MEJORA) --- */
@@ -209,7 +208,7 @@ body {
     background: linear-gradient(135deg, #a9d4f2, #609bc6); 
     border: 1px solid #333;
 }
-/* Colores de los Iconos (tanto grandes como pequeños) */
+/* Colores de los Iconos (grandes y pequeños) */
 .rojo { background-color: var(--color-rojo-amongus); } .azul { background-color: var(--color-azul-amongus); } .blanco { background-color: var(--color-blanco-amongus); } 
 .verde { background-color: var(--color-verde-amongus); } .amarillo { background-color: var(--color-amarillo-amongus); } .skip { background-color: var(--color-skip); }
 
@@ -224,8 +223,75 @@ body {
 .eliminado .voto-iconos-container { opacity: 0; }
 
 
-/* --- NOTIFICACIÓN DE ROL GIGANTE (NEON FIX) --- */
+/* --- PANEL DE ROL PERSONAL (AÑADIDO) --- */
+.personal-role-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(44, 62, 80, 0.9); /* Gris oscuro semi-transparente */
+    border: 3px solid var(--color-borde-panel);
+    border-radius: 15px;
+    padding: 10px 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Roboto', sans-serif;
+}
+
+.panel-label {
+    color: #ecf0f1;
+    font-weight: 700;
+    font-size: 0.8em;
+    margin: 0 0 5px 0;
+}
+
+.my-crewmate-icon {
+    width: 50px; 
+    height: 65px; 
+    border-radius: 50% 50% 10% 10%; 
+    border: 3px solid white;
+    position: relative;
+    margin-bottom: 5px;
+}
+.my-crewmate-icon::before {
+    content: ''; 
+    position: absolute; 
+    top: 8px; 
+    left: 12px; 
+    width: 26px; 
+    height: 18px; 
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a9d4f2, #609bc6); 
+    border: 1px solid #333;
+}
+
+.my-role-display {
+    font-family: 'Bungee Outline', sans-serif;
+    font-size: 1.2em;
+    font-weight: 900;
+    padding: 2px 0;
+}
+.my-role-display.impostor {
+    color: var(--color-neón-rojo);
+    text-shadow: 0 0 5px var(--color-neón-rojo), 0 0 10px rgba(255, 69, 69, 0.5);
+}
+.my-role-display.crewmate {
+    color: var(--color-neón-cian);
+    text-shadow: 0 0 5px var(--color-neón-cian), 0 0 10px rgba(57, 255, 252, 0.5);
+}
+.my-role-display.sin-asignar {
+    color: #fff;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1em;
+    text-shadow: none;
+}
+
+
+/* --- NOTIFICACIÓN DE ROL GIGANTE (NEON) --- */
 .role-notification-popup {
+    /* ... (Estilos sin cambios) ... */
     position: fixed;
     top: 0;
     left: 0;
@@ -283,20 +349,18 @@ body {
 }
 
 .ejected-crewmate {
-    /* Mismo estilo de base que crewmate-icon, pero más grande */
     width: 100px; 
     height: 130px; 
     border-radius: 50% 50% 10% 10%; 
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
     border: 5px solid white;
-    position: absolute; /* Para que vuele */
+    position: absolute; 
     top: 50%;
     left: 50%;
-    margin-top: -65px; /* Centrado vertical */
-    margin-left: -50px; /* Centrado horizontal */
+    margin-top: -65px; 
+    margin-left: -50px; 
 }
 .ejected-crewmate::before {
-    /* Estilo de la visera */
     content: ''; 
     position: absolute; 
     top: 15px; 
@@ -320,6 +384,7 @@ body {
     position: absolute;
     bottom: 20%;
     text-align: center;
+    font-family: 'Bungee Outline', sans-serif;
 }
 
 .expulsion-popup.impostor-ejected .expulsion-message {
@@ -331,6 +396,105 @@ body {
     color: var(--color-neón-cian);
     text-shadow: 0 0 10px var(--color-neón-cian);
 }
+
+
+/* --- PANEL DE ADMINISTRADOR --- */
+.admin-panel { 
+    margin-top: auto; 
+    padding-top: 15px; 
+    border-top: 1px dashed #4a637d; 
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+.admin-panel button {
+    padding: 10px 15px; 
+    border: none; 
+    border-radius: 8px; 
+    font-weight: 900; 
+    cursor: pointer;
+    color: white; 
+    transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+    flex-basis: 48%; 
+    font-family: 'Roboto', sans-serif;
+}
+.admin-panel button:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.admin-btn-start { background-color: #f39c12; box-shadow: 0 4px 0 #d35400; }
+.admin-btn-start:active { box-shadow: 0 2px 0 #d35400; }
+
+.admin-btn-continue { background-color: #3498db; box-shadow: 0 4px 0 #2980b9; }
+.admin-btn-continue:active { box-shadow: 0 2px 0 #2980b9; }
+
+.admin-btn-reset { background-color: #e74c3c; box-shadow: 0 4px 0 #c0392b; }
+.admin-btn-reset:active { box-shadow: 0 2px 0 #c0392b; }
+
+.admin-btn-permit-vote { 
+    background-color: #1abc9c; 
+    box-shadow: 0 4px 0 #16a085;
+    flex-basis: 100%; 
+}
+.admin-btn-permit-vote:active { box-shadow: 0 2px 0 #16a085; }
+
+/* --- ESTILOS DE ASIGNACIÓN DE ROLES Y NOMBRE EN EL PANEL --- */
+.admin-actions { margin-top: 5px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; }
+
+.name-input { 
+    flex-basis: 60%; 
+    padding: 5px; 
+    border-radius: 5px; 
+    border: 1px solid #7f8c8d; 
+    font-size: 0.8em; 
+    font-family: 'Roboto', sans-serif; 
+}
+
+.name-btn { 
+    flex-basis: 35%; 
+    padding: 5px; 
+    border: none; 
+    border-radius: 5px; 
+    font-size: 0.75em; 
+    font-weight: 700; 
+    cursor: pointer; 
+    color: white; 
+    background-color: #9b59b6; 
+    box-shadow: 0 2px 0 #8e44ad; 
+    transition: background-color 0.1s, box-shadow 0.1s, transform 0.1s;
+}
+.name-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 0 #8e44ad;
+}
+
+.role-btn { 
+    flex-basis: 48%; 
+    padding: 8px; 
+    border: none; 
+    border-radius: 5px; 
+    font-size: 0.85em; 
+    font-weight: 900; 
+    cursor: pointer; 
+    color: white; 
+    box-shadow: 0 3px 0 rgba(0,0,0,0.3); 
+    transition: background-color 0.1s, box-shadow 0.1s, transform 0.1s;
+}
+.role-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+}
+
+.role-btn.tripulante { background-color: var(--color-crewmate); box-shadow: 0 3px 0 #27ae60; }
+.role-btn.tripulante:active { box-shadow: 0 2px 0 #27ae60; }
+
+.role-btn.impostor { background-color: var(--color-impostor); box-shadow: 0 3px 0 #ff4b4b; }
+.role-btn.impostor:active { box-shadow: 0 2px 0 #ff4b4b; }
+
 
 /* KEYFRAMES */
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
@@ -347,6 +511,6 @@ body {
         transform: translate(-50%, -50%) rotate(360deg) scale(1.1);
     }
     100% { 
-        transform: translate(300vw, -300vh) rotate(3600deg) scale(0.1); /* Vuela lejos y gira */
+        transform: translate(300vw, -300vh) rotate(3600deg) scale(0.1); 
     }
 }
