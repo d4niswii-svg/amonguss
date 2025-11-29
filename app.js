@@ -16,10 +16,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// Referencias a la Base de Datos (ACTUALIZADAS)
-const jugadoresRef = database.ref('jugadores'); // ¡NUEVO NOMBRE!
+// Referencias a la Base de Datos
+const jugadoresRef = database.ref('jugadores'); 
 const configRef = database.ref('config');
-const estadoRef = database.ref('estado'); // Nuevo nodo de estado
+const estadoRef = database.ref('estado');
+const chatRef = database.ref('chat'); // ¡NUEVA REFERENCIA PARA CHAT!
 
 // Referencias a la UI
 const botonesVoto = document.querySelectorAll('.boton-voto');
@@ -30,14 +31,18 @@ const resetButton = document.getElementById('reset-button');
 const startTimerButton = document.getElementById('start-timer-button');
 const continueButton = document.getElementById('continue-button'); 
 const mensajePrincipal = document.getElementById('mensaje-principal'); 
-const adminPanel = document.querySelector('.admin-panel');
+
+// UI del Chat
+const chatForm = document.getElementById('chat-form');
+const chatInput = document.getElementById('chat-input');
+const chatMessagesContainer = document.getElementById('chat-messages');
 
 let totalVotos = 0;
 let timerInterval = null;
 const coloresJugadores = ['amarillo', 'azul', 'blanco', 'rojo', 'verde', 'skip']; 
 
 // =========================================================
-// LÓGICA DE TIEMPO REAL: ACTUALIZACIÓN DE JUGADORES
+// LÓGICA DE TIEMPO REAL: VOTACIÓN
 // =========================================================
 jugadoresRef.on('value', (snapshot) => {
     const jugadores = snapshot.val();
@@ -50,28 +55,26 @@ jugadoresRef.on('value', (snapshot) => {
         const votosActuales = jugador ? jugador.votos || 0 : 0;
         totalVotos += votosActuales;
 
-        // 1. Actualizar UI
+        // Actualizar UI, Barras, y Estilos
         const contadorElement = document.getElementById(`contador-${color}`);
         const barraElement = document.getElementById(`barra-${color}`);
         const botonElement = document.getElementById(`votar-${color}`);
 
         if (contadorElement) contadorElement.textContent = votosActuales;
         
-        // 2. Aplicar estilo de eliminado
         if (jugador && jugador.eliminado === true && botonElement) {
             botonElement.classList.add('eliminado');
         } else if (botonElement) {
              botonElement.classList.remove('eliminado');
         }
         
-        // 3. Barras
         if (barraElement && totalVotos > 0) {
             barraElement.style.width = `${(votosActuales / totalVotos) * 100}%`;
         } else if (barraElement) {
             barraElement.style.width = '0%';
         }
         
-        // 4. Lógica del Más Votado
+        // Lógica del Más Votado
         if (color !== 'skip' && !(jugador && jugador.eliminado) && votosActuales > maxVotos) {
             maxVotos = votosActuales;
             jugadorMasVotado = color;
@@ -80,7 +83,7 @@ jugadoresRef.on('value', (snapshot) => {
         }
     }
 
-    // 5. Mostrar el resultado (Líder Actual)
+    // Mostrar el resultado (Líder Actual)
     let liderTexto = jugadorMasVotado === "EMPATE" 
         ? "EMPATE" 
         : jugadorMasVotado ? jugadorMasVotado.toUpperCase() : "NADIE";
@@ -94,7 +97,39 @@ jugadoresRef.on('value', (snapshot) => {
 });
 
 // =========================================================
-// LÓGICA DE ELIMINACIÓN Y FIN DE VOTACIÓN
+// LÓGICA DE TIEMPO REAL: CHAT ANÓNIMO
+// =========================================================
+
+// Escucha nuevos mensajes y los añade al contenedor
+chatRef.on('child_added', (snapshot) => {
+    const messageData = snapshot.val();
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('chat-message');
+    
+    // Muestra el mensaje (anónimo)
+    messageElement.textContent = messageData.mensaje; 
+    
+    chatMessagesContainer.appendChild(messageElement);
+    // Hace scroll al último mensaje
+    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+});
+
+// Manejar el envío de mensajes
+chatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const mensaje = chatInput.value.trim();
+
+    if (mensaje) {
+        chatRef.push({ // Agrega un nuevo mensaje con ID único
+            mensaje: mensaje,
+            tiempo: Date.now()
+        });
+        chatInput.value = ''; // Limpiar el input
+    }
+});
+
+// =========================================================
+// LÓGICA DE ELIMINACIÓN Y ESTADO DEL JUEGO
 // =========================================================
 
 function obtenerJugadorMasVotado(jugadoresData) {
@@ -102,7 +137,6 @@ function obtenerJugadorMasVotado(jugadoresData) {
     let masVotado = null;
     let empate = false;
     
-    // Buscar el jugador con más votos (que no esté eliminado y no sea skip)
     for (const color of coloresJugadores) {
         const jugador = jugadoresData[color];
         if (color !== 'skip' && !(jugador && jugador.eliminado)) {
@@ -116,18 +150,16 @@ function obtenerJugadorMasVotado(jugadoresData) {
         }
     }
     
-    // Comparar con el voto 'Skip'
     const votosSkip = jugadoresData.skip.votos || 0;
     
     if (maxVotos <= votosSkip || masVotado === null) {
-        return { nombre: 'NADIE', esEliminado: false }; // Saltado o nadie votó
+        return { nombre: 'NADIE', esEliminado: false };
     }
     
     if (empate) {
         return { nombre: 'EMPATE', esEliminado: false };
     }
     
-    // Si no es empate ni skip, el jugador es eliminado
     return { nombre: masVotado, esEliminado: true };
 }
 
@@ -139,17 +171,13 @@ function finalizarVotacion() {
         const resultado = obtenerJugadorMasVotado(jugadoresData);
         
         if (resultado.esEliminado) {
-            // 1. Marcar como eliminado en la DB
             jugadoresRef.child(`${resultado.nombre}/eliminado`).set(true);
-            
-            // 2. Mostrar mensaje de eliminado y botón de continuar
             estadoRef.update({
                 ultimoEliminado: resultado.nombre,
-                mensaje: `¡${resultado.nombre.toUpperCase()} fue expulsado! No era el Impostor.`
+                mensaje: `¡${resultado.nombre.toUpperCase()} fue expulsado!`
             });
             continueButton.style.display = 'inline-block';
         } else {
-             // 2. Mostrar mensaje de NO eliminado y botón de continuar
             estadoRef.update({
                 ultimoEliminado: null,
                 mensaje: resultado.nombre === "EMPATE" ? "Votación terminada en empate." : "Nadie fue expulsado. Votación saltada."
@@ -157,7 +185,7 @@ function finalizarVotacion() {
              continueButton.style.display = 'inline-block';
         }
         
-        startTimerButton.style.display = 'none'; // Ocultamos el botón de iniciar
+        startTimerButton.style.display = 'none';
     });
 }
 
@@ -206,9 +234,7 @@ estadoRef.on('value', (snapshot) => {
     }
 });
 
-// =========================================================
-// FUNCIÓN DE VOTACIÓN (VOTO ÚNICO POR BROWSER)
-// =========================================================
+// ... [El resto de la función votar(personaje) es la misma]
 function votar(personaje) {
     if (localStorage.getItem('voted') === 'true') {
         alert('¡Ya has emitido tu voto en este dispositivo!');
@@ -221,12 +247,10 @@ function votar(personaje) {
              return;
         }
         
-        // Lógica de voto
         const votoRef = (personaje === 'skip') 
             ? jugadoresRef.child('skip/votos') 
             : jugadoresRef.child(`${personaje}/votos`);
         
-        // Comprobar si el jugador ya está eliminado antes de votar
         if (personaje !== 'skip') {
             jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
                 if (jugadorSnap.val().eliminado) {
