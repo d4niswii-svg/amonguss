@@ -1,6 +1,6 @@
 /* PALETA Y FUENTES HD / Among Us Style */
 :root {
-    --color-fondo-blanco: #f4f6f7; /* Fondo principal blanco */
+    --color-fondo-blanco: #f4f6f7; /* Fondo principal blanco - NO SE USA AHORA */
     --color-panel-amongus: #d5dadf; /* Gris claro/plata para los paneles */
     --color-borde-panel: #2c3e50; /* Gris oscuro para el borde */
     --color-neón-cian: #39fffc; 
@@ -17,29 +17,33 @@
 }
 
 /* FONT: Usar Bungee si está disponible, si no, Roboto 900 */
+html, body {
+    margin: 0;
+    padding: 0; /* Aseguramos que no haya padding ni margin en html/body */
+    height: 100%;
+}
+
 body {
     display: flex;
     justify-content: center;
     align-items: flex-start; 
     min-height: 100vh;
-    margin: 0;
-    padding-top: 0; /* Aseguramos que no hay padding en el body para fullscreen */
-    background: var(--color-fondo-blanco); 
+    padding-top: 0; 
     font-family: 'Bungee Outline', 'Roboto', sans-serif;
     color: var(--color-texto-oscuro);
     overflow-x: hidden;
     transition: background-color 0.5s; 
+    
+    /* ** NUEVO FONDO: IMAGEN DE GALAXIA ** */
+    background-image: url('https://wallpapers.com/images/hd/black-galaxy-glowing-earth-eo77rcgn6knba9f6.jpg');
+    background-size: cover;
+    background-attachment: fixed; /* Para que la imagen no se mueva con el scroll (aunque no debería haber scroll) */
+    background-position: center;
 }
 
-/* ** IFRAME A PANTALLA COMPLETA (KEKOCITY) ** */
+/* ** IFRAME DE KEKOCITY (ELIMINADO) ** */
 .fullscreen-iframe {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 1; /* Detrás de todos los elementos de la UI */
-    border: none !important;
+    display: none !important; 
 }
 
 
@@ -51,7 +55,7 @@ body {
     width: 100vw;
     height: 100vh;
     background-color: rgba(0, 0, 0, 0.7); /* Fondo oscuro transparente */
-    z-index: 100; /* Delante de Kekocity, detrás de los popups */
+    z-index: 100; /* Delante del fondo */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -90,7 +94,7 @@ body {
     max-height: 80vh;
     margin-top: 10px;
     padding: 15px;
-    overflow-y: auto; /* Permitir scroll si la lista es larga */
+    overflow-y: auto; 
 }
 
 
@@ -308,7 +312,7 @@ body.emergency-meeting {
     border-radius: 15px;
     padding: 10px 20px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    z-index: 101; /* Delante del iFrame */
+    z-index: 101; 
     display: flex;
     flex-direction: column;
     align-items: center;
