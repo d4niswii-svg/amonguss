@@ -4,6 +4,7 @@
 // 1. CONFIGURACIÓN DE FIREBASE (¡CLAVES INSERTADAS!)
 // =========================================================
 const firebaseConfig = {
+// ... (configuración sin cambios) ...
   apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
   authDomain: "ango-592a4.firebaseapp.com",
   databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
@@ -35,7 +36,7 @@ const votosDetalleRef = database.ref('votosDetalle');
 
 
 // Referencias a la UI
-// Removidos 'botonesVoto' ya que se usan dinámicamente
+const botonesVoto = document.querySelectorAll('.boton-voto');
 const temporizadorElement = document.getElementById('temporizador');
 const votoConfirmadoElement = document.getElementById('voto-confirmado');
 const resultadoFinalElement = document.getElementById('resultado-final');
@@ -92,123 +93,68 @@ if (userIdDisplay) userIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
 // LÓGICA DE TIEMPO REAL: VOTACIÓN Y VISUALIZACIÓN (ICONOS)
 // =========================================================
 
-/**
- * Función que genera los datos de los jugadores activos para el renderizado.
- */
-function getActivePlayersData(jugadoresSnapshot) {
-    const jugadoresDB = jugadoresSnapshot.val();
-    const jugadoresActivos = [];
-
-    // 1. Encontrar los participantes que tienen un color asignado
-    const participantesConColor = Object.values(participantesCache)
-        .filter(p => p.color && coloresTripulantes.includes(p.color));
-
-    // 2. Crear una lista de jugadores/botones a mostrar (solo colores asignados + skip)
-    for (const color of coloresJugadores) {
-        const votosActuales = jugadoresDB[color] ? jugadoresDB[color].votos || 0 : 0;
-        const eliminado = jugadoresDB[color] ? jugadoresDB[color].eliminado || false : false;
-        
-        if (color === 'skip') {
-             // El botón 'Skip' siempre está activo
-             jugadoresActivos.push({ color: 'skip', nombre: 'SALTAR VOTO', votos: votosActuales, eliminado: false, id: 'votar-skip' });
-             continue;
-        }
-
-        // Buscar el participante asociado a este color
-        const participante = participantesConColor.find(p => p.color === color);
-
-        if (participante) {
-            // Si hay un participante, usar su nombre
-            const nombre = participante.nombre || color.toUpperCase();
-            jugadoresActivos.push({ color, nombre, votos: votosActuales, eliminado, id: `votar-${color}` });
-        } 
-        // Si no hay participante con ese color, el botón NO se añade, por lo que queda OCULTO.
-    }
-
-    return jugadoresActivos;
-}
-
-
-/**
- * Función que actualiza la visualización de votos, barras e iconos.
- */
 function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
-    const jugadoresActivos = getActivePlayersData(jugadoresSnapshot);
+// ... (función sin cambios, usa participantesCache) ...
+    const jugadores = jugadoresSnapshot.val();
     const votosDetalle = votosDetalleSnapshot.val() || {};
-    const participantesData = participantesCache;
+    const participantesData = participantesCache; 
 
     let maxVotos = -1;
     let jugadorMasVotado = null;
-    // Recalcular el total de votos solo de los jugadores activos para el porcentaje
-    let totalVotos = jugadoresActivos.reduce((sum, j) => sum + j.votos, 0);
+    let totalVotos = 0;
+    
+    for (const color of coloresJugadores) {
+        const votosActuales = jugadores[color] ? jugadores[color].votos || 0 : 0;
+        totalVotos += votosActuales;
 
-    const opcionesContainer = document.querySelector('.opciones');
-    opcionesContainer.innerHTML = ''; // Limpiar el contenedor estático
-
-    // Recorrer los jugadores activos y crear/actualizar botones
-    for (const jugador of jugadoresActivos) {
-        const color = jugador.color;
-        const votosActuales = jugador.votos;
-
-        // 1. Crear o encontrar el botón (estructura dinámica)
-        const botonElement = document.createElement('button');
-        botonElement.id = jugador.id;
-        botonElement.classList.add('boton-voto', 'player-row', `${color}-bg`);
-        botonElement.setAttribute('data-color', color);
-        
-        if (jugador.eliminado) {
-             botonElement.classList.add('eliminado');
-        } 
-
-        // 2. Lógica del Más Votado (solo jugadores principales no eliminados)
-        if (color !== 'skip' && !jugador.eliminado) {
-             if (votosActuales > maxVotos) {
-                 maxVotos = votosActuales;
-                 jugadorMasVotado = color;
-             } else if (votosActuales === maxVotos && maxVotos > 0) {
-                 jugadorMasVotado = "EMPATE";
-             }
-        }
-
-        const porcentaje = totalVotos > 0 ? (votosActuales / totalVotos) * 100 : 0;
-
-        // 3. Contenido del botón
-        botonElement.innerHTML = `
-            <div class="crewmate-icon ${color}"></div> 
-            <span class="nombre">${jugador.nombre.toUpperCase()}</span>
-            <div class="voto-iconos-container" id="voto-iconos-${color}"></div>
-            <div class="vote-bar-container"><div class="vote-bar" id="barra-${color}" style="width: ${porcentaje}%;"></div></div>
-        `;
-        opcionesContainer.appendChild(botonElement);
-
-        // 4. RENDERIZAR ICONOS DE VOTO
+        // 1. Referencias UI
+        const barraElement = document.getElementById(`barra-${color}`);
+        const botonElement = document.getElementById(`votar-${color}`);
         const contadorElement = document.getElementById(`voto-iconos-${color}`);
+
+        // 2. Aplicar estilo de eliminado
+        if (jugadores[color] && jugadores[color].eliminado === true && botonElement) {
+            botonElement.classList.add('eliminado');
+        } else if (botonElement) {
+             botonElement.classList.remove('eliminado');
+        }
+        
+        // 3. Barras de porcentaje
+        if (barraElement && totalVotos > 0) {
+            barraElement.style.width = `${(votosActuales / totalVotos) * 100}%`;
+        } else if (barraElement) {
+            barraElement.style.width = '0%';
+        }
+        
+        // 4. Lógica del Más Votado
+        if (color !== 'skip' && !(jugadores[color] && jugadores[color].eliminado) && votosActuales > maxVotos) {
+            maxVotos = votosActuales;
+            jugadorMasVotado = color;
+        } else if (color !== 'skip' && !(jugadores[color] && jugadores[color].eliminado) && votosActuales === maxVotos && maxVotos > 0) {
+            jugadorMasVotado = "EMPATE";
+        }
+        
+        // 5. RENDERIZAR ICONOS DE VOTO (Corregido: Usa la caché)
         if (contadorElement) {
-            contadorElement.innerHTML = '';
-            const votantes = Object.keys(votosDetalle).filter(id => votosDetalle[id].voto === color);
-            
-            votantes.forEach(votanteId => {
-                const participante = participantesData[votanteId];
-                const colorVotante = participante && coloresTripulantes.includes(participante.color) ? participante.color : 'skip';
-                
-                const icon = document.createElement('div');
-                icon.classList.add('voto-crewmate-icon', colorVotante);
-                contadorElement.appendChild(icon);
-            });
+             contadorElement.innerHTML = '';
+             const votantes = Object.keys(votosDetalle).filter(id => votosDetalle[id].voto === color);
+             
+             votantes.forEach(votanteId => {
+                 const participante = participantesData[votanteId];
+                 // El color del votante es su color asignado o 'skip' si no tiene uno
+                 const colorVotante = participante && coloresTripulantes.includes(participante.color) ? participante.color : 'skip';
+                 
+                 const icon = document.createElement('div');
+                 icon.classList.add('voto-crewmate-icon', colorVotante);
+                 contadorElement.appendChild(icon);
+             });
         }
     }
-    
-    // 5. Reasignar listeners a los nuevos botones (VITAL)
-    document.querySelectorAll('.boton-voto').forEach(btn => {
-        btn.addEventListener('click', () => {
-            votar(btn.getAttribute('data-color'));
-        });
-    });
 
-    // 6. Actualizar Resultado Final
+    // 6. Mostrar el resultado (Líder Actual)
     let liderTexto = jugadorMasVotado === "EMPATE" 
         ? "EMPATE" 
-        : jugadorMasVotado ? jugadoresActivos.find(j => j.color === jugadorMasVotado).nombre.toUpperCase() : "NADIE";
+        : jugadorMasVotado ? jugadorMasVotado.toUpperCase() : "NADIE";
         
     if (totalVotos === 0) {
          resultadoFinalElement.style.display = 'none';
@@ -216,19 +162,7 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
         resultadoFinalElement.style.display = 'block';
         resultadoFinalElement.textContent = `VOTOS TOTALES: ${totalVotos} | LÍDER ACTUAL: ${liderTexto}`;
     }
-    
-    // 7. FIX CRÍTICO: Aplicar la deshabilitación de botones basándose en el estado global
-    configRef.once('value').then(snap => {
-        const config = snap.val() || {};
-        const votoTiempoCorriendo = config.votoActivo && config.tiempoFin > Date.now();
-        const puedeVotar = votoTiempoCorriendo && localStorage.getItem('voted') !== 'true';
-
-        document.querySelectorAll('.boton-voto').forEach(btn => {
-            btn.disabled = !puedeVotar;
-        });
-    });
 }
-
 
 // ----------------------------------------------------
 // Listener Combinado
@@ -252,6 +186,7 @@ votosDetalleRef.on('value', (snapshot) => {
 // =========================================================
 
 function obtenerJugadorMasVotado(jugadoresData) {
+// ... (función sin cambios) ...
     let maxVotos = -1;
     let jugadorMasVotado = 'NADIE';
     let esEmpate = false;
@@ -289,10 +224,8 @@ function obtenerJugadorMasVotado(jugadoresData) {
     return { nombre: jugadorMasVotado, esEliminado: isEliminado };
 }
 
-/**
- * Muestra la animación de expulsión con el mensaje apropiado.
- */
 function showExpulsionResult(ejectedColor, ejectedRole, ejectedName) {
+// ... (función sin cambios) ...
     // Resetear clases de animación y color
     expulsionPopup.classList.remove('impostor-ejected', 'crewmate-ejected', 'skip-ejected');
     ejectedCrewmate.classList.remove(...coloresJugadores);
@@ -326,6 +259,7 @@ function showExpulsionResult(ejectedColor, ejectedRole, ejectedName) {
 }
 
 function finalizarVotacion() {
+// ... (función sin cambios) ...
     clearInterval(timerInterval);
     configRef.update({ votoActivo: false });
     temporizadorElement.textContent = "00:00 - Votación Cerrada";
@@ -368,6 +302,7 @@ function finalizarVotacion() {
 }
 
 function actualizarTemporizador(tiempoFin) {
+// ... (función sin cambios) ...
     clearInterval(timerInterval); 
 
     timerInterval = setInterval(() => {
@@ -388,8 +323,8 @@ function actualizarTemporizador(tiempoFin) {
     }, 1000);
 }
 
-// Controla la visibilidad de los botones de Admin
 function updateAdminButtonsVisibility(config) {
+// ... (función sin cambios) ...
     if (isAdmin) {
         participantPanel.style.display = 'flex';
         adminLoginButton.style.display = 'none';
@@ -398,17 +333,15 @@ function updateAdminButtonsVisibility(config) {
         continueButton.style.display = config.votoActivo === false || config.tiempoFin > 0 ? 'block' : 'none';
         resetButton.style.display = 'block';
         allowMultipleVoteButton.style.display = 'block';
-        // Nuevo botón de asignación de roles
-        if(assignRolesButton) assignRolesButton.style.display = 'block';
-        
+
     } else {
          participantPanel.style.display = 'none';
          adminLoginButton.style.display = 'block';
-         if(assignRolesButton) assignRolesButton.style.display = 'none';
     }
 }
 
 function showRoleNotification(rol) {
+// ... (función sin cambios) ...
     roleNotification.textContent = `¡TU ROL ES: ${rol.toUpperCase()}!`;
     roleNotification.classList.remove('crewmate', 'impostor');
     roleNotification.classList.add(rol === 'impostor' ? 'impostor' : 'crewmate');
@@ -477,7 +410,7 @@ function performVoteChecks(personaje) {
             });
             
             localStorage.setItem('voted', 'true');
-            document.querySelectorAll('.boton-voto').forEach(btn => btn.disabled = true);
+            botonesVoto.forEach(btn => btn.disabled = true);
             votoConfirmadoElement.style.display = 'block';
             setTimeout(() => { votoConfirmadoElement.style.display = 'none'; }, 3000);
         }
@@ -515,7 +448,11 @@ configRef.on('value', (snapshot) => {
     // Lógica clave: solo puede votar si votoActivo es TRUE, el tiempo está corriendo (tiempoFin > Date.now()) 
     // Y NO ha votado antes.
     const votoTiempoCorriendo = config.votoActivo && config.tiempoFin > Date.now();
-    // La deshabilitación de botones se hace en updateVoteDisplay para los botones dinámicos
+    const puedeVotar = votoTiempoCorriendo && localStorage.getItem('voted') !== 'true'; // <--- FIX LÓGICO
+
+    botonesVoto.forEach(btn => {
+        btn.disabled = !puedeVotar;
+    });
     
     updateAdminButtonsVisibility(config); 
     
@@ -541,7 +478,12 @@ estadoRef.on('value', (snapshot) => {
     }
 });
 
-// Asignar eventos de click a los botones de voto (No es necesario aquí, se hace en updateVoteDisplay)
+// Asignar eventos de click a los botones de voto
+botonesVoto.forEach(btn => {
+    btn.addEventListener('click', () => {
+        votar(btn.getAttribute('data-color'));
+    });
+});
 
 
 // =========================================================
@@ -695,14 +637,13 @@ function updateParticipantDisplay(participantesData) {
                 </div>
                 <button class="role-btn tripulante" data-id="${p.id}" data-rol="tripulante">Tripulante</button>
                 <button class="role-btn impostor" data-id="${p.id}" data-rol="impostor">Impostor</button>
-                <button class="remove-btn admin-btn-reset" data-id="${p.id}">Expulsar</button> <!-- NUEVO BOTÓN EXPULSAR -->
             </div>
         `;
         participantListContainer.appendChild(pElement);
         index++;
     });
     
-    // 4. Agregar listeners para roles, nombres y colores (Y ELIMINAR)
+    // 4. Agregar listeners para roles, nombres y colores
     document.querySelectorAll('.role-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             asignarRol(e.target.dataset.id, e.target.dataset.rol);
@@ -722,12 +663,6 @@ function updateParticipantDisplay(participantesData) {
             const userId = e.target.dataset.id;
             const color = e.target.dataset.color === 'null' ? null : e.target.dataset.color;
             asignarColor(userId, color);
-        });
-    });
-
-    document.querySelectorAll('.remove-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            expulsarParticipante(e.target.dataset.id);
         });
     });
 }
@@ -755,22 +690,6 @@ function asignarColor(userId, color) {
         participantesRef.child(userId).update({ color: null });
     }
 }
-
-// NUEVA FUNCIÓN: Expulsar a un participante de la lista
-function expulsarParticipante(userId) {
-    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
-    if (confirm(`¿Estás seguro de que quieres expulsar al participante con ID: ${userId}?`)) {
-        participantesRef.child(userId).remove()
-            .then(() => {
-                alert(`Participante ${userId} expulsado exitosamente. Se necesitará un reinicio para que su ID pueda volver a unirse como principal.`);
-            })
-            .catch(error => {
-                console.error("Error al expulsar participante:", error);
-                alert("Hubo un error al intentar expulsar al participante.");
-            });
-    }
-}
-
 
 // 3.1 Listener de participantes que llama a la función de renderizado
 participantesRef.on('value', (snapshot) => {
@@ -907,47 +826,45 @@ resetButton.addEventListener('click', () => {
 /**
  * Asigna un impostor al azar y el resto como tripulantes entre los jugadores con color asignado.
  */
-if(assignRolesButton) {
-    assignRolesButton.addEventListener('click', () => {
-        if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
+assignRolesButton.addEventListener('click', () => {
+    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
 
-        // 1. Obtener los jugadores que tienen color asignado (activos)
-        const jugadoresActivos = Object.entries(participantesCache)
-            .filter(([id, p]) => p.color && coloresTripulantes.includes(p.color));
+    // 1. Obtener los jugadores que tienen color asignado (activos)
+    const jugadoresActivos = Object.entries(participantesCache)
+        .filter(([id, p]) => p.color && coloresTripulantes.includes(p.color));
 
-        if (jugadoresActivos.length < 2) {
-            alert("Se necesitan al menos 2 jugadores con color asignado para iniciar la asignación de roles.");
-            return;
-        }
-        
-        // 2. Determinar la cantidad de impostores (ej. 1 impostor por cada 5 jugadores)
-        const numJugadores = jugadoresActivos.length;
-        const numImpostores = Math.max(1, Math.floor(numJugadores / 5)); // Al menos 1, 1 por cada 5
-        
-        // 3. Seleccionar IDs de impostores al azar
-        const shuffledPlayers = jugadoresActivos.map(p => p[0]).sort(() => 0.5 - Math.random());
-        const impostorIds = shuffledPlayers.slice(0, numImpostores);
+    if (jugadoresActivos.length < 2) {
+        alert("Se necesitan al menos 2 jugadores con color asignado para iniciar la asignación de roles.");
+        return;
+    }
+    
+    // 2. Determinar la cantidad de impostores (ej. 1 impostor por cada 5 jugadores)
+    const numJugadores = jugadoresActivos.length;
+    const numImpostores = Math.max(1, Math.floor(numJugadores / 5)); // Al menos 1, 1 por cada 5
+    
+    // 3. Seleccionar IDs de impostores al azar
+    const shuffledPlayers = jugadoresActivos.map(p => p[0]).sort(() => 0.5 - Math.random());
+    const impostorIds = shuffledPlayers.slice(0, numImpostores);
 
-        // 4. Construir el objeto de actualizaciones
-        const updates = {};
-        for (const [id] of jugadoresActivos) {
-            const rol = impostorIds.includes(id) ? 'impostor' : 'tripulante';
-            updates[`${id}/rol`] = rol;
-        }
-        
-        // 5. Aplicar los roles en Firebase
-        participantesRef.update(updates)
-            .then(() => {
-                // Limpiar la señal de voto local para forzar la notificación de rol
-                configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
-                alert(`Roles asignados: ${numImpostores} Impostor(es) y ${numJugadores - numImpostores} Tripulante(s).`);
-            })
-            .catch(error => {
-                console.error("Error al asignar roles:", error);
-                alert("Error al asignar roles.");
-            });
-    });
-}
+    // 4. Construir el objeto de actualizaciones
+    const updates = {};
+    for (const [id] of jugadoresActivos) {
+        const rol = impostorIds.includes(id) ? 'impostor' : 'tripulante';
+        updates[`${id}/rol`] = rol;
+    }
+    
+    // 5. Aplicar los roles en Firebase
+    participantesRef.update(updates)
+        .then(() => {
+            // Limpiar la señal de voto local para forzar la notificación de rol
+            configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
+            alert(`Roles asignados: ${numImpostores} Impostor(es) y ${numJugadores - numImpostores} Tripulante(s).`);
+        })
+        .catch(error => {
+            console.error("Error al asignar roles:", error);
+            alert("Error al asignar roles.");
+        });
+});
 
 // 4. PERMITIR VOTO MÚLTIPLE (Solo Admin)
 allowMultipleVoteButton.addEventListener('click', () => {
