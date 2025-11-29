@@ -1,3 +1,5 @@
+// app.js
+
 // =========================================================
 // 1. CONFIGURACIÓN DE FIREBASE (¡CLAVES INSERTADAS!)
 // =========================================================
@@ -55,7 +57,7 @@ const ANONYMOUS_USER_ID = getAnonymousUserId();
 document.getElementById('user-id-display').textContent = `Tu ID: ${ANONYMOUS_USER_ID}`; 
 
 // =========================================================
-// LÓGICA DE TIEMPO REAL: VOTACIÓN (Sin Cambios)
+// LÓGICA DE TIEMPO REAL: VOTACIÓN
 // =========================================================
 jugadoresRef.on('value', (snapshot) => {
     const jugadores = snapshot.val();
@@ -174,7 +176,7 @@ function finalizarVotacion() {
 
 
 // =========================================================
-// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL (FIXED)
+// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL
 // =========================================================
 
 function actualizarTemporizador(tiempoFin) {
@@ -233,10 +235,10 @@ configRef.on('value', (snapshot) => {
         btn.disabled = !puedeVotar;
     });
     
-    // Llama a la nueva función
+    // Llama a la nueva función de visibilidad de botones (si es admin)
     updateAdminButtonsVisibility(config); 
     
-    // Control del temporizador
+    // Control del temporizador (SIEMPRE para todos los usuarios)
     if (config.tiempoFin > Date.now() && config.votoActivo) { 
         actualizarTemporizador(config.tiempoFin);
     } else if (config.votoActivo && config.tiempoFin === 0) {
@@ -305,7 +307,7 @@ botonesVoto.forEach(btn => {
 
 
 // =========================================================
-// LÓGICA DE PARTICIPANTES Y ROLES (Sin Cambios en la lógica de listado)
+// LÓGICA DE PARTICIPANTES Y ROLES
 // =========================================================
 
 // Muestra el mensaje de notificación de rol
@@ -351,7 +353,7 @@ participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
 });
 
 
-// 3. Función para renderizar la lista (Aislada para ser llamada manualmente)
+// 3. Función para renderizar la lista
 function updateParticipantDisplay(participantesData) {
     if (!isAdmin) {
         participantListContainer.innerHTML = '<p class="admin-message">Inicia sesión como Admin para ver la lista.</p>';
@@ -434,7 +436,7 @@ setupParticipantTracking();
 // FUNCIONES DE ADMINISTRADOR (CLAVE ZXZ)
 // =========================================================
 
-// Manejar el botón de Login Admin (FIXED)
+// Manejar el botón de Login Admin
 adminLoginButton.addEventListener('click', () => {
     const clave = prompt("Introduce la clave de administrador:");
     if (clave === 'zxz') { // CLAVE ZXZ
@@ -479,7 +481,7 @@ startTimerButton.addEventListener('click', () => {
     });
 });
 
-// 2. CONTINUAR VOTACIÓN (Solo Admin)
+// 2. CONTINUAR VOTACIÓN (Solo Admin - Nombres Persistentes)
 continueButton.addEventListener('click', () => {
     if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
 
@@ -488,18 +490,30 @@ continueButton.addEventListener('click', () => {
         updates[`${color}/votos`] = 0;
     }
     
+    // 1. Resetear votos
     jugadoresRef.update(updates).then(() => {
+        // 2. Resetear el rol de TODOS los participantes a 'sin asignar' (Preservando nombres)
+        participantesRef.once('value').then(snapshot => {
+            const updatesRoles = {};
+            snapshot.forEach(childSnapshot => {
+                updatesRoles[`${childSnapshot.key}/rol`] = 'sin asignar';
+            });
+            participantesRef.update(updatesRoles);
+        });
+        
+        // 3. Resetear configuración de votación
         configRef.update({
             votoActivo: true,
             tiempoFin: 0
         });
         localStorage.removeItem('voted'); 
+        localStorage.removeItem('currentRole'); // Borrar rol local para que aparezca la notificacion si se reasigna
         estadoRef.update({ mensaje: "Votación Continuada. ¡Inicia el temporizador!" });
-        alert("Contadores reiniciados. Presiona 'Iniciar Votación' para comenzar la nueva ronda.");
+        alert("Contadores de voto reiniciados y roles borrados. Los nombres asignados se mantienen.");
     });
 });
 
-// 3. Reiniciar JUEGO TOTAL (Solo Admin)
+// 3. Reiniciar JUEGO TOTAL (Solo Admin - Nombres Persistentes)
 resetButton.addEventListener('click', () => {
     if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
     
@@ -512,12 +526,21 @@ resetButton.addEventListener('click', () => {
         }
     }
     
+    // 1. Resetear jugadores (votos, eliminado)
     jugadoresRef.set(jugadoresReset).then(() => {
-         participantesRef.set(null); 
+        // 2. Resetear el rol de TODOS los participantes a 'sin asignar' (Preservando nombres)
+        participantesRef.once('value').then(snapshot => {
+            const updatesRoles = {};
+            snapshot.forEach(childSnapshot => {
+                updatesRoles[`${childSnapshot.key}/rol`] = 'sin asignar';
+            });
+            participantesRef.update(updatesRoles);
+        });
+
          configRef.update({ votoActivo: true, tiempoFin: 0 });
          localStorage.removeItem('voted');
          localStorage.removeItem('currentRole');
          estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Vota por el Impostor!" });
-         alert("Juego reiniciado. Todos los jugadores están de vuelta, roles borrados.");
+         alert("Juego reiniciado. Todos los jugadores están de vuelta y sus roles fueron borrados.");
     });
 });
