@@ -23,7 +23,7 @@ body {
     align-items: flex-start; 
     min-height: 100vh;
     margin: 0;
-    padding-top: 0; /* Ya no necesitamos padding superior */
+    padding-top: 0; /* Aseguramos que no hay padding en el body para fullscreen */
     background: var(--color-fondo-blanco); 
     font-family: 'Bungee Outline', 'Roboto', sans-serif;
     color: var(--color-texto-oscuro);
@@ -31,7 +31,7 @@ body {
     transition: background-color 0.5s; 
 }
 
-/* ** NUEVO: IFRAME A PANTALLA COMPLETA (KEKOCITY) ** */
+/* ** IFRAME A PANTALLA COMPLETA (KEKOCITY) ** */
 .fullscreen-iframe {
     position: fixed;
     top: 0;
@@ -43,7 +43,7 @@ body {
 }
 
 
-/* ** NUEVO: CONTENEDOR MODAL DE VOTACIÓN ** */
+/* ** CONTENEDOR MODAL DE VOTACIÓN ** */
 .voting-modal-container {
     position: fixed;
     top: 0;
@@ -56,7 +56,6 @@ body {
     justify-content: center;
     align-items: center;
     backdrop-filter: blur(5px); /* Efecto de desenfoque */
-    /* El display:none/flex se controla en JS */
 }
 /* El panel de votación dentro del modal, para que se centre */
 .votacion-container {
@@ -75,7 +74,7 @@ body {
     to { transform: scale(1); opacity: 1; }
 }
 
-/* ** NUEVO: PANEL DE ADMINISTRADOR FLOTANTE FIJO (ESQUINA) ** */
+/* ** PANEL DE ADMINISTRADOR FLOTANTE FIJO (ESQUINA) ** */
 .admin-fixed-panel {
     position: fixed;
     top: 50px; /* Separado del borde superior */
@@ -91,21 +90,14 @@ body {
     max-height: 80vh;
     margin-top: 10px;
     padding: 15px;
-    /* Se oculta con JS: display:none; */
+    overflow-y: auto; /* Permitir scroll si la lista es larga */
 }
 
 
-/* ** EFECTO JODIDAMENTE BUENO: ALARMA DE EMERGENCIA (body shake) ** */
+/* EFECTO DE REUNIÓN DE EMERGENCIA (solo fondo sin temblor) */
 body.emergency-meeting {
-    background-color: #ff454550; 
-    animation: shake 0.2s infinite; 
-}
-@keyframes shake {
-    0% { transform: translate(1px, 1px) rotate(0deg); }
-    25% { transform: translate(-1px, 0px) rotate(0.5deg); }
-    50% { transform: translate(1px, -1px) rotate(-0.5deg); }
-    75% { transform: translate(-1px, 1px) rotate(0.5deg); }
-    100% { transform: translate(1px, 1px) rotate(0deg); }
+    background-color: #ff454550; /* Solo un tinte rojo */
+    animation: none; /* ELIMINADO: No hay temblor */
 }
 
 /* ESTILO GENERAL DE PANEL (Limpio y 3D) */
