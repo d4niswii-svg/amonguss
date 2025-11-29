@@ -151,31 +151,6 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
         } else if (color !== 'skip' && !(jugadores[color] && jugadores[color].eliminado) && votosActuales === maxVotos && maxVotos > 0) {
             jugadorMasVotado = "EMPATE";
         }
-        
-        // 5. RENDERIZAR ICONOS DE VOTO (Mejorado con Voto Secreto)
-        if (contadorElement) {
-             contadorElement.innerHTML = '';
-             
-             // Si el voto es secreto y la votación está activa, no se muestran los iconos
-             if (isSecretVote && jugadoresSnapshot.val().votoActivo) {
-                 contadorElement.textContent = 'VOTO SECRETO ACTIVO';
-                 contadorElement.classList.add('voto-secreto-activo');
-             } else {
-                 contadorElement.classList.remove('voto-secreto-activo');
-                 
-                 const votantes = Object.keys(votosDetalle).filter(id => votosDetalle[id].voto === color);
-                 
-                 votantes.forEach(votanteId => {
-                     const participante = participantesData[votanteId];
-                     // El color del votante es su color asignado o 'skip' si no tiene uno
-                     const colorVotante = participante && coloresTripulantes.includes(participante.color) ? participante.color : 'skip';
-                     
-                     const icon = document.createElement('div');
-                     icon.classList.add('voto-crewmate-icon', colorVotante);
-                     contadorElement.appendChild(icon);
-                 });
-             }
-        }
     }
 
     // 6. Mostrar el resultado (Líder Actual)
@@ -912,21 +887,41 @@ adminLoginButton.addEventListener('click', () => {
     }
 });
 
-// ** NUEVO LISTENER: Botón de Reunión de Emergencia (Admin) **
+// ** NUEVO LISTENER MODIFICADO: Botón de Reunión de Emergencia (Admin) **
 showVotingModalButton.addEventListener('click', () => {
     if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
     
-    configRef.once('value', (snapshot) => {
-        const duracion = snapshot.val().duracionSegundos || 60; // Usa 60s por defecto
-        const tiempoFin = Date.now() + (duracion * 1000); 
+    // --- LÓGICA JODIDAMENTE BUENA: ELIMINAR COLORES SIN JUGADOR ASIGNADO ---
+    participantesRef.once('value').then(snapshot => {
+        const participantesData = snapshot.val() || {};
+        const coloresAsignados = Object.values(participantesData)
+            .map(p => p.color)
+            .filter(color => coloresTripulantes.includes(color));
 
-        configRef.update({
-            votoActivo: true, 
-            tiempoFin: tiempoFin
-        }).then(() => {
-            // El listener de config ya llama a showVotingModal()
-            estadoRef.update({ mensaje: "¡A VOTAR! El tiempo corre..." });
-            alert(`Votación iniciada por ${duracion} segundos.`);
+        // Colores que NO tienen un jugador asignado
+        const coloresNoAsignados = coloresTripulantes.filter(color => !coloresAsignados.includes(color));
+
+        const eliminaciones = {};
+        coloresNoAsignados.forEach(color => {
+             eliminaciones[`${color}/eliminado`] = true;
+        });
+
+        // 1. Aplicar eliminaciones en la base de datos (jugadores)
+        jugadoresRef.update(eliminaciones).then(() => {
+            // 2. Iniciar la votación después de eliminar a los "jugadores fantasma"
+            configRef.once('value', (configSnap) => {
+                const duracion = configSnap.val().duracionSegundos || 60; // Usa 60s por defecto
+                const tiempoFin = Date.now() + (duracion * 1000); 
+
+                configRef.update({
+                    votoActivo: true, 
+                    tiempoFin: tiempoFin
+                }).then(() => {
+                    // El listener de config ya llama a showVotingModal()
+                    estadoRef.update({ mensaje: "¡A VOTAR! El tiempo corre..." });
+                    alert(`Votación iniciada por ${duracion} segundos. Colores no asignados eliminados.`);
+                });
+            });
         });
     });
 });
