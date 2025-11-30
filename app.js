@@ -151,6 +151,31 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
         } else if (color !== 'skip' && !(jugadores[color] && jugadores[color].eliminado) && votosActuales === maxVotos && maxVotos > 0) {
             jugadorMasVotado = "EMPATE";
         }
+        
+        // 5. RENDERIZAR ICONOS DE VOTO (Mejorado con Voto Secreto)
+        if (contadorElement) {
+             contadorElement.innerHTML = '';
+             
+             // Si el voto es secreto y la votación está activa, no se muestran los iconos
+             if (isSecretVote && jugadoresSnapshot.val().votoActivo) {
+                 contadorElement.textContent = 'VOTO SECRETO ACTIVO';
+                 contadorElement.classList.add('voto-secreto-activo');
+             } else {
+                 contadorElement.classList.remove('voto-secreto-activo');
+                 
+                 const votantes = Object.keys(votosDetalle).filter(id => votosDetalle[id].voto === color);
+                 
+                 votantes.forEach(votanteId => {
+                     const participante = participantesData[votanteId];
+                     // El color del votante es su color asignado o 'skip' si no tiene uno
+                     const colorVotante = participante && coloresTripulantes.includes(participante.color) ? participante.color : 'skip';
+                     
+                     const icon = document.createElement('div');
+                     icon.classList.add('voto-crewmate-icon', colorVotante);
+                     contadorElement.appendChild(icon);
+                 });
+             }
+        }
     }
 
     // 6. Mostrar el resultado (Líder Actual)
@@ -915,7 +940,9 @@ showVotingModalButton.addEventListener('click', () => {
 
                 configRef.update({
                     votoActivo: true, 
-                    tiempoFin: tiempoFin
+                    tiempoFin: tiempoFin,
+                    // ** LÍNEA CRUCIAL: Esto fuerza a todos los clientes a borrar su 'voted' local **
+                    lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
                 }).then(() => {
                     // El listener de config ya llama a showVotingModal()
                     estadoRef.update({ mensaje: "¡A VOTAR! El tiempo corre..." });
@@ -946,6 +973,7 @@ continueButton.addEventListener('click', () => {
         configRef.update({
             votoActivo: true, 
             tiempoFin: 0,
+            // ** LÍNEA CRUCIAL: Esto fuerza a todos los clientes a borrar su 'voted' local **
             lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
         });
         
