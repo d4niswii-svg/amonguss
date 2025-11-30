@@ -320,6 +320,13 @@ body.emergency-meeting {
     min-width: 150px;
 }
 
+/* Contenido normal de rol/color, debe ser flex para el layout original */
+#role-display-content {
+    display: flex; 
+    flex-direction: column;
+    align-items: center;
+}
+
 .panel-label {
     color: #ecf0f1;
     font-weight: 700;
@@ -375,6 +382,48 @@ body.emergency-meeting {
     font-size: 1em;
     text-shadow: none;
 }
+
+/* ** ESTILOS NUEVOS: FORMULARIO DE ASIGNACIÓN DE NOMBRE ** */
+.name-setup-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    gap: 10px;
+}
+
+.name-setup-message {
+    color: #ecf0f1;
+    font-weight: 700;
+    font-size: 0.9em;
+    text-align: center;
+}
+
+#new-player-name-input {
+    padding: 8px;
+    border-radius: 5px;
+    border: 2px solid #2c3e50;
+    font-size: 1em;
+    width: 90%;
+    text-align: center;
+}
+
+.submit-name-button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    font-weight: 900;
+    cursor: pointer;
+    color: white;
+    background-color: #27ae60; /* Verde */
+    box-shadow: 0 4px 0 #219d53;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+.submit-name-button:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #219d53;
+}
+/* ** FIN ESTILOS NUEVOS ** */
 
 
 /* --- NOTIFICACIÓN DE ROL GIGANTE (NEON) --- */
@@ -520,8 +569,6 @@ body.emergency-meeting {
 .admin-btn-resolve-vote { background-color: #f39c12; } 
 /* *** NUEVO ESTILO: Botón de Limpiar Votación Actual *** */
 .admin-btn-clear-vote { background-color: #3498db; } 
-/* *** NUEVO ESTILO: Botón de Toggle Reunión de Emergencia *** */
-.admin-btn-toggle-meeting { background-color: #e67e22; flex-basis: 100%; }
 
 .admin-btn-reset { background-color: #c0392b; }
 .admin-btn-permit-vote { background-color: #9b59b6; flex-basis: 100%; }
@@ -557,11 +604,6 @@ body.emergency-meeting {
     color: var(--color-neón-rojo);
     text-decoration: line-through;
 }
-/* *** NUEVO ESTILO: Participante Expulsado en la lista Admin *** */
-.user-index-name.expelled-admin-list {
-    color: #e67e22; /* Naranja/advertencia */
-    font-style: italic;
-}
 
 .user-role-admin {
     display: inline-block;
@@ -590,8 +632,6 @@ body.emergency-meeting {
 .role-btn { flex-basis: 48%; padding: 5px 8px; border: none; border-radius: 5px; font-size: 0.75em; font-weight: 700; cursor: pointer; color: white; box-shadow: 0 2px 0 rgba(0,0,0,0.5); }
 .role-btn.tripulante { background-color: #1abc9c; }
 .role-btn.impostor { background-color: #e74c3c; }
-/* *** NUEVO ESTILO: Botón de Expulsar/Kick *** */
-.kick-btn { flex-basis: 30%; padding: 5px; border: none; border-radius: 5px; font-size: 0.75em; font-weight: 700; cursor: pointer; color: white; background-color: #e74c3c; box-shadow: 0 2px 0 #c0392b; }
 
 .color-assignment {
     display: flex;
