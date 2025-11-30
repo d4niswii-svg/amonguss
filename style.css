@@ -520,6 +520,8 @@ body.emergency-meeting {
 .admin-btn-resolve-vote { background-color: #f39c12; } 
 /* *** NUEVO ESTILO: Botón de Limpiar Votación Actual *** */
 .admin-btn-clear-vote { background-color: #3498db; } 
+/* *** NUEVO ESTILO: Botón de Toggle Reunión de Emergencia *** */
+.admin-btn-toggle-meeting { background-color: #e67e22; flex-basis: 100%; }
 
 .admin-btn-reset { background-color: #c0392b; }
 .admin-btn-permit-vote { background-color: #9b59b6; flex-basis: 100%; }
@@ -555,6 +557,11 @@ body.emergency-meeting {
     color: var(--color-neón-rojo);
     text-decoration: line-through;
 }
+/* *** NUEVO ESTILO: Participante Expulsado en la lista Admin *** */
+.user-index-name.expelled-admin-list {
+    color: #e67e22; /* Naranja/advertencia */
+    font-style: italic;
+}
 
 .user-role-admin {
     display: inline-block;
@@ -583,6 +590,8 @@ body.emergency-meeting {
 .role-btn { flex-basis: 48%; padding: 5px 8px; border: none; border-radius: 5px; font-size: 0.75em; font-weight: 700; cursor: pointer; color: white; box-shadow: 0 2px 0 rgba(0,0,0,0.5); }
 .role-btn.tripulante { background-color: #1abc9c; }
 .role-btn.impostor { background-color: #e74c3c; }
+/* *** NUEVO ESTILO: Botón de Expulsar/Kick *** */
+.kick-btn { flex-basis: 30%; padding: 5px; border: none; border-radius: 5px; font-size: 0.75em; font-weight: 700; cursor: pointer; color: white; background-color: #e74c3c; box-shadow: 0 2px 0 #c0392b; }
 
 .color-assignment {
     display: flex;
