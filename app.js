@@ -372,7 +372,7 @@ function showVictoryScreen(mensaje, ganador) {
     // 3. Renderizar Tripulantes (Para el contraste)
     crewmateListContainer.innerHTML = tripulantes.map(p => 
         `<div class="final-player-item crewmate"><div class="voto-crewmate-icon ${p.color}"></div>${p.nombre}</div>`
-    ).join('');
+        ).join('');
     
     // 4. Mostrar la pantalla
     victoryPopup.style.display = 'flex';
@@ -1007,6 +1007,7 @@ function asignarNombre(userId, nombre) {
     
     // *** MODIFICACIÓN CLAVE: Si el admin asigna un nombre, se guarda en LocalStorage de ese cliente ***
     if (userId === ANONYMOUS_USER_ID) {
+         // Si el admin pone SIN NOMBRE o cadena vacía, se borra localmente para forzar el formulario al recargar.
          localStorage.setItem('amongus_username', newName === 'SIN NOMBRE' ? '' : newName); 
     }
     
