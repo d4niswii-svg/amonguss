@@ -60,6 +60,12 @@ const expulsionMessage = document.getElementById('expulsion-message');
 const personalRolePanel = document.getElementById('personal-role-panel');
 const myCrewmateIcon = document.getElementById('my-crewmate-icon');
 const myRoleDisplay = document.getElementById('my-role-display');
+// ** NUEVAS REFERENCIAS PARA ASIGNACIÓN DE NOMBRE INICIAL **
+const roleDisplayContent = document.getElementById('role-display-content'); // Nuevo contenedor para el contenido normal
+const nameSetupForm = document.getElementById('name-setup-form');
+const nameSetupMessage = document.getElementById('name-setup-message');
+const newPlayerNameInput = document.getElementById('new-player-name-input');
+const submitNameButton = document.getElementById('submit-name-button');
 
 // REFERENCIAS DE ID/NOMBRE
 const userIdDisplay = document.getElementById('user-id-display');
@@ -69,8 +75,6 @@ const userNameDisplay = document.getElementById('user-name-display-top');
 const assignRolesButton = document.getElementById('assign-roles-button');
 // ** NUEVA REFERENCIA: Voto Secreto **
 const toggleSecretVoteButton = document.getElementById('toggle-secret-vote-button');
-// ** NUEVA REFERENCIA: Toggle Reunión de Emergencia **
-const toggleMeetingButton = document.getElementById('toggle-meeting-button');
 
 // ** NUEVAS REFERENCIAS DE UI MODAL **
 const votingModalContainer = document.getElementById('voting-modal-container');
@@ -107,19 +111,12 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
     const votosDetalle = votosDetalleSnapshot.val() || {};
     const participantesData = participantesCache; 
     
-    // ** NUEVO: Obtener mapa de color a nombre **
-    const colorToNameMap = {};
-    Object.values(participantesData).forEach(p => {
-        if (p.color && coloresTripulantes.includes(p.color) && p.nombre) {
-            colorToNameMap[p.color] = p.nombre.toUpperCase();
-        }
-    });
-
     // ** NUEVO: Leer si el voto es secreto **
     let isSecretVote = false;
-    // Esto se lee una vez, pero el listener de config ya lo tiene actualizado
-    const configSnapshot = configRef.get() || {};
-    isSecretVote = configSnapshot.val() ? configSnapshot.val().votoSecreto || false : false;
+    configRef.once('value').then(snap => {
+        // *** MODIFICACIÓN: isSecretVote se activa siempre que esté configurado como ON ***
+        isSecretVote = snap.val() ? snap.val().votoSecreto || false : false;
+    });
 
     let maxVotos = -1;
     let jugadorMasVotado = null;
@@ -134,7 +131,6 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
         const botonElement = document.getElementById(`votar-${color}`);
         const contadorElement = document.getElementById(`voto-iconos-${color}`); // Contenedor de iconos
         const crewmateIcon = botonElement ? botonElement.querySelector('.crewmate-icon') : null; // Icono grande del jugador
-        const nombreElement = botonElement ? botonElement.querySelector('.nombre') : null; // *** NUEVA REFERENCIA DE NOMBRE ***
 
         // 2. Aplicar estilo de eliminado
         if (jugadores[color] && jugadores[color].eliminado === true && botonElement) {
@@ -184,23 +180,12 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
                  });
              }
         }
-        
-        // 6. *** NUEVO: Mostrar nombre del participante en el botón ***
-        if (nombreElement) {
-            if (color === 'skip') {
-                nombreElement.textContent = 'SALTAR VOTO';
-            } else {
-                // Usa el nombre asignado en caché o el color por defecto
-                const nombreAsignado = colorToNameMap[color] || color.toUpperCase();
-                nombreElement.textContent = nombreAsignado;
-            }
-        }
     }
 
-    // 7. Mostrar el resultado (Líder Actual)
+    // 6. Mostrar el resultado (Líder Actual)
     let liderTexto = jugadorMasVotado === "EMPATE" 
         ? "EMPATE" 
-        : jugadorMasVotado ? colorToNameMap[jugadorMasVotado] || jugadorMasVotado.toUpperCase() : "NADIE";
+        : jugadorMasVotado ? jugadorMasVotado.toUpperCase() : "NADIE";
         
     if (totalVotos === 0) {
          resultadoFinalElement.style.display = 'none';
@@ -231,16 +216,19 @@ votosDetalleRef.on('value', (snapshot) => {
 // ** LÓGICA DE VISIBILIDAD DE MODAL DE VOTACIÓN **
 // =========================================================
 
-// Ya no se usan, la visibilidad la controla el panel de restricción o el Admin
-// function showVotingModal() { votingModalContainer.style.display = 'flex'; }
-// function hideVotingModal() { votingModalContainer.style.display = 'none'; }
+// *** MODIFICACIÓN: Ya no se usan, la visibilidad la controla el panel de restricción ***
+function showVotingModal() {
+    votingModalContainer.style.display = 'flex';
+}
+function hideVotingModal() {
+    // Si la votación se cierra, el modal se oculta
+    votingModalContainer.style.display = 'none';
+}
 
 
 // =========================================================
 // LÓGICA DE RESULTADOS (SOLO PARA ADMIN)
 // =========================================================
-
-// ... (obtenerJugadorMasVotado, showExpulsionResult y verificarFinDePartida sin cambios) ...
 
 function obtenerJugadorMasVotado(jugadoresData) {
     let maxVotos = -1;
@@ -435,48 +423,33 @@ function resolveVoting() {
 // *** REVISADO: Función de visibilidad de Admin simplificada y asegurada ***
 function updateAdminButtonsVisibility(config) {
 
-    // ** NUEVO: Lógica de visibilidad del modal de votación (Admin Toggle) **
-    const meetingActive = config.meetingActive !== false; // Por defecto es TRUE si no existe
-    
+    // El modal de votación ahora solo se oculta si la restricción de acceso está activa
+    if (accessRestrictionMessage.style.display !== 'flex') {
+         votingModalContainer.style.display = 'flex';
+    }
+
     if (isAdmin) {
         // Mostrar el botón de toggle del panel
         toggleAdminPanelButton.style.display = 'block';
         adminLoginButton.style.display = 'none';
 
-        // Lógica de botones de Admin dentro del panel
-        assignRolesButton.style.display = 'block';         
-        resolveVoteButton.style.display = 'block';          
-        clearVotesButton.style.display = 'block';           
-        resetButton.style.display = 'block';              
-        allowMultipleVoteButton.style.display = 'block';    
-        toggleSecretVoteButton.style.display = 'block';     
+        // Lógica de botones de Admin dentro del panel (solo para el admin)
+        // *** HACEMOS VISIBLES TODOS LOS BOTONES DE ADMIN INDEPENDIENTEMENTE DEL ESTADO DE JUEGO ***
+        assignRolesButton.style.display = 'block';         // Asignar Roles
+        resolveVoteButton.style.display = 'block';          // Resolver Votación
+        clearVotesButton.style.display = 'block';           // Limpiar Votación Actual
+        resetButton.style.display = 'block';              // Reiniciar Juego TOTAL (¡ESTE ES EL QUE QUIERES!)
+        allowMultipleVoteButton.style.display = 'block';    // Permitir Voto Múltiple
+        toggleSecretVoteButton.style.display = 'block';     // Voto Secreto
         
-        // *** NUEVO BOTÓN DE ADMIN ***
-        toggleMeetingButton.style.display = 'block';
-        toggleMeetingButton.textContent = meetingActive ? "Ocultar Reunión" : "Mostrar Reunión";
-
-
         // Actualizar texto del botón de voto secreto
         toggleSecretVoteButton.textContent = config.votoSecreto ? "Voto Secreto: ON" : "Voto Secreto: OFF";
 
 
     } else {
-         toggleAdminPanelButton.style.display = 'none'; 
-         adminPanelContainer.style.display = 'none'; 
+         toggleAdminPanelButton.style.display = 'none'; // No-admin no ve el botón de toggle
+         adminPanelContainer.style.display = 'none'; // Asegurar que el contenedor esté oculto
          adminLoginButton.style.display = 'block';
-         
-         // Si la reunión no está activa, ocultar el modal para NO-ADMINS
-         if (!meetingActive) {
-             votingModalContainer.style.display = 'none';
-             return; // Termina la lógica de visibilidad aquí si no está activo
-         }
-    }
-    
-    // El modal de votación ahora solo se oculta si la restricción de acceso está activa
-    if (accessRestrictionMessage.style.display !== 'flex') {
-         votingModalContainer.style.display = meetingActive ? 'flex' : 'none';
-    } else {
-         votingModalContainer.style.display = 'none';
     }
 }
 
@@ -611,6 +584,37 @@ botonesVoto.forEach(btn => {
 
 
 // =========================================================
+// LÓGICA DE ASIGNACIÓN DE NOMBRE INICIAL (JUGADOR)
+// =========================================================
+
+function handleNameSubmission(event) {
+    // Si es un click O si es un keyup y la tecla es Enter
+    if (event.type === 'click' || (event.type === 'keyup' && event.key === 'Enter')) {
+        const newName = newPlayerNameInput.value.trim();
+        
+        if (newName.length > 0) {
+            // Actualizar el nombre en Firebase
+            participantesRef.child(ANONYMOUS_USER_ID).update({ nombre: newName || 'SIN NOMBRE' })
+            .then(() => {
+                // Ocultar el formulario de nombre y mostrar el contenido normal (esto lo maneja el listener)
+                alert(`¡Nombre establecido como ${newName}!`);
+            })
+            .catch(error => {
+                console.error("Error al asignar nombre:", error);
+                alert("Error al asignar el nombre.");
+            });
+        } else {
+            alert("Por favor, introduce un nombre válido.");
+        }
+    }
+}
+
+// Agregar listeners para el botón y la tecla Enter en el input
+if (submitNameButton) submitNameButton.addEventListener('click', handleNameSubmission);
+if (newPlayerNameInput) newPlayerNameInput.addEventListener('keyup', handleNameSubmission);
+
+
+// =========================================================
 // LÓGICA DE PARTICIPANTES Y ROLES (CONTROL DE ACCESO Y RENDERIZADO)
 // =========================================================
 
@@ -630,11 +634,8 @@ function checkAndRestrictAccess(participantesData) {
     } else {
         accessRestrictionMessage.style.display = 'none';
         
-        // *** MODIFICACIÓN: La visibilidad del modal la controla el Admin Toggle ***
-        configRef.once('value').then(snap => {
-            const meetingActive = snap.val() ? snap.val().meetingActive !== false : true;
-             votingModalContainer.style.display = meetingActive || isAdmin ? 'flex' : 'none'; 
-        });
+        // *** MODIFICACIÓN: Mostrar el modal si el acceso NO está restringido ***
+        votingModalContainer.style.display = 'flex'; 
         return false;
     }
 }
@@ -644,28 +645,16 @@ function checkAndRestrictAccess(participantesData) {
 function setupParticipantTracking() {
     const userRef = participantesRef.child(ANONYMOUS_USER_ID);
     
-    userRef.once('value').then(snap => {
-         const p = snap.val();
-         
-         // *** NUEVO: Bloqueo para expulsados ***
-         if (p && p.isExpelled) {
-             alert("Has sido expulsado por el administrador y no puedes reconectarte hasta un reinicio total.");
-             userRef.onDisconnect().cancel(); // Cancela el onDisconnect
-             return; 
-         }
-         
-         // Si el usuario se conecta o refresca
-         userRef.onDisconnect().update({ conectado: false });
-         
-         // Pone un valor inicial si es la primera vez que se conecta
-         userRef.set({ 
-             conectado: true,
-             ultimaConexion: Date.now(),
-             nombre: p && p.nombre || 'Participante (Sesión temporal)', // Preservar nombre si existe
-             rol: p && p.rol || 'sin asignar', // Preservar rol si existe
-             color: p && p.color || null, // Preservar color si existe
-             isExpelled: false // Asegurar que el campo existe y es false
-         });
+    // Si el usuario se conecta o refresca
+    userRef.onDisconnect().update({ conectado: false });
+    
+    // Pone un valor inicial si es la primera vez que se conecta
+    userRef.set({ 
+        conectado: true,
+        ultimaConexion: Date.now(),
+        nombre: 'Participante (Sesión temporal)', // Nombre por defecto para la comprobación
+        rol: 'sin asignar',
+        color: null
     });
 }
 
@@ -674,56 +663,76 @@ function setupParticipantTracking() {
 participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
     const participante = snapshot.val();
     
-    if (participante) {
-        
-        // FIX: Mostrar Nombre de usuario en la esquina superior
-        const nombreMostrado = participante.nombre || 'Incognito';
-        if (userNameDisplay) userNameDisplay.textContent = `Tu Nombre: ${nombreMostrado}`;
-
-
-        // --- LÓGICA DE NOTIFICACIÓN DE ROL GIGANTE ---
-        if (participante.rol && participante.rol !== 'sin asignar') {
-             showRoleNotification(participante.rol);
-        }
-        // ----------------------------------------------------
-        
-        
-        // --- LÓGICA DE PANEL PERSONAL ---
-        myCrewmateIcon.classList.remove(...coloresTripulantes);
-        myCrewmateIcon.classList.remove('skip');
-        
-        const tieneColor = participante.color && coloresTripulantes.includes(participante.color);
-
-        if (tieneColor) {
-            personalRolePanel.style.display = 'flex';
-            myCrewmateIcon.classList.add(participante.color);
-            
-            // 1. Mostrar Rol
-            myRoleDisplay.classList.remove('crewmate', 'impostor', 'sin-asignar');
-            if (participante.rol === 'impostor') {
-                myRoleDisplay.classList.add('impostor');
-                myRoleDisplay.textContent = 'IMPOSTOR';
-            } else if (participante.rol === 'tripulante') {
-                myRoleDisplay.classList.add('crewmate');
-                myRoleDisplay.textContent = 'TRIPULANTE';
-            } else if (participante.rol === 'expulsado') {
-                 myRoleDisplay.classList.add('sin-asignar');
-                 myRoleDisplay.textContent = 'ELIMINADO';
-            } else {
-                 myRoleDisplay.classList.add('sin-asignar');
-                 myRoleDisplay.textContent = 'SIN ASIGNAR';
-            }
-            
-        } else {
-             // Mostrar el panel, pero con el crewmate gris/skip y el mensaje de 'SIN ASIGNAR'
-             personalRolePanel.style.display = 'flex';
-             myCrewmateIcon.classList.add('skip');
-             myRoleDisplay.classList.remove('crewmate', 'impostor');
-             myRoleDisplay.classList.add('sin-asignar');
-             myRoleDisplay.textContent = 'SIN COLOR';
-        }
-    } else {
+    if (!participante) {
          personalRolePanel.style.display = 'none';
+         return;
+    }
+    
+    personalRolePanel.style.display = 'flex';
+    
+    // ** LÓGICA DE FORMULARIO DE NOMBRE INICIAL **
+    const tieneColor = participante.color && coloresTripulantes.includes(participante.color);
+    // Comprueba si el nombre es el por defecto O el que asigna el admin si está vacío
+    const esNombrePorDefecto = participante.nombre === 'Participante (Sesión temporal)' || participante.nombre === 'SIN NOMBRE'; 
+
+    // Si tiene color Y tiene el nombre por defecto, mostramos el formulario
+    if (tieneColor && esNombrePorDefecto) {
+        // Mostrar formulario de nombre y ocultar contenido normal
+        nameSetupMessage.textContent = `¡Eres el color ${participante.color.toUpperCase()}! Escribe tu nombre:`;
+        newPlayerNameInput.value = ''; // Limpiar input
+        nameSetupForm.style.display = 'flex';
+        roleDisplayContent.style.display = 'none'; // Ocultar el contenido normal
+        newPlayerNameInput.focus();
+        return; // Salir, la lógica de abajo es para el estado normal
+    } else {
+        // Ocultar formulario de nombre y asegurar que el contenido normal se muestra
+        nameSetupForm.style.display = 'none';
+        roleDisplayContent.style.display = 'flex';
+    }
+    // ** FIN LÓGICA DE FORMULARIO DE NOMBRE INICIAL **
+    
+    
+    // FIX: Mostrar Nombre de usuario en la esquina superior
+    const nombreMostrado = participante.nombre || 'Incognito';
+    if (userNameDisplay) userNameDisplay.textContent = `Tu Nombre: ${nombreMostrado}`;
+
+
+    // --- LÓGICA DE NOTIFICACIÓN DE ROL GIGANTE ---
+    if (participante.rol && participante.rol !== 'sin asignar') {
+         showRoleNotification(participante.rol);
+    }
+    // ----------------------------------------------------
+    
+    
+    // --- LÓGICA DE PANEL PERSONAL (Contenido normal) ---
+    myCrewmateIcon.classList.remove(...coloresTripulantes);
+    myCrewmateIcon.classList.remove('skip');
+    
+    if (tieneColor) {
+        myCrewmateIcon.classList.add(participante.color);
+        
+        // 1. Mostrar Rol
+        myRoleDisplay.classList.remove('crewmate', 'impostor', 'sin-asignar');
+        if (participante.rol === 'impostor') {
+            myRoleDisplay.classList.add('impostor');
+            myRoleDisplay.textContent = 'IMPOSTOR';
+        } else if (participante.rol === 'tripulante') {
+            myRoleDisplay.classList.add('crewmate');
+            myRoleDisplay.textContent = 'TRIPULANTE';
+        } else if (participante.rol === 'expulsado') {
+             myRoleDisplay.classList.add('sin-asignar');
+             myRoleDisplay.textContent = 'ELIMINADO';
+        } else {
+             myRoleDisplay.classList.add('sin-asignar');
+             myRoleDisplay.textContent = 'SIN ASIGNAR';
+        }
+        
+    } else {
+         // Mostrar el panel, pero con el crewmate gris/skip y el mensaje de 'SIN ASIGNAR'
+         myCrewmateIcon.classList.add('skip');
+         myRoleDisplay.classList.remove('crewmate', 'impostor');
+         myRoleDisplay.classList.add('sin-asignar');
+         myRoleDisplay.textContent = 'SIN COLOR';
     }
 });
 
@@ -732,9 +741,6 @@ participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
 function updateParticipantDisplay(participantesData) {
     // 1. CONTROL DE ACCESO (para todos)
     checkAndRestrictAccess(participantesData); 
-    
-    // Almacenar el caché globalmente
-    participantesCache = participantesData || {}; 
     
     if (!isAdmin) {
         participantListContainer.innerHTML = '<p class="admin-message">Inicia sesión como Admin para ver la lista.</p>';
@@ -747,7 +753,7 @@ function updateParticipantDisplay(participantesData) {
     
     const participantesArray = Object.entries(participantesData || {})
         .map(([id, data]) => ({ id, ...data }))
-        .sort((a, b) => (b.conectado - a.conectado)); // Conectados primero
+        .filter(p => p.conectado === true); 
     
     if (participantesArray.length === 0) {
         participantListContainer.innerHTML = '<p class="admin-message">No hay participantes conectados actualmente.</p>';
@@ -755,9 +761,6 @@ function updateParticipantDisplay(participantesData) {
     }
 
     participantesArray.forEach(p => {
-        // Ocultar si está desconectado Y no es expulsado
-        if (p.conectado === false && !p.isExpelled) return; 
-
         const nombreMostrado = p.nombre || `Participante ${index}`;
         
         const pElement = document.createElement('div');
@@ -774,11 +777,10 @@ function updateParticipantDisplay(participantesData) {
         
         const statusText = jugadorEliminado ? ' (ELIMINADO)' : '';
         const roleAndColorText = `${p.rol ? p.rol.toUpperCase() : 'SIN ASIGNAR'} (${p.color || 'N/A'})`;
-        const expulsionText = p.isExpelled ? ' (EXPULSADO)' : (p.conectado ? '' : ' (DESC.)');
 
 
         pElement.innerHTML = `
-            <span class="user-index-name ${p.conectado ? 'online' : 'offline'} ${jugadorEliminado ? 'ejected-player' : ''} ${p.isExpelled ? 'expelled-admin-list' : ''}">${index}. <strong>${nombreMostrado}</strong> ${statusText} ${expulsionText}</span>
+            <span class="user-index-name online ${jugadorEliminado ? 'ejected-player' : ''}">${index}. <strong>${nombreMostrado}</strong> ${statusText}</span>
             <span class="user-role-admin">${roleAndColorText}</span>
             <span class="user-id-text">(ID: ${p.id})</span>
             
@@ -787,21 +789,19 @@ function updateParticipantDisplay(participantesData) {
                 <button class="name-btn" data-id="${p.id}">Asignar Nombre</button>
                 <div class="color-assignment">
                     ${coloresTripulantes.map(color => `
-                        <button class="color-btn ${color}" data-id="${p.id}" data-color="${color}" ${p.color === color ? 'disabled' : ''} ${p.isExpelled ? 'disabled' : ''}>${color.charAt(0).toUpperCase()}</button>
+                        <button class="color-btn ${color}" data-id="${p.id}" data-color="${color}" ${p.color === color ? 'disabled' : ''}>${color.charAt(0).toUpperCase()}</button>
                     `).join('')}
-                    <button class="color-btn skip" data-id="${p.id}" data-color="null" ${p.color === undefined || p.color === null ? 'disabled' : ''} ${p.isExpelled ? 'disabled' : ''}>X</button>
+                    <button class="color-btn skip" data-id="${p.id}" data-color="null" ${p.color === undefined || p.color === null ? 'disabled' : ''}>X</button>
                 </div>
-                <button class="role-btn tripulante" data-id="${p.id}" data-rol="tripulante" ${jugadorEliminado || p.isExpelled ? 'disabled' : ''}>Tripulante</button>
-                <button class="role-btn impostor" data-id="${p.id}" data-rol="impostor" ${jugadorEliminado || p.isExpelled ? 'disabled' : ''}>Impostor</button>
-                <!-- *** NUEVO BOTÓN DE EXPULSIÓN *** -->
-                <button class="kick-btn" data-id="${p.id}" ${p.isExpelled ? 'disabled' : ''}>${p.isExpelled ? 'Expulsado' : 'Expulsar'}</button>
+                <button class="role-btn tripulante" data-id="${p.id}" data-rol="tripulante" ${jugadorEliminado ? 'disabled' : ''}>Tripulante</button>
+                <button class="role-btn impostor" data-id="${p.id}" data-rol="impostor" ${jugadorEliminado ? 'disabled' : ''}>Impostor</button>
             </div>
         `;
         participantListContainer.appendChild(pElement);
         index++;
     });
     
-    // 4. Agregar listeners para roles, nombres y colores y **KICK**
+    // 4. Agregar listeners para roles, nombres y colores
     document.querySelectorAll('.role-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             asignarRol(e.target.dataset.id, e.target.dataset.rol);
@@ -821,13 +821,6 @@ function updateParticipantDisplay(participantesData) {
             const userId = e.target.dataset.id;
             const color = e.target.dataset.color === 'null' ? null : e.target.dataset.color;
             asignarColor(userId, color);
-        });
-    });
-    
-    // *** NUEVO LISTENER: KICK ***
-    document.querySelectorAll('.kick-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            kickParticipant(e.target.dataset.id);
         });
     });
 }
@@ -876,20 +869,8 @@ function asignarRol(userId, rol) {
 // 5. Función de asignación de nombre (para el ADMIN)
 function asignarNombre(userId, nombre) {
     if (!isAdmin) return;
-    participantesRef.child(userId).update({ nombre: nombre.trim() || 'SIN NOMBRE' });
-}
-
-// *** NUEVA FUNCIÓN: EXPULSAR PARTICIPANTE ***
-function kickParticipant(userId) {
-    if (!isAdmin) return;
-    if (confirm("¿Estás seguro de que quieres EXPULSAR a este participante? No podrá reconectarse hasta un Reinicio Total.")) {
-        participantesRef.child(userId).update({ 
-            conectado: false, 
-            isExpelled: true 
-        }).then(() => {
-            alert(`El usuario ID: ${userId} ha sido expulsado.`);
-        });
-    }
+    // Si el admin borra el nombre, se pone 'SIN NOMBRE' para que active la solicitud
+    participantesRef.child(userId).update({ nombre: nombre.trim() || 'SIN NOMBRE' }); 
 }
 
 // Inicializar el rastreo de participantes al cargar
@@ -928,8 +909,8 @@ adminLoginButton.addEventListener('click', () => {
         adminPanelContainer.style.display = 'flex';
         toggleAdminPanelButton.textContent = 'Ocultar Panel Admin';
         
-        // *** MODIFICACIÓN: Mostrar el modal de votación al ser admin (la lógica de meetingActive lo maneja) ***
-        // votingModalContainer.style.display = 'flex'; 
+        // *** MODIFICACIÓN: Mostrar el modal de votación al ser admin ***
+        votingModalContainer.style.display = 'flex'; 
         
         alert('¡Acceso de administrador concedido!');
     } else if (password !== null) {
@@ -953,23 +934,15 @@ resolveVoteButton.addEventListener('click', () => {
 
         const eliminaciones = {};
         coloresNoAsignados.forEach(color => {
-             // Solo eliminar si NO está ya eliminado (para evitar sobrescribir con el mismo valor)
-             if (!(currentJugadoresSnapshot.val()[color] && currentJugadoresSnapshot.val()[color].eliminado)) {
-                 eliminaciones[`${color}/eliminado`] = true;
-             }
+             eliminaciones[`${color}/eliminado`] = true;
         });
 
         // 1. Aplicar eliminaciones en la base de datos (jugadores)
-        if (Object.keys(eliminaciones).length > 0) {
-            jugadoresRef.update(eliminaciones).then(() => {
-                // 2. Resolver la votación
-                estadoRef.update({ mensaje: "¡RESOLVIENDO VOTACIÓN! Analizando resultados..." });
-                resolveVoting(); // Llama a la nueva función de resolución
-            });
-        } else {
-             estadoRef.update({ mensaje: "¡RESOLVIENDO VOTACIÓN! Analizando resultados..." });
-             resolveVoting();
-        }
+        jugadoresRef.update(eliminaciones).then(() => {
+            // 2. Resolver la votación
+            estadoRef.update({ mensaje: "¡RESOLVIENDO VOTACIÓN! Analizando resultados..." });
+            resolveVoting(); // Llama a la nueva función de resolución
+        });
     });
 });
 
@@ -1017,11 +990,9 @@ resetButton.addEventListener('click', () => {
         participantesRef.once('value').then(snapshot => {
             const updates = {};
             snapshot.forEach(childSnapshot => {
-                // *** AGREGADO: isExpelled: false en el reset total ***
                 updates[`${childSnapshot.key}/rol`] = 'sin asignar';
                 updates[`${childSnapshot.key}/color`] = null; // Limpiar color
-                updates[`${childSnapshot.key}/isExpelled`] = false; 
-                updates[`${childSnapshot.key}/conectado`] = false; // Forzar a reconectar para limpiar sesión
+                // NOTA: Se mantiene el nombre asignado por el usuario o admin, si lo hubiera.
             });
             participantesRef.update(updates);
         });
@@ -1030,13 +1001,11 @@ resetButton.addEventListener('click', () => {
          configRef.update({ 
              votoActivo: false, // Se mantiene como false ya que la votación no tiene fin
              tiempoFin: 0,
-             votoSecreto: false, // Resetear voto secreto
-             meetingActive: true, // Resetear a visible
              lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
          });
 
          estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Asigna roles y color!" });
-         alert("Juego reiniciado. Todos los jugadores están de vuelta, sus roles y colores fueron borrados. ¡Jugadores expulsados pueden unirse de nuevo!");
+         alert("Juego reiniciado. Todos los jugadores están de vuelta, sus roles y colores fueron borrados.");
     });
 });
 
@@ -1048,7 +1017,7 @@ assignRolesButton.addEventListener('click', () => {
 
     // 1. Obtener los jugadores que tienen color asignado (activos)
     const jugadoresActivos = Object.entries(participantesCache)
-        .filter(([id, p]) => p.color && coloresTripulantes.includes(p.color) && !p.isExpelled); // Excluir expulsados
+        .filter(([id, p]) => p.color && coloresTripulantes.includes(p.color));
 
     if (jugadoresActivos.length < 2) {
         alert("Se necesitan al menos 2 jugadores con color asignado para iniciar la asignación de roles.");
@@ -1105,16 +1074,5 @@ toggleSecretVoteButton.addEventListener('click', () => {
         const currentStatus = snap.val() || false;
         configRef.child('votoSecreto').set(!currentStatus);
         alert(`Voto Secreto ha sido ${!currentStatus ? 'ACTIVADO' : 'DESACTIVADO'}.`);
-    });
-});
-
-// ** NUEVO: Toggle Reunión de Emergencia **
-toggleMeetingButton.addEventListener('click', () => {
-    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
-    
-    configRef.child('meetingActive').once('value').then(snap => {
-        const currentStatus = snap.val() !== false; // Default a TRUE
-        configRef.child('meetingActive').set(!currentStatus);
-        alert(`Reunión de Emergencia ha sido ${!currentStatus ? 'MOSTRADA' : 'OCULTADA'}.`);
     });
 });
