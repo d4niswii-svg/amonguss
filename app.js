@@ -108,6 +108,10 @@ const userNameDisplay = document.getElementById('user-name-display-top');
 const assignRolesButton = document.getElementById('assign-roles-button');
 // ** NUEVA REFERENCIA: Voto Secreto **
 const toggleSecretVoteButton = document.getElementById('toggle-secret-vote-button');
+// ** NUEVA REFERENCIA INTELIGENTE: Predicción **
+const aiPredictButton = document.getElementById('ai-predict-button'); 
+const aiPredictionMessage = document.getElementById('ai-prediction-message');
+
 
 // ** NUEVAS REFERENCIAS DE UI MODAL **
 const votingModalContainer = document.getElementById('voting-modal-container');
@@ -504,6 +508,42 @@ function resolveVoting() {
     });
 }
 
+// ** LÓGICA INTELIGENTE: PREDICCIÓN DE IMPOSTOR **
+function suggestImpostor() {
+    if (!isAdmin || !aiPredictionMessage || !participantesCache) return;
+
+    // 1. Filtrar jugadores activos (aprobados, no eliminados)
+    const jugadoresActivos = Object.entries(participantesCache)
+        .map(([id, p]) => ({ id, ...p }))
+        .filter(p => p.status === 'approved' && p.color && coloresTripulantes.includes(p.color));
+
+    if (jugadoresActivos.length === 0) {
+        aiPredictionMessage.textContent = 'No hay jugadores activos para predecir.';
+        aiPredictionMessage.style.display = 'block';
+        return;
+    }
+
+    // 2. "AI" Algoritmo Simple: El jugador con la conexión más antigua (más tiempo en el juego sin actividad).
+    // Esto simula que el Impostor es el más "calmado" y conectado.
+    const jugadorMasViejo = jugadoresActivos.reduce((prev, current) => {
+        return (prev.ultimaConexion < current.ultimaConexion) ? prev : current;
+    });
+
+    const nombre = jugadorMasViejo.nombre || jugadorMasViejo.color.toUpperCase();
+    const color = jugadorMasViejo.color.toUpperCase();
+    const tiempo = Math.floor((Date.now() - jugadorMasViejo.ultimaConexion) / 60000); // Minutos
+
+    aiPredictionMessage.innerHTML = `
+        <p>📊 **PREDICCIÓN ESTADÍSTICA:** El jugador con la conexión más antigua (hace ${tiempo} minutos) es:</p>
+        <div class="prediction-result ${jugadorMasViejo.color}">${nombre} (${color})</div>
+        <p>⚠️ Cuidado: ¡Podría ser el Impostor más tranquilo!</p>
+    `;
+    aiPredictionMessage.style.display = 'block';
+
+    setTimeout(() => {
+        aiPredictionMessage.style.display = 'none';
+    }, 15000); // Mostrar por 15 segundos
+}
 
 // *** REVISADO: Función de visibilidad de Admin simplificada y asegurada ***
 function updateAdminButtonsVisibility(config) {
@@ -528,7 +568,7 @@ function updateAdminButtonsVisibility(config) {
              toggleSecretVoteButton.style.display = 'block';     
              toggleSecretVoteButton.textContent = config.votoSecreto ? "Voto Secreto: ON" : "Voto Secreto: OFF";
         }
-
+        if (aiPredictButton) aiPredictButton.style.display = 'block'; // <-- NUEVO
 
     } else {
          if (toggleAdminPanelButton) toggleAdminPanelButton.style.display = 'none'; 
@@ -559,20 +599,27 @@ function votar(personaje) {
         const participante = participanteSnap.val();
         const miColor = participante ? participante.color : null;
         const miRol = participante ? participante.rol : null; 
+        const miStatus = participante ? participante.status : 'pending'; // <-- OBTENER STATUS
         
-        // --- RESTRICCIÓN 1: Solo jugadores con color asignado (rojo, azul, etc.) pueden votar ---
+        // --- RESTRICCIÓN 1: Debe estar APROBADO ---
+        if (miStatus !== 'approved') {
+            alert('No puedes votar. El administrador debe aprobar tu solicitud primero.');
+            return;
+        }
+
+        // --- RESTRICCIÓN 2: Solo jugadores con color asignado (rojo, azul, etc.) pueden votar ---
         if (!miColor || !coloresTripulantes.includes(miColor)) {
             alert('No puedes votar. El administrador debe asignarte un color de jugador (rojo, azul, etc.).');
             return;
         }
         
-        // --- RESTRICCIÓN 2: Solo jugadores con ROL asignado (no 'sin asignar' ni 'expulsado') ---
+        // --- RESTRICCIÓN 3: Solo jugadores con ROL asignado (no 'sin asignar' ni 'expulsado') ---
          if (!miRol || miRol === 'sin asignar' || miRol === 'expulsado') {
              alert(`No puedes votar. Tu estado actual es ${miRol ? miRol.toUpperCase() : 'SIN ASIGNAR'}.`);
              return;
          }
 
-        // --- RESTRICCIÓN 3: Jugador eliminado no puede votar ---
+        // --- RESTRICCIÓN 4: Jugador eliminado no puede votar ---
         jugadoresRef.child(miColor).once('value').then(jugadorSnap => {
             if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
                 alert(`¡Tu personaje (${miColor.toUpperCase()}) ha sido ELIMINADO! No puedes emitir más votos.`);
@@ -589,44 +636,50 @@ function performVoteChecks(personaje) {
     
     // ** CHEQUEO DE VOTO ÚNICO (BASADO EN FIREBASE) **
     votosDetalleRef.child(ANONYMOUS_USER_ID).once('value').then(votoSnap => {
-        if (votoSnap.exists()) {
-             alert('¡Ya has emitido tu voto en esta ronda!');
-             return;
-        }
-        
-        const votoRef = (personaje === 'skip') 
-            ? jugadoresRef.child('skip/votos') 
-            : jugadoresRef.child(`${personaje}/votos`);
-        
-        const performVote = () => {
-             // 1. Voto en el contador total
-             votoRef.transaction(function (currentVotes) {
-                return (currentVotes || 0) + 1;
-            });
+        configRef.child('lastVoteClearSignal').once('value').then(configSnap => {
+            const lastClearTime = configSnap.val() || 0;
+            const myVoteTime = votoSnap.exists() ? votoSnap.val().tiempo : 0;
             
-            // 2. Voto en el detalle (para los iconos y el voto único)
-            votosDetalleRef.child(ANONYMOUS_USER_ID).set({
-                voto: personaje,
-                tiempo: Date.now()
-            });
+            // Si ya votó en esta ronda (el tiempo de su voto es posterior a la última limpieza)
+            if (myVoteTime > lastClearTime) {
+                 alert('¡Ya has emitido tu voto en esta ronda!');
+                 return;
+            }
             
-            if (botonesVoto) botonesVoto.forEach(btn => btn.disabled = true);
-            if (votoConfirmadoElement) votoConfirmadoElement.style.display = 'block';
-            setTimeout(() => { if (votoConfirmadoElement) votoConfirmadoElement.style.display = 'none'; }, 3000);
-        }
+            const votoRef = (personaje === 'skip') 
+                ? jugadoresRef.child('skip/votos') 
+                : jugadoresRef.child(`${personaje}/votos`);
+            
+            const performVote = () => {
+                 // 1. Voto en el contador total
+                 votoRef.transaction(function (currentVotes) {
+                    return (currentVotes || 0) + 1;
+                });
+                
+                // 2. Voto en el detalle (para los iconos y el voto único)
+                votosDetalleRef.child(ANONYMOUS_USER_ID).set({
+                    voto: personaje,
+                    tiempo: firebase.database.ServerValue.TIMESTAMP // Usar tiempo del servidor
+                });
+                
+                if (botonesVoto) botonesVoto.forEach(btn => btn.disabled = true);
+                if (votoConfirmadoElement) votoConfirmadoElement.style.display = 'block';
+                setTimeout(() => { if (votoConfirmadoElement) votoConfirmadoElement.style.display = 'none'; }, 3000);
+            }
 
-        // Si vota por alguien que ya está eliminado (excluyendo 'skip')
-        if (personaje !== 'skip') {
-            jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
-                if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
-                    alert(`¡${personaje.toUpperCase()} ya ha sido eliminado! No puedes votar por él.`);
-                    return;
-                }
+            // Si vota por alguien que ya está eliminado (excluyendo 'skip')
+            if (personaje !== 'skip') {
+                jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
+                    if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
+                        alert(`¡${personaje.toUpperCase()} ya ha sido eliminado! No puedes votar por él.`);
+                        return;
+                    }
+                    performVote();
+                });
+            } else {
                 performVote();
-            });
-        } else {
-            performVote();
-        }
+            }
+        });
     });
 }
 
@@ -638,9 +691,14 @@ if (configRef && votosDetalleRef) {
         
         participantesCache.config = config; 
         
+        // Re-habilitar botones si se permite voto múltiple (o se limpió el voto)
         votosDetalleRef.child(ANONYMOUS_USER_ID).once('value').then(votoSnap => {
             const haVotado = votoSnap.exists();
-            const puedeVotar = !haVotado; 
+            const lastClearTime = config.lastVoteClearSignal || 0;
+            const myVoteTime = votoSnap.exists() ? votoSnap.val().tiempo : 0;
+            
+            // Si el tiempo de voto es más antiguo que el último clear, puede votar de nuevo
+            const puedeVotar = !haVotado || myVoteTime < lastClearTime; 
             
             if (botonesVoto) botonesVoto.forEach(btn => {
                 btn.disabled = !puedeVotar;
@@ -736,11 +794,28 @@ function updatePlayerNamesInVotingPanel() {
 
 // Muestra el mensaje de restricción de acceso si hay 5 jugadores asignados
 function checkAndRestrictAccess(participantesData) {
-    const jugadoresConColor = Object.values(participantesData || {}).filter(p => coloresTripulantes.includes(p.color)).length;
-    const tieneColor = participantesData[ANONYMOUS_USER_ID] && coloresTripulantes.includes(participantesData[ANONYMOUS_USER_ID].color);
+    // Obtenemos el status actual del usuario
+    const myStatus = participantesData[ANONYMOUS_USER_ID] ? participantesData[ANONYMOUS_USER_ID].status : 'pending';
     
-    if (jugadoresConColor >= 5 && !tieneColor && !isAdmin) {
-        if (accessRestrictionMessage) accessRestrictionMessage.style.display = 'flex';
+    // ACCESO solo si está aprobado.
+    const tieneAcceso = myStatus === 'approved' || isAdmin; 
+    
+    // Contamos solo a los que tienen un color para el límite de 5.
+    const jugadoresConColor = Object.values(participantesData || {}).filter(p => coloresTripulantes.includes(p.color)).length;
+    
+    // Si no está aprobado O si ya hay 5 jugadores con color Y el mío no es uno de ellos.
+    if (!tieneAcceso || (jugadoresConColor >= 5 && !coloresTripulantes.includes(participantesData[ANONYMOUS_USER_ID]?.color))) {
+        
+        // Determinar el mensaje exacto
+        let restrictionText = 'Ya hay 5 jugadores con color asignado. Espera a que el administrador inicie una nueva partida.';
+        if (myStatus === 'pending') {
+            restrictionText = 'El administrador debe aceptar tu solicitud para unirte a la partida.';
+        }
+
+        if (accessRestrictionMessage) {
+            accessRestrictionMessage.style.display = 'flex';
+            accessRestrictionMessage.querySelector('p').textContent = restrictionText; // Modificar el texto
+        }
         if (votingModalContainer) votingModalContainer.style.display = 'none'; 
         const centerIdDisplay = document.getElementById('user-id-display-center');
         if(centerIdDisplay) centerIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
@@ -767,12 +842,20 @@ function setupParticipantTracking() {
     // *** MODIFICACIÓN CLAVE: Usar el nombre guardado, si existe. Si no, cadena vacía. ***
     const initialName = SAVED_USERNAME || ''; 
 
-    userRef.set({ 
+    userRef.update({ // Usar update para no sobrescribir el status si ya existe
         conectado: true,
-        ultimaConexion: Date.now(),
-        nombre: initialName, // Usa el nombre de LocalStorage
+        ultimaConexion: firebase.database.ServerValue.TIMESTAMP, // <-- Usar tiempo del servidor
+        nombre: initialName, 
         rol: 'sin asignar',
         color: null
+    }).then(() => {
+        // Establecer 'status: pending' SÓLO si es la primera vez que se conecta (para que el update anterior no lo borre)
+        userRef.child('status').transaction(currentStatus => {
+            if (currentStatus === null || currentStatus === undefined) {
+                return 'pending'; // Si no hay status, establecer 'pending'
+            }
+            return currentStatus; // Mantener el status existente ('approved', 'pending', etc.)
+        });
     });
 }
 
@@ -792,8 +875,27 @@ if (participantesRef) {
         const tieneColor = participante.color && coloresTripulantes.includes(participante.color);
         // Si el nombre está vacío o es 'SIN NOMBRE' (borrado por admin)
         const esNombreVacio = participante.nombre === '' || participante.nombre === 'SIN NOMBRE'; 
+        
+        const myStatus = participante.status || 'pending'; // Obtener el status
 
-        // Lógica de formulario de nombre inicial
+        // LÓGICA DE LOBBY: Si está Pendiente, mostrar PENDIENTE y salir.
+        if (myStatus === 'pending') {
+             if (nameSetupForm) nameSetupForm.style.display = 'none';
+             if (roleDisplayContent) roleDisplayContent.style.display = 'flex';
+             if (myCrewmateIcon) {
+                myCrewmateIcon.classList.remove(...coloresTripulantes);
+                myCrewmateIcon.classList.add('skip');
+             }
+             if (myRoleDisplay) {
+                 myRoleDisplay.classList.remove('crewmate', 'impostor');
+                 myRoleDisplay.classList.add('sin-asignar');
+                 myRoleDisplay.textContent = 'PENDIENTE'; // <-- NUEVO ESTADO LOBBY
+             }
+             if (userNameDisplay) userNameDisplay.textContent = `Tu Nombre: ${participante.nombre || 'Incognito'}`;
+             return; 
+        }
+
+        // Lógica de formulario de nombre inicial (solo si está APROBADO)
         if (tieneColor && esNombreVacio) {
             if (nameSetupMessage) nameSetupMessage.textContent = `¡Eres el color ${participante.color.toUpperCase()}! Escribe tu nombre:`;
             if (newPlayerNameInput) newPlayerNameInput.value = ''; 
@@ -867,9 +969,11 @@ function updateParticipantDisplay(participantesData) {
     if (participantListContainer) participantListContainer.innerHTML = ''; 
     let index = 1;
     
+    // Solo mostrar conectados
     const participantesArray = Object.entries(participantesData || {})
         .map(([id, data]) => ({ id, ...data }))
-        .filter(p => p.conectado === true); 
+        .filter(p => p.conectado === true)
+        .sort((a, b) => (a.status === 'pending' ? -1 : 1) || (a.ultimaConexion || 0) - (b.ultimaConexion || 0)); // Pendientes primero, luego por conexión
     
     if (participantesArray.length === 0) {
         if (participantListContainer) participantListContainer.innerHTML = '<p class="admin-message">No hay participantes conectados actualmente.</p>';
@@ -890,33 +994,45 @@ function updateParticipantDisplay(participantesData) {
             }
         }
         
+        const status = p.status || 'pending'; // Obtener el status
+        const isPending = status === 'pending'; // Bandera para Pending
+        
         const statusText = jugadorEliminado ? ' (ELIMINADO)' : '';
         const roleAndColorText = `${p.rol ? p.rol.toUpperCase() : 'SIN ASIGNAR'} (${p.color || 'N/A'})`;
+        const approvalText = isPending ? ' <span class="status-pending">(PENDIENTE)</span>' : status === 'approved' ? ' <span class="status-approved">(APROBADO)</span>' : ''; // ETIQUETA PENDIENTE/APROBADO
 
 
         pElement.innerHTML = `
-            <span class="user-index-name online ${jugadorEliminado ? 'ejected-player' : ''}">${index}. <strong>${nombreMostrado}</strong> ${statusText}</span>
+            <span class="user-index-name online ${jugadorEliminado ? 'ejected-player' : ''}">${index}. <strong>${nombreMostrado}</strong> ${statusText} ${approvalText}</span>
             <span class="user-role-admin">${roleAndColorText}</span>
             <span class="user-id-text">(ID: ${p.id})</span>
             
             <div class="admin-actions">
+                ${isPending ? 
+                    `<button class="approve-btn admin-btn-approve" data-id="${p.id}">Aceptar Jugador</button>` : '' // <-- NUEVO BOTÓN APROBAR
+                }
+                
                 <input type="text" class="name-input" data-id="${p.id}" placeholder="Nuevo Nombre" value="${p.nombre || ''}">
                 <button class="name-btn" data-id="${p.id}">Asignar Nombre</button>
-                <div class="color-assignment">
+                
+                <!-- Deshabilitar la asignación de color si está pendiente -->
+                <div class="color-assignment" style="${isPending ? 'opacity: 0.5; pointer-events: none;' : ''}"> 
                     ${coloresTripulantes.map(color => `
                         <button class="color-btn ${color}" data-id="${p.id}" data-color="${color}" ${p.color === color ? 'disabled' : ''}>${color.charAt(0).toUpperCase()}</button>
                     `).join('')}
                     <button class="color-btn skip" data-id="${p.id}" data-color="null" ${p.color === undefined || p.color === null ? 'disabled' : ''}>X</button>
                 </div>
-                <button class="role-btn tripulante" data-id="${p.id}" data-rol="tripulante" ${jugadorEliminado ? 'disabled' : ''}>Tripulante</button>
-                <button class="role-btn impostor" data-id="${p.id}" data-rol="impostor" ${jugadorEliminado ? 'disabled' : ''}>Impostor</button>
+                
+                <!-- Deshabilitar roles si está pendiente o eliminado -->
+                <button class="role-btn tripulante" data-id="${p.id}" data-rol="tripulante" ${jugadorEliminado || isPending ? 'disabled' : ''}>Tripulante</button>
+                <button class="role-btn impostor" data-id="${p.id}" data-rol="impostor" ${jugadorEliminado || isPending ? 'disabled' : ''}>Impostor</button>
                 
                 <!-- ** NUEVO BOTÓN DE ELIMINAR / MATAR ** -->
                 <button class="kill-btn admin-btn-reset" 
                         data-id="${p.id}" 
                         data-color="${p.color}" 
                         data-name="${nombreMostrado}" 
-                        ${!p.color || jugadorEliminado ? 'disabled' : ''}>
+                        ${!p.color || jugadorEliminado || isPending ? 'disabled' : ''}>
                         MATAR/ELIMINAR
                 </button>
             </div>
@@ -952,6 +1068,13 @@ function updateParticipantDisplay(participantesData) {
     document.querySelectorAll('.kill-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             adminKillPlayer(e.target.dataset.id, e.target.dataset.color, e.target.dataset.name);
+        });
+    });
+    
+    // ** NUEVO LISTENER PARA EL BOTÓN DE APROBACIÓN **
+    document.querySelectorAll('.approve-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            adminApprovePlayer(e.target.dataset.id);
         });
     });
 }
@@ -1012,6 +1135,13 @@ function asignarNombre(userId, nombre) {
     }
     
     participantesRef.child(userId).update({ nombre: newName }); 
+}
+
+// ** NUEVA FUNCIÓN: Aprueba a un jugador para que reciba color/rol **
+function adminApprovePlayer(userId) {
+    if (!isAdmin || !participantesRef) return;
+    participantesRef.child(userId).update({ status: 'approved' });
+    alert(`Jugador ${participantesCache[userId].nombre || userId} APROBADO.`);
 }
 
 // ** NUEVA FUNCIÓN: Ejecutar una muerte / eliminación de admin **
@@ -1156,7 +1286,9 @@ if (resetButton) {
         for (const color of coloresJugadores) {
             if (color === 'skip') {
                 jugadoresReset[color] = { votos: 0 };
-            } else {
+            }
+            // NO TOCAR EL ESTADO 'ELIMINADO' DE LOS COLORES NO USADOS.
+            else {
                 jugadoresReset[color] = { votos: 0, eliminado: false };
             }
         }
@@ -1169,6 +1301,7 @@ if (resetButton) {
                 snapshot.forEach(childSnapshot => {
                     updates[`${childSnapshot.key}/rol`] = 'sin asignar';
                     updates[`${childSnapshot.key}/color`] = null; 
+                    updates[`${childSnapshot.key}/status`] = 'pending'; // <-- RESETEAR A PENDIENTE
                     // No se toca el nombre para mantener la persistencia local.
                 });
                 participantesRef.update(updates);
@@ -1180,50 +1313,98 @@ if (resetButton) {
                  lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
              });
 
-             estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Asigna roles y color!" });
-             alert("Juego reiniciado. Todos los jugadores están de vuelta, sus roles y colores fueron borrados.");
+             estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Acepta jugadores y asigna roles!" });
+             alert("Juego reiniciado. Todos los jugadores están de vuelta y en la sala de espera (pending).");
         });
     });
 }
 
 /**
- * Asigna un impostor al azar y el resto como tripulantes entre los jugadores con color asignado.
+ * ** MODIFICACIÓN CLAVE: Asigna un impostor al azar, tripulantes y colores **
+ * Se asigna el color y el rol a TODOS los jugadores con status: 'approved' Y sin color.
  */
 if (assignRolesButton) {
     assignRolesButton.addEventListener('click', () => {
-        if (!isAdmin || !participantesRef || !configRef || !estadoRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
+        if (!isAdmin || !participantesRef || !configRef || !estadoRef || !jugadoresRef || !votosDetalleRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
 
-        const jugadoresActivos = Object.entries(participantesCache)
-            .filter(([id, p]) => p.color && coloresTripulantes.includes(p.color));
+        // 1. Obtener los jugadores elegibles: APROBADOS Y SIN COLOR.
+        const jugadoresElegibles = Object.entries(participantesCache)
+            .filter(([id, p]) => p.status === 'approved' && (!p.color || coloresTripulantes.includes(p.color) === false)); // Sin color o con color "skip"
 
-        if (jugadoresActivos.length < 2) {
-            alert("Se necesitan al menos 2 jugadores con color asignado para iniciar la asignación de roles.");
-            return;
+        // Obtener los colores libres (coloresTripulantes - colores ya asignados)
+        const coloresOcupados = Object.values(participantesCache)
+            .map(p => p.color)
+            .filter(c => c && coloresTripulantes.includes(c)); // Filtrar nulls, skip y no tripulantes
+
+        const coloresDisponibles = coloresTripulantes.filter(color => !coloresOcupados.includes(color));
+        const updates = {};
+
+        // 2. Asignar Colores a los elegibles (Solo si hay cupo)
+        if (jugadoresElegibles.length > 0) {
+            if (coloresDisponibles.length < jugadoresElegibles.length) {
+                alert(`Solo hay ${coloresDisponibles.length} colores disponibles, pero ${jugadoresElegibles.length} jugadores esperando. Libera un color o reinicia.`);
+                return;
+            }
+            
+            const shuffledColors = coloresDisponibles.sort(() => 0.5 - Math.random());
+            jugadoresElegibles.forEach(([id], index) => {
+                 updates[`${id}/color`] = shuffledColors[index];
+            });
         }
         
-        const numJugadores = jugadoresActivos.length;
+        // 3. Obtener todos los jugadores con color (los recién asignados + los que ya lo tenían)
+        // Aplicar los cambios de color primero para que el cache se actualice o usar la versión "futura"
+        const jugadoresConColorAhora = Object.entries({ ...participantesCache, ...updates })
+            .filter(([id, p]) => (updates[`${id}/color`] || p.color) && coloresTripulantes.includes(updates[`${id}/color`] || p.color))
+            .map(([id, p]) => ({ id, rol: p.rol, color: updates[`${id}/color`] || p.color }));
+
+        if (jugadoresConColorAhora.length < 2) {
+             alert("Se necesitan al menos 2 jugadores con color asignado para iniciar la partida.");
+             return;
+        }
+
+        // 4. Asignar Roles (a TODOS los jugadores con color de tripulante)
+        const numJugadores = jugadoresConColorAhora.length;
         let numImpostores = 1;
         if (numJugadores >= 6) numImpostores = 2;
         if (numJugadores >= 10) numImpostores = 3; 
 
-        const shuffledPlayers = jugadoresActivos.map(p => p[0]).sort(() => 0.5 - Math.random());
+        const shuffledPlayers = jugadoresConColorAhora.map(p => p.id).sort(() => 0.5 - Math.random());
         const impostorIds = shuffledPlayers.slice(0, numImpostores);
 
-        const updates = {};
-        for (const [id] of jugadoresActivos) {
+        // Asignación final de roles
+        for (const { id } of jugadoresConColorAhora) {
             const rol = impostorIds.includes(id) ? 'impostor' : 'tripulante';
             updates[`${id}/rol`] = rol;
         }
-        
+
+        // 5. Aplicar los cambios en Firebase y Reiniciar Contadores
         participantesRef.update(updates)
             .then(() => {
-                configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
-                alert(`Roles asignados: ${numImpostores} Impostor(es) y ${numJugadores - numImpostores} Tripulante(s).`);
-                estadoRef.update({ mensaje: `¡Roles asignados! ${numImpostores} Impostor(es) a bordo.` });
+                // Reiniciar contadores de voto y estado de juego
+                const jugadoresReset = {};
+                for (const color of coloresJugadores) {
+                    if (color === 'skip') {
+                        jugadoresReset[color] = { votos: 0 };
+                    } else {
+                        jugadoresReset[color] = { votos: 0, eliminado: false };
+                    }
+                }
+                jugadoresRef.set(jugadoresReset); 
+                votosDetalleRef.set(null); 
+                
+                configRef.update({ 
+                    votoActivo: false,
+                    tiempoFin: 0,
+                    lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
+                });
+                
+                alert(`¡Partida configurada! ${numImpostores} Impostor(es) y ${numJugadores - numImpostores} Tripulante(s).`);
+                estadoRef.update({ mensaje: `¡Roles y Colores asignados! ${numImpostores} Impostor(es) a bordo. ¡Reunión de emergencia!` });
             })
             .catch(error => {
-                console.error("Error al asignar roles:", error);
-                alert("Error al asignar roles.");
+                console.error("Error al asignar roles/colores:", error);
+                alert("Error al asignar roles/colores.");
             });
     });
 }
@@ -1251,6 +1432,12 @@ if (toggleSecretVoteButton) {
         });
     });
 }
+
+// ** NUEVO LISTENER: Botón de Predicción (AI/Stats) **
+if (aiPredictButton) {
+    aiPredictButton.addEventListener('click', suggestImpostor);
+}
+
 
 // Inicializar el rastreo de participantes al cargar (DEBE ESTAR AL FINAL)
 setupParticipantTracking();
