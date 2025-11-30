@@ -41,8 +41,10 @@ const temporizadorElement = document.getElementById('temporizador');
 const votoConfirmadoElement = document.getElementById('voto-confirmado');
 const resultadoFinalElement = document.getElementById('resultado-final');
 const resetButton = document.getElementById('reset-button');
-const startTimerButton = document.getElementById('start-timer-button'); // Este ya no se usa directamente para iniciar, pero se mantiene la ref
-const continueButton = document.getElementById('continue-button'); 
+// *** MODIFICACIÓN: Nuevo botón para limpiar votos ***
+const clearVotesButton = document.getElementById('clear-votes-button'); 
+// const startTimerButton = document.getElementById('start-timer-button'); // ELIMINADO: Ya no se usa
+const continueButton = document.getElementById('continue-button'); // ELIMINADO: Reemplazado por clearVotesButton
 const mensajePrincipal = document.getElementById('mensaje-principal'); 
 
 // UI de Administrador/Roles
@@ -72,20 +74,19 @@ const toggleSecretVoteButton = document.getElementById('toggle-secret-vote-butto
 
 // ** NUEVAS REFERENCIAS DE UI MODAL **
 const votingModalContainer = document.getElementById('voting-modal-container');
-const showVotingModalButton = document.getElementById('show-voting-modal-button');
+// *** MODIFICACIÓN: Botón de "Iniciar Reunión" ahora es "Resolver Votación" ***
+const resolveVoteButton = document.getElementById('resolve-vote-button');
 
 // ** NUEVAS REFERENCIAS DE PANEL ADMIN **
 const toggleAdminPanelButton = document.getElementById('toggle-admin-panel-button');
 const adminPanelContainer = document.getElementById('admin-panel-container'); // Nuevo contenedor para ocultar/mostrar
-// NUEVA REFERENCIA DE ADMIN: DURACIÓN
-const voteDurationInput = document.getElementById('vote-duration-input'); 
 
 
 let isAdmin = false;
-let timerInterval = null;
+let participantesCache = {}; 
 const coloresJugadores = ['amarillo', 'azul', 'blanco', 'rojo', 'verde', 'skip']; 
 const coloresTripulantes = ['amarillo', 'azul', 'blanco', 'rojo', 'verde']; // Sin Skip
-let participantesCache = {}; 
+
 
 // IDs del navegador
 function getAnonymousUserId() {
@@ -109,6 +110,7 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
     // ** NUEVO: Leer si el voto es secreto **
     let isSecretVote = false;
     configRef.once('value').then(snap => {
+        // *** MODIFICACIÓN: isSecretVote se activa siempre que esté configurado como ON ***
         isSecretVote = snap.val() ? snap.val().votoSecreto || false : false;
     });
 
@@ -154,8 +156,8 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
         if (contadorElement) {
              contadorElement.innerHTML = '';
              
-             // Si el voto es secreto y la votación está activa, no se muestran los iconos
-             if (isSecretVote && jugadoresSnapshot.val().votoActivo) {
+             // *** MODIFICACIÓN: isSecretVote siempre oculta los votos si está ON ***
+             if (isSecretVote) {
                  contadorElement.textContent = 'VOTO SECRETO ACTIVO';
                  contadorElement.classList.add('voto-secreto-activo');
              } else {
@@ -210,17 +212,18 @@ votosDetalleRef.on('value', (snapshot) => {
 // ** LÓGICA DE VISIBILIDAD DE MODAL DE VOTACIÓN **
 // =========================================================
 
+// *** MODIFICACIÓN: Ya no se usan, la visibilidad la controla el panel de restricción ***
 function showVotingModal() {
     votingModalContainer.style.display = 'flex';
 }
-
 function hideVotingModal() {
+    // Si la votación se cierra, el modal se oculta
     votingModalContainer.style.display = 'none';
 }
 
 
 // =========================================================
-// LÓGICA DE TEMPORIZADOR Y ESTADO GENERAL 
+// LÓGICA DE RESULTADOS (SOLO PARA ADMIN)
 // =========================================================
 
 function obtenerJugadorMasVotado(jugadoresData) {
@@ -294,9 +297,7 @@ function showExpulsionResult(ejectedColor, ejectedRole, ejectedName) {
     }, 5000); 
 }
 
-// =========================================================
-// ** NUEVA FUNCIÓN JODIDAMENTE BUENA: Verificar Condición de Victoria **
-// =========================================================
+// ** FUNCIÓN JODIDAMENTE BUENA: Verificar Condición de Victoria **
 function verificarFinDePartida() {
     let impostoresRestantes = 0;
     let tripulantesRestantes = 0;
@@ -338,14 +339,10 @@ function verificarFinDePartida() {
     }
 }
 
-
-function finalizarVotacion() {
-    clearInterval(timerInterval);
-    configRef.update({ votoActivo: false });
-    temporizadorElement.textContent = "00:00 - Votación Cerrada";
-    hideVotingModal(); // Ocultar el modal al finalizar
-
-    // 1. Limpiar los iconos de voto de la UI localmente (ya que la función updateVoteDisplay no se activará si votoActivo=false)
+// *** NUEVA FUNCIÓN: Resuelve la votación (simulando el fin del temporizador) ***
+function resolveVoting() {
+    
+    // *** MODIFICACIÓN: Limpiar los iconos de voto de la UI localmente ***
     coloresJugadores.forEach(color => {
         const contadorElement = document.getElementById(`voto-iconos-${color}`);
         if (contadorElement) {
@@ -398,6 +395,18 @@ function finalizarVotacion() {
              showExpulsionResult('SKIP', 'none', 'none'); 
              estadoRef.update({ mensaje: "Nadie ha sido expulsado (SKIP o EMPATE)." });
         }
+        
+        // *** MODIFICACIÓN: Borrar votos y resetear señal para la próxima ronda ***
+         jugadoresRef.once('value').then(snap => {
+            const updates = {};
+            for (const color of coloresJugadores) {
+                updates[`${color}/votos`] = 0;
+            }
+            jugadoresRef.update(updates).then(() => {
+                votosDetalleRef.set(null); // Borrar el detalle de votos
+                configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP); // Enviar señal de limpieza para re-activar botones
+            });
+         });
 
         // 5. Llamar a la función de visibilidad para actualizar los botones
         configRef.once('value').then(snap => {
@@ -406,60 +415,28 @@ function finalizarVotacion() {
     });
 }
 
-function actualizarTemporizador(tiempoFin) {
-    clearInterval(timerInterval); 
 
-    timerInterval = setInterval(() => {
-        const tiempoRestante = tiempoFin - Date.now();
-
-        if (tiempoRestante <= 0) {
-            finalizarVotacion();
-            return;
-        }
-
-        const segundos = Math.floor((tiempoRestante / 1000) % 60);
-        const minutos = Math.floor((tiempoRestante / 1000 / 60) % 60);
-
-        const minutosStr = String(minutos).padStart(2, '0');
-        const segundosStr = String(segundos).padStart(2, '0');
-
-        temporizadorElement.textContent = `${minutosStr}:${segundosStr}`;
-    }, 1000);
-}
-
-// ** FUNCIÓN MEJORADA: Controla la visibilidad de los botones de Admin **
+// *** MODIFICACIÓN: Función de visibilidad de Admin simplificada ***
 function updateAdminButtonsVisibility(config) {
-    // --- LÓGICA COMÚN: VISIBILIDAD DEL MODAL (PARA TODOS) ---
-    if (config.votoActivo) {
-        showVotingModal(); // Muestra el modal si la votación está activa en DB
-    } else {
-         hideVotingModal(); // Oculta el modal si la votación terminó
+
+    // El modal de votación ahora solo se oculta si la restricción de acceso está activa
+    if (accessRestrictionMessage.style.display !== 'flex') {
+         votingModalContainer.style.display = 'flex';
     }
-    // --------------------------------------------------------
 
     if (isAdmin) {
         // Mostrar el botón de toggle del panel
         toggleAdminPanelButton.style.display = 'block';
         adminLoginButton.style.display = 'none';
 
-        const isVotingActive = config.votoActivo && config.tiempoFin > Date.now();
-        const isFinished = !config.votoActivo && config.tiempoFin > 0;
-        const isReadyToStart = !config.votoActivo || config.tiempoFin === 0;
-
         // Lógica de botones de Admin dentro del panel (solo para el admin)
-        assignRolesButton.style.display = isReadyToStart ? 'block' : 'none';
-        showVotingModalButton.style.display = isReadyToStart ? 'block' : 'none'; // NUEVO BOTÓN
+        assignRolesButton.style.display = 'block';
+        resolveVoteButton.style.display = 'block'; // Nuevo botón
+        clearVotesButton.style.display = 'block'; // Nuevo botón
         
         // startTimerButton.style.display = 'none'; // Ya no se usa
-
-        if (isVotingActive) { 
-            continueButton.style.display = 'none';
-        } else if (isFinished) {
-            continueButton.style.display = 'block';
-        } else if (isReadyToStart) {
-            continueButton.style.display = 'none';
-        }
-
+        continueButton.style.display = 'none'; // ELIMINADO: Reemplazado
+        
         resetButton.style.display = 'block';
         allowMultipleVoteButton.style.display = 'block';
         toggleSecretVoteButton.style.display = 'block';
@@ -492,14 +469,21 @@ function votar(personaje) {
     participantesRef.child(ANONYMOUS_USER_ID).once('value').then(participanteSnap => {
         const participante = participanteSnap.val();
         const miColor = participante ? participante.color : null;
+        const miRol = participante ? participante.rol : null; // *** NUEVO: Chequeo de rol ***
         
-        // --- RESTRICCIÓN PRINCIPAL: Solo jugadores con color asignado (rojo, azul, etc.) pueden votar ---
+        // --- RESTRICCIÓN 1: Solo jugadores con color asignado (rojo, azul, etc.) pueden votar ---
         if (!miColor || !coloresTripulantes.includes(miColor)) {
             alert('No puedes votar. El administrador debe asignarte un color de jugador (rojo, azul, etc.).');
             return;
         }
+        
+        // --- RESTRICCIÓN 2: Solo jugadores con ROL asignado (no 'sin asignar' ni 'expulsado') ---
+         if (!miRol || miRol === 'sin asignar' || miRol === 'expulsado') {
+             alert(`No puedes votar. Tu estado actual es ${miRol ? miRol.toUpperCase() : 'SIN ASIGNAR'}.`);
+             return;
+         }
 
-        // --- RESTRICCIÓN: Jugador eliminado no puede votar ---
+        // --- RESTRICCIÓN 3: Jugador eliminado no puede votar ---
         jugadoresRef.child(miColor).once('value').then(jugadorSnap => {
             if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
                 alert(`¡Tu personaje (${miColor.toUpperCase()}) ha sido ELIMINADO! No puedes emitir más votos.`);
@@ -513,57 +497,48 @@ function votar(personaje) {
 
 function performVoteChecks(personaje) {
     
-    // ** NUEVO CHEQUEO DE VOTO ÚNICO (BASADO EN FIREBASE) **
+    // ** CHEQUEO DE VOTO ÚNICO (BASADO EN FIREBASE) **
     votosDetalleRef.child(ANONYMOUS_USER_ID).once('value').then(votoSnap => {
         if (votoSnap.exists()) {
              alert('¡Ya has emitido tu voto en esta ronda!');
              return;
         }
         
-        // Si la votación está activa (RESTRICCIÓN DE INICIO/CONTINUACIÓN)
-        configRef.child('votoActivo').once('value').then(snap => {
-            // La restricción de voto por tiempo se maneja por la deshabilitación de botones, 
-            // pero esta alerta de seguridad se mantiene:
-            if (!snap.val()) {
-                 alert('La votación ha terminado o no ha iniciado. El administrador debe iniciar o continuar la votación.');
-                 return;
-            }
+        // *** MODIFICACIÓN: Eliminada la restricción de votoActivo, siempre se puede votar ***
+        
+        const votoRef = (personaje === 'skip') 
+            ? jugadoresRef.child('skip/votos') 
+            : jugadoresRef.child(`${personaje}/votos`);
+        
+        const performVote = () => {
+             // 1. Voto en el contador total
+             votoRef.transaction(function (currentVotes) {
+                return (currentVotes || 0) + 1;
+            });
             
-            const votoRef = (personaje === 'skip') 
-                ? jugadoresRef.child('skip/votos') 
-                : jugadoresRef.child(`${personaje}/votos`);
+            // 2. Voto en el detalle (para los iconos y el voto único)
+            votosDetalleRef.child(ANONYMOUS_USER_ID).set({
+                voto: personaje,
+                tiempo: Date.now()
+            });
             
-            const performVote = () => {
-                 // 1. Voto en el contador total
-                 votoRef.transaction(function (currentVotes) {
-                    return (currentVotes || 0) + 1;
-                });
-                
-                // 2. Voto en el detalle (para los iconos y el voto único)
-                votosDetalleRef.child(ANONYMOUS_USER_ID).set({
-                    voto: personaje,
-                    tiempo: Date.now()
-                });
-                
-                // ** ELIMINADO: localStorage.setItem('voted', 'true'); **
-                botonesVoto.forEach(btn => btn.disabled = true);
-                votoConfirmadoElement.style.display = 'block';
-                setTimeout(() => { votoConfirmadoElement.style.display = 'none'; }, 3000);
-            }
+            botonesVoto.forEach(btn => btn.disabled = true);
+            votoConfirmadoElement.style.display = 'block';
+            setTimeout(() => { votoConfirmadoElement.style.display = 'none'; }, 3000);
+        }
 
-            // Si vota por alguien que ya está eliminado (excluyendo 'skip')
-            if (personaje !== 'skip') {
-                jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
-                    if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
-                        alert(`¡${personaje.toUpperCase()} ya ha sido eliminado! No puedes votar por él.`);
-                        return;
-                    }
-                    performVote();
-                });
-            } else {
+        // Si vota por alguien que ya está eliminado (excluyendo 'skip')
+        if (personaje !== 'skip') {
+            jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
+                if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
+                    alert(`¡${personaje.toUpperCase()} ya ha sido eliminado! No puedes votar por él.`);
+                    return;
+                }
                 performVote();
-            }
-        });
+            });
+        } else {
+            performVote();
+        }
     });
 }
 
@@ -572,16 +547,11 @@ function performVoteChecks(personaje) {
 configRef.on('value', (snapshot) => {
     const config = snapshot.val();
     
-    // --- Lógica de Sincronización de Voto Local (ID DE DISPOSITIVO) ---
-    // ** ELIMINADO: Toda la lógica de lastVoteClearSignal y localClearSignal **
-    
-    // ------------------------------------------------------------------
-
-    const votoTiempoCorriendo = config.votoActivo && config.tiempoFin > Date.now();
-    // ** NUEVA LÓGICA: Chequear el voto único en base de datos para deshabilitar botones **
+    // *** MODIFICACIÓN: Lógica simplificada de deshabilitación de botones (solo por voto único) ***
     votosDetalleRef.child(ANONYMOUS_USER_ID).once('value').then(votoSnap => {
         const haVotado = votoSnap.exists();
-        const puedeVotar = votoTiempoCorriendo && !haVotado;
+        // La votación es SIEMPRE activa ahora
+        const puedeVotar = !haVotado; 
         
         botonesVoto.forEach(btn => {
             btn.disabled = !puedeVotar;
@@ -590,17 +560,8 @@ configRef.on('value', (snapshot) => {
     
     updateAdminButtonsVisibility(config); 
     
-    // Control del temporizador
-    if (votoTiempoCorriendo) { 
-        actualizarTemporizador(config.tiempoFin);
-        // showVotingModal() ya está llamado en updateAdminButtonsVisibility(config)
-    } else if (config.votoActivo && config.tiempoFin === 0) {
-        clearInterval(timerInterval);
-        temporizadorElement.textContent = "---"; 
-    } else if (!config.votoActivo) {
-        clearInterval(timerInterval);
-        temporizadorElement.textContent = "00:00 - Votación Cerrada";
-    }
+    // *** MODIFICACIÓN: Eliminar toda la lógica de temporizador ***
+    // temporizadorElement.textContent se mantiene estático en "---" en el HTML
 });
 
 estadoRef.on('value', (snapshot) => {
@@ -633,12 +594,16 @@ function checkAndRestrictAccess(participantesData) {
     // Si hay 5 jugadores con color Y yo no soy uno de ellos
     if (jugadoresConColor >= 5 && !tieneColor && !isAdmin) {
         accessRestrictionMessage.style.display = 'flex';
+        votingModalContainer.style.display = 'none'; // Oculta el modal de votación
         // Se asegura de que el ID/Nombre se muestre en el panel de restricción
         const centerIdDisplay = document.getElementById('user-id-display-center');
         if(centerIdDisplay) centerIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
         return true;
     } else {
         accessRestrictionMessage.style.display = 'none';
+        
+        // *** MODIFICACIÓN: Mostrar el modal si el acceso NO está restringido ***
+        votingModalContainer.style.display = 'flex'; 
         return false;
     }
 }
@@ -650,17 +615,14 @@ function setupParticipantTracking() {
     
     // Si el usuario se conecta o refresca
     userRef.onDisconnect().update({ conectado: false });
-    // ** ELIMINADO: Poner conectado: true aquí ya que no hay persistencia de ID **
     
     // Pone un valor inicial si es la primera vez que se conecta
-    // ** USAMOS set() en lugar de once().then().update() para no re-crear en cada sesión si el ID cambia **
     userRef.set({ 
         conectado: true,
         ultimaConexion: Date.now(),
         nombre: 'Participante (Sesión temporal)', 
         rol: 'sin asignar',
-        color: null,
-        avatar: null // NUEVO: Campo para el avatar
+        color: null
     });
 }
 
@@ -668,7 +630,6 @@ function setupParticipantTracking() {
 // Escucha el rol asignado al usuario y actualiza el panel personal y el nombre
 participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
     const participante = snapshot.val();
-    // ** ELIMINADO: const localRole = localStorage.getItem('currentRole'); **
     
     if (participante) {
         
@@ -678,10 +639,7 @@ participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
 
 
         // --- LÓGICA DE NOTIFICACIÓN DE ROL GIGANTE ---
-        // ** SIMPLIFICADO: Mostramos la notificación si el rol es asignado **
         if (participante.rol && participante.rol !== 'sin asignar') {
-            // No podemos chequear si es diferente al local, así que la notificación será más agresiva
-            // Solo mostramos si el rol ha sido asignado y el usuario está activo.
              showRoleNotification(participante.rol);
         }
         // ----------------------------------------------------
@@ -765,21 +723,16 @@ function updateParticipantDisplay(participantesData) {
             }
         }
         
-        const avatarDisplay = p.avatar ? `<span class="player-avatar">${p.avatar}</span>` : '';
         const statusText = jugadorEliminado ? ' (ELIMINADO)' : '';
         const roleAndColorText = `${p.rol ? p.rol.toUpperCase() : 'SIN ASIGNAR'} (${p.color || 'N/A'})`;
 
 
         pElement.innerHTML = `
-            <span class="user-index-name online ${jugadorEliminado ? 'ejected-player' : ''}">${index}. ${avatarDisplay} <strong>${nombreMostrado}</strong> ${statusText}</span>
+            <span class="user-index-name online ${jugadorEliminado ? 'ejected-player' : ''}">${index}. <strong>${nombreMostrado}</strong> ${statusText}</span>
             <span class="user-role-admin">${roleAndColorText}</span>
             <span class="user-id-text">(ID: ${p.id})</span>
             
             <div class="admin-actions">
-                <!-- NUEVO: Asignar Avatar -->
-                <input type="text" class="avatar-input" data-id="${p.id}" placeholder="Avatar URL/Emoji" value="${p.avatar || ''}">
-                <button class="avatar-btn" data-id="${p.id}">Set Avatar</button>
-
                 <input type="text" class="name-input" data-id="${p.id}" placeholder="Nuevo Nombre" value="${p.nombre || ''}">
                 <button class="name-btn" data-id="${p.id}">Asignar Nombre</button>
                 <div class="color-assignment">
@@ -790,14 +743,13 @@ function updateParticipantDisplay(participantesData) {
                 </div>
                 <button class="role-btn tripulante" data-id="${p.id}" data-rol="tripulante" ${jugadorEliminado ? 'disabled' : ''}>Tripulante</button>
                 <button class="role-btn impostor" data-id="${p.id}" data-rol="impostor" ${jugadorEliminado ? 'disabled' : ''}>Impostor</button>
-                <button class="kick-btn admin-btn-reset" data-id="${p.id}">Kick/Ban</button> <!-- NUEVO BOTÓN DE KICK/BAN -->
             </div>
         `;
         participantListContainer.appendChild(pElement);
         index++;
     });
     
-    // 4. Agregar listeners para roles, nombres, colores Y AHORA AVATAR/KICK
+    // 4. Agregar listeners para roles, nombres y colores
     document.querySelectorAll('.role-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             asignarRol(e.target.dataset.id, e.target.dataset.rol);
@@ -817,21 +769,6 @@ function updateParticipantDisplay(participantesData) {
             const userId = e.target.dataset.id;
             const color = e.target.dataset.color === 'null' ? null : e.target.dataset.color;
             asignarColor(userId, color);
-        });
-    });
-
-    // NUEVO: Listeners para Avatar y Kick
-    document.querySelectorAll('.avatar-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const userId = e.target.dataset.id;
-            const inputElement = document.querySelector(`.avatar-input[data-id="${userId}"]`);
-            asignarAvatar(userId, inputElement.value);
-        });
-    });
-    
-    document.querySelectorAll('.kick-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            kickParticipant(e.target.dataset.id);
         });
     });
 }
@@ -883,28 +820,6 @@ function asignarNombre(userId, nombre) {
     participantesRef.child(userId).update({ nombre: nombre.trim() || 'SIN NOMBRE' });
 }
 
-// 6. NUEVA FUNCIÓN: Asignación de Avatar (para el ADMIN)
-function asignarAvatar(userId, avatar) {
-    if (!isAdmin) return;
-    participantesRef.child(userId).update({ avatar: avatar.trim() || null });
-}
-
-// 7. NUEVA FUNCIÓN: Expulsar/Banear Jugador (para el ADMIN)
-function kickParticipant(userId) {
-    if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
-    if (!confirm(`¿Estás seguro de que quieres EXPULSAR (eliminar de la lista) al participante con ID: ${userId}?`)) {
-        return;
-    }
-    
-    // Eliminar completamente el registro del participante
-    participantesRef.child(userId).remove().then(() => {
-        alert(`Participante con ID ${userId} expulsado permanentemente de esta sesión.`);
-    }).catch(error => {
-        console.error("Error al expulsar participante:", error);
-        alert("Error al expulsar participante.");
-    });
-}
-
 // Inicializar el rastreo de participantes al cargar
 setupParticipantTracking();
 
@@ -941,21 +856,20 @@ adminLoginButton.addEventListener('click', () => {
         adminPanelContainer.style.display = 'flex';
         toggleAdminPanelButton.textContent = 'Ocultar Panel Admin';
         
+        // *** MODIFICACIÓN: Mostrar el modal de votación al ser admin ***
+        votingModalContainer.style.display = 'flex'; 
+        
         alert('¡Acceso de administrador concedido!');
     } else if (password !== null) {
         alert('Clave incorrecta.');
     }
 });
 
-// ** NUEVO LISTENER MODIFICADO: Botón de Reunión de Emergencia (Admin) **
-showVotingModalButton.addEventListener('click', () => {
+// *** MODIFICACIÓN: Listener para el botón de "RESOLVER VOTACIÓN" (anteriormente showVotingModalButton) ***
+resolveVoteButton.addEventListener('click', () => {
     if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
     
-    // ** LECTURA DE LA DURACIÓN DEL INPUT **
-    const duracionInput = voteDurationInput ? parseInt(voteDurationInput.value, 10) : 60;
-    const duracion = isNaN(duracionInput) || duracionInput <= 0 ? 60 : duracionInput; 
-
-    // --- LÓGICA JODIDAMENTE BUENA: ELIMINAR COLORES SIN JUGADOR ASIGNADO ---
+    // --- LÓGICA: ELIMINAR COLORES SIN JUGADOR ASIGNADO Y RESOLVER ---
     participantesRef.once('value').then(snapshot => {
         const participantesData = snapshot.val() || {};
         const coloresAsignados = Object.values(participantesData)
@@ -972,26 +886,16 @@ showVotingModalButton.addEventListener('click', () => {
 
         // 1. Aplicar eliminaciones en la base de datos (jugadores)
         jugadoresRef.update(eliminaciones).then(() => {
-            // 2. Iniciar la votación después de eliminar a los "jugadores fantasma"
-            const tiempoFin = Date.now() + (duracion * 1000); 
-
-            configRef.update({
-                votoActivo: true, 
-                tiempoFin: tiempoFin,
-                // ** CRUCIAL: Esto fuerza a un 'reset' lógico para el voto único de los clientes **
-                lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
-            }).then(() => {
-                // El listener de config ya llama a showVotingModal()
-                estadoRef.update({ mensaje: "¡A VOTAR! El tiempo corre..." });
-                alert(`Votación iniciada por ${duracion} segundos. Colores no asignados eliminados.`);
-            });
+            // 2. Resolver la votación
+            estadoRef.update({ mensaje: "¡RESOLVIENDO VOTACIÓN! Analizando resultados..." });
+            resolveVoting(); // Llama a la nueva función de resolución
         });
     });
 });
 
 
-// 2. CONTINUAR VOTACIÓN (Solo Admin - ROLES Y COLORES NO SE RESETEAN)
-continueButton.addEventListener('click', () => {
+// *** NUEVO LISTENER: Limpiar Votación Actual (Reemplaza a Continue) ***
+clearVotesButton.addEventListener('click', () => {
     if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
 
     const updates = {};
@@ -1003,20 +907,14 @@ continueButton.addEventListener('click', () => {
     jugadoresRef.update(updates).then(() => {
         votosDetalleRef.set(null); // Borrar el detalle de votos
         
-        // 2. Los roles y colores SE MANTIENEN. Solo se limpia el voto.
+        // 2. Enviar señal de limpieza para re-activar los botones en el cliente
+        configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
         
-        // 3. Resetear configuración de votación y enviar señal de limpieza
-        configRef.update({
-            votoActivo: true, 
-            tiempoFin: 0,
-            // ** CRUCIAL: Esto fuerza a un 'reset' lógico para el voto único de los clientes **
-            lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
-        });
-        
-        estadoRef.update({ mensaje: "Votación Continuada. ¡Inicia el temporizador!" });
-        alert("Contadores de voto reiniciados. Roles y colores asignados se mantienen.");
+        estadoRef.update({ mensaje: "Votación Actual Limpiada. ¡Vuelvan a votar!" });
+        alert("Contadores de voto reiniciados. Roles, colores y estado de eliminación se mantienen.");
     });
 });
+
 
 // 3. Reiniciar JUEGO TOTAL (Solo Admin - ROLES Y COLORES SE RESETEAN)
 resetButton.addEventListener('click', () => {
@@ -1041,18 +939,18 @@ resetButton.addEventListener('click', () => {
             snapshot.forEach(childSnapshot => {
                 updates[`${childSnapshot.key}/rol`] = 'sin asignar';
                 updates[`${childSnapshot.key}/color`] = null; // Limpiar color
-                updates[`${childSnapshot.key}/avatar`] = null; // Limpiar avatar
             });
             participantesRef.update(updates);
         });
 
+         // Enviar señal de limpieza
          configRef.update({ 
-             votoActivo: true, 
+             votoActivo: false, // Se mantiene como false ya que la votación no tiene fin
              tiempoFin: 0,
              lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
          });
 
-         estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Asigna roles!" });
+         estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Asigna roles y color!" });
          alert("Juego reiniciado. Todos los jugadores están de vuelta, sus roles y colores fueron borrados.");
     });
 });
