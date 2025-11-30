@@ -14,7 +14,7 @@
     <!-- MENSAJE DE RESTRICCIÓN DE ACCESO (FULLSCREEN) -->
     <div id="access-restriction-message" class="access-restriction-message" style="display:none;">
         <h1>ACCESO DENEGADO</h1>
-        <p>Ya hay 5 jugadores activos. Espera a que el administrador inicie una nueva partida.</p>
+        <p>El administrador debe aceptar tu solicitud para unirte a la partida.</p>
         <div id="user-id-display-center" class="my-id-label-center">Tu ID: ...</div>
     </div>
 
@@ -156,6 +156,10 @@
         <div id="admin-panel-container" style="display:none;">
             <div id="participant-panel" class="panel participant-panel">
                 <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
+                
+                <!-- Predicción/Ayuda de la IA (INTELIGENTE) -->
+                <div id="ai-prediction-message" class="ai-prediction-box" style="display:none;"></div> 
+
                 <div id="participant-list-container" class="participant-list">
                     <!-- La lista se genera aquí (Admin) -->
                 </div>
@@ -163,7 +167,8 @@
                 <!-- Panel de Administración -->
                 <div class="admin-panel">
                     <!-- BOTONES DE CONTROL DE PARTIDA -->
-                    <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles</button>
+                    <button id="ai-predict-button" class="admin-btn-ai-predict" style="display:none;">Predicción Impostor (AI/Stats)</button> <!-- NUEVO BOTÓN INTELIGENTE -->
+                    <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Colores y Roles Auto</button>
                     <button id="resolve-vote-button" class="admin-btn-resolve-vote" style="display:none;">Resolver Votación</button> 
                     <button id="clear-votes-button" class="admin-btn-clear-vote" style="display:none;">Limpiar Votación Actual</button> 
                     
