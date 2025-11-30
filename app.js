@@ -41,10 +41,8 @@ const temporizadorElement = document.getElementById('temporizador');
 const votoConfirmadoElement = document.getElementById('voto-confirmado');
 const resultadoFinalElement = document.getElementById('resultado-final');
 const resetButton = document.getElementById('reset-button');
-// *** MODIFICACIÓN: Nuevo botón para limpiar votos ***
+// *** Nuevo botón para limpiar votos ***
 const clearVotesButton = document.getElementById('clear-votes-button'); 
-// const startTimerButton = document.getElementById('start-timer-button'); // ELIMINADO: Ya no se usa
-const continueButton = document.getElementById('continue-button'); // ELIMINADO: Reemplazado por clearVotesButton
 const mensajePrincipal = document.getElementById('mensaje-principal'); 
 
 // UI de Administrador/Roles
@@ -74,7 +72,7 @@ const toggleSecretVoteButton = document.getElementById('toggle-secret-vote-butto
 
 // ** NUEVAS REFERENCIAS DE UI MODAL **
 const votingModalContainer = document.getElementById('voting-modal-container');
-// *** MODIFICACIÓN: Botón de "Iniciar Reunión" ahora es "Resolver Votación" ***
+// *** MODIFICACIÓN: Botón para resolver votación ***
 const resolveVoteButton = document.getElementById('resolve-vote-button');
 
 // ** NUEVAS REFERENCIAS DE PANEL ADMIN **
@@ -416,7 +414,7 @@ function resolveVoting() {
 }
 
 
-// *** MODIFICACIÓN: Función de visibilidad de Admin simplificada ***
+// *** REVISADO: Función de visibilidad de Admin simplificada y asegurada ***
 function updateAdminButtonsVisibility(config) {
 
     // El modal de votación ahora solo se oculta si la restricción de acceso está activa
@@ -430,16 +428,13 @@ function updateAdminButtonsVisibility(config) {
         adminLoginButton.style.display = 'none';
 
         // Lógica de botones de Admin dentro del panel (solo para el admin)
-        assignRolesButton.style.display = 'block';
-        resolveVoteButton.style.display = 'block'; // Nuevo botón
-        clearVotesButton.style.display = 'block'; // Nuevo botón
-        
-        // startTimerButton.style.display = 'none'; // Ya no se usa
-        continueButton.style.display = 'none'; // ELIMINADO: Reemplazado
-        
-        resetButton.style.display = 'block';
-        allowMultipleVoteButton.style.display = 'block';
-        toggleSecretVoteButton.style.display = 'block';
+        // *** HACEMOS VISIBLES TODOS LOS BOTONES DE ADMIN INDEPENDIENTEMENTE DEL ESTADO DE JUEGO ***
+        assignRolesButton.style.display = 'block';         // Asignar Roles
+        resolveVoteButton.style.display = 'block';          // Resolver Votación
+        clearVotesButton.style.display = 'block';           // Limpiar Votación Actual
+        resetButton.style.display = 'block';              // Reiniciar Juego TOTAL (¡ESTE ES EL QUE QUIERES!)
+        allowMultipleVoteButton.style.display = 'block';    // Permitir Voto Múltiple
+        toggleSecretVoteButton.style.display = 'block';     // Voto Secreto
         
         // Actualizar texto del botón de voto secreto
         toggleSecretVoteButton.textContent = config.votoSecreto ? "Voto Secreto: ON" : "Voto Secreto: OFF";
@@ -561,7 +556,7 @@ configRef.on('value', (snapshot) => {
     updateAdminButtonsVisibility(config); 
     
     // *** MODIFICACIÓN: Eliminar toda la lógica de temporizador ***
-    // temporizadorElement.textContent se mantiene estático en "---" en el HTML
+    // temporizadorElement.textContent se mantiene estático en "ABIERTA" en el HTML
 });
 
 estadoRef.on('value', (snapshot) => {
@@ -865,7 +860,7 @@ adminLoginButton.addEventListener('click', () => {
     }
 });
 
-// *** MODIFICACIÓN: Listener para el botón de "RESOLVER VOTACIÓN" (anteriormente showVotingModalButton) ***
+// *** MODIFICACIÓN: Listener para el botón de "RESOLVER VOTACIÓN" ***
 resolveVoteButton.addEventListener('click', () => {
     if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
     
