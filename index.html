@@ -11,7 +11,7 @@
 </head>
 <body>
 
-    <!-- MENSAJE DE RESTRICCIÓN DE ACCESO -->
+    <!-- MENSAJE DE RESTRICCIÓN DE ACCESO (FULLSCREEN) -->
     <div id="access-restriction-message" class="access-restriction-message" style="display:none;">
         <h1>ACCESO DENEGADO</h1>
         <p>Ya hay 5 jugadores activos. Espera a que el administrador inicie una nueva partida.</p>
@@ -19,10 +19,10 @@
     </div>
 
 
-    <!-- NOTIFICACIÓN DE ROL GIGANTE -->
+    <!-- NOTIFICACIÓN DE ROL GIGANTE (FULLSCREEN) -->
     <div id="role-notification" class="role-notification-popup" style="display: none;"></div>
     
-    <!-- POPUP DE EXPULSIÓN (VOTACIÓN) -->
+    <!-- POPUP DE EXPULSIÓN (VOTACIÓN) (FULLSCREEN) -->
     <div id="expulsion-result-popup" class="expulsion-popup" style="display:none;">
         <div class="expulsion-content">
             <div id="ejected-crewmate-icon" class="ejected-crewmate"></div>
@@ -30,7 +30,7 @@
         </div>
     </div>
     
-    <!-- ** NUEVO: POPUP DE MUERTE DRAMÁTICA (KILL) ** -->
+    <!-- ** POPUP DE MUERTE DRAMÁTICA (KILL) (FULLSCREEN) ** -->
     <div id="murder-popup" class="murder-popup" style="display:none;">
         <div class="murder-content">
             <h1 id="murder-victim-name"></h1>
@@ -38,7 +38,7 @@
         </div>
     </div>
     
-    <!-- ** NUEVO: POPUP DE VICTORIA DRAMÁTICA ** -->
+    <!-- ** POPUP DE VICTORIA DRAMÁTICA (FULLSCREEN) ** -->
     <div id="victory-popup" class="victory-popup" style="display:none;">
         <h1 id="victory-message" class="victory-message"></h1>
         <div class="impostor-reveal">
@@ -52,7 +52,7 @@
         <p class="victory-footer">¡JUEGO TERMINADO! Presiona REINICIAR para empezar de nuevo.</p>
     </div>
 
-    <!-- PANEL DE ROL PERSONAL (MODIFICADO) -->
+    <!-- PANEL DE ROL PERSONAL (ESQUINA INFERIOR DERECHA) -->
     <div id="personal-role-panel" class="personal-role-panel" style="display:none;">
         
         <!-- Contenido Normal de Rol/Color -->
@@ -62,7 +62,7 @@
             <div id="my-role-display" class="my-role-display"></div>
         </div>
 
-        <!-- ** NUEVO: Formulario para Asignar Nombre Inicial ** -->
+        <!-- Formulario para Asignar Nombre Inicial -->
         <div id="name-setup-form" class="name-setup-form" style="display:none;">
             <p id="name-setup-message" class="name-setup-message"></p>
             <input type="text" id="new-player-name-input" placeholder="Escribe tu nombre aquí" maxlength="20">
@@ -77,7 +77,7 @@
         <div id="user-id-display" class="my-id-label-top">Tu ID: ...</div>
     </div>
     
-    <!-- ** 2. CONTENEDOR MODAL DE VOTACIÓN (Visible si el acceso no está restringido) ** -->
+    <!-- ** CONTENEDOR MODAL DE VOTACIÓN (Centro de la Pantalla) ** -->
     <div id="voting-modal-container" class="voting-modal-container" style="display: none;">
         
         <!-- Contenido principal de votación -->
@@ -143,13 +143,13 @@
     </div>
 
     
-    <!-- ** 3. PANEL DE ADMINISTRADOR FLOTANTE FIJO ** -->
+    <!-- ** PANEL DE ADMINISTRADOR FLOTANTE FIJO (ESQUINA SUPERIOR DERECHA) ** -->
     <div class="admin-fixed-panel">
         
-        <!-- Botón de Login Admin (Solo visible si NO es admin) -->
+        <!-- Botón de Login Admin -->
         <button id="admin-login-button" class="admin-login-button">Login Admin</button>
         
-        <!-- ** NUEVO BOTÓN: Ocultar/Mostrar Panel Admin (Solo visible si es admin) ** -->
+        <!-- Botón: Ocultar/Mostrar Panel Admin -->
         <button id="toggle-admin-panel-button" class="admin-login-button" style="display:none; margin-bottom: 10px;">Mostrar Panel Admin</button>
 
         <!-- Contenedor del Panel (Se oculta/muestra con el botón) -->
@@ -164,10 +164,7 @@
                 <div class="admin-panel">
                     <!-- BOTONES DE CONTROL DE PARTIDA -->
                     <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles</button>
-                    <!-- *** MODIFICADO: Nuevo botón para resolver la votación *** -->
                     <button id="resolve-vote-button" class="admin-btn-resolve-vote" style="display:none;">Resolver Votación</button> 
-                    
-                    <!-- *** NUEVO BOTÓN: Limpiar votación actual *** -->
                     <button id="clear-votes-button" class="admin-btn-clear-vote" style="display:none;">Limpiar Votación Actual</button> 
                     
                     <!-- Botones de Control de Voto -->
