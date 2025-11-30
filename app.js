@@ -18,10 +18,18 @@ const firebaseConfig = {
 let database = null; // Inicialmente null
 
 // IDs del navegador (Debe estar al inicio para ser usado inmediatamente)
+// *** MODIFICACIÓN CLAVE: ID PERSISTENTE y Nombre en LocalStorage ***
 function getAnonymousUserId() {
-    return 'user_' + Math.random().toString(36).substring(2, 9);
+    let userId = localStorage.getItem('amongus_user_id');
+    if (!userId) {
+        userId = 'user_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('amongus_user_id', userId);
+    }
+    return userId;
 }
+
 const ANONYMOUS_USER_ID = getAnonymousUserId();
+const SAVED_USERNAME = localStorage.getItem('amongus_username') || ''; // Cargar el nombre guardado
 
 
 try {
@@ -676,7 +684,10 @@ function handleNameSubmission(event) {
         const newName = newPlayerNameInput.value.trim();
         
         if (newName.length > 0) {
-            participantesRef.child(ANONYMOUS_USER_ID).update({ nombre: newName || 'SIN NOMBRE' })
+            // *** MODIFICACIÓN CLAVE: Guardar en LocalStorage y Firebase ***
+            localStorage.setItem('amongus_username', newName); 
+
+            participantesRef.child(ANONYMOUS_USER_ID).update({ nombre: newName })
             .then(() => {
                 alert(`¡Nombre establecido como ${newName}!`);
             })
@@ -711,7 +722,8 @@ function updatePlayerNamesInVotingPanel() {
 
         if (participant && participant.nombre) {
              const customName = participant.nombre.trim();
-             if (customName !== 'Participante (Sesión temporal)' && customName !== 'SIN NOMBRE' && customName.length > 0) {
+             // Solo si el nombre no está vacío y no es el valor de borrado por admin.
+             if (customName !== 'SIN NOMBRE' && customName.length > 0) {
                  playerName = customName.toUpperCase();
              }
         }
@@ -752,10 +764,13 @@ function setupParticipantTracking() {
     
     userRef.onDisconnect().update({ conectado: false });
     
+    // *** MODIFICACIÓN CLAVE: Usar el nombre guardado, si existe. Si no, cadena vacía. ***
+    const initialName = SAVED_USERNAME || ''; 
+
     userRef.set({ 
         conectado: true,
         ultimaConexion: Date.now(),
-        nombre: 'Participante (Sesión temporal)', 
+        nombre: initialName, // Usa el nombre de LocalStorage
         rol: 'sin asignar',
         color: null
     });
@@ -775,10 +790,11 @@ if (participantesRef) {
         if (personalRolePanel) personalRolePanel.style.display = 'flex';
         
         const tieneColor = participante.color && coloresTripulantes.includes(participante.color);
-        const esNombrePorDefecto = participante.nombre === 'Participante (Sesión temporal)' || participante.nombre === 'SIN NOMBRE'; 
+        // Si el nombre está vacío o es 'SIN NOMBRE' (borrado por admin)
+        const esNombreVacio = participante.nombre === '' || participante.nombre === 'SIN NOMBRE'; 
 
         // Lógica de formulario de nombre inicial
-        if (tieneColor && esNombrePorDefecto) {
+        if (tieneColor && esNombreVacio) {
             if (nameSetupMessage) nameSetupMessage.textContent = `¡Eres el color ${participante.color.toUpperCase()}! Escribe tu nombre:`;
             if (newPlayerNameInput) newPlayerNameInput.value = ''; 
             if (nameSetupForm) nameSetupForm.style.display = 'flex';
@@ -986,7 +1002,15 @@ function asignarRol(userId, rol) {
 // 5. Función de asignación de nombre (para el ADMIN)
 function asignarNombre(userId, nombre) {
     if (!isAdmin || !participantesRef) return;
-    participantesRef.child(userId).update({ nombre: nombre.trim() || 'SIN NOMBRE' }); 
+    
+    const newName = nombre.trim() || 'SIN NOMBRE';
+    
+    // *** MODIFICACIÓN CLAVE: Si el admin asigna un nombre, se guarda en LocalStorage de ese cliente ***
+    if (userId === ANONYMOUS_USER_ID) {
+         localStorage.setItem('amongus_username', newName === 'SIN NOMBRE' ? '' : newName); 
+    }
+    
+    participantesRef.child(userId).update({ nombre: newName }); 
 }
 
 // ** NUEVA FUNCIÓN: Ejecutar una muerte / eliminación de admin **
@@ -1144,6 +1168,7 @@ if (resetButton) {
                 snapshot.forEach(childSnapshot => {
                     updates[`${childSnapshot.key}/rol`] = 'sin asignar';
                     updates[`${childSnapshot.key}/color`] = null; 
+                    // No se toca el nombre para mantener la persistencia local.
                 });
                 participantesRef.update(updates);
             });
