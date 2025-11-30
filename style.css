@@ -573,6 +573,8 @@ body.emergency-meeting {
 .admin-btn-reset { background-color: #c0392b; }
 .admin-btn-permit-vote { background-color: #9b59b6; flex-basis: 100%; }
 .admin-btn-secret-vote { background-color: #008080; flex-basis: 100%; } /* Voto Secreto */
+/* --- NUEVO: Botón de AI/Estadísticas --- */
+.admin-btn-ai-predict { background-color: #7f8c8d; flex-basis: 100%; }
 
 
 /* --- PANEL DE PARTICIPANTES --- */
@@ -659,6 +661,29 @@ body.emergency-meeting {
 .color-assignment .amarillo { background-color: var(--color-amarillo-amongus); color: #000; }
 .color-assignment .skip { background-color: var(--color-skip); }
 
+/* --- NUEVO: Botón de Aprobación --- */
+.admin-btn-approve { 
+    background-color: #2ecc71 !important; /* Verde de aceptación */
+    flex-basis: 100%;
+    margin-bottom: 5px;
+    color: white;
+    box-shadow: 0 4px 0 #27ae60;
+}
+.admin-btn-approve:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #27ae60;
+}
+/* Estilo para la etiqueta PENDIENTE en el panel de admin */
+.status-pending {
+    color: #f1c40f; 
+    font-weight: 900;
+}
+.status-approved {
+    color: #27ae60;
+    font-weight: 900;
+}
+/* --- FIN NUEVO --- */
+
 /* --- RESTRICCIÓN DE ACCESO (PANTALLA COMPLETA) --- */
 .access-restriction-message {
     position: fixed;
@@ -687,8 +712,37 @@ body.emergency-meeting {
     color: #ecf0f1;
 }
 
-/* Estilo opcional para la ventana de juego */
-/* Ya no se usa, pero se mantiene la clase para evitar errores de sintaxis */
-.optional-game-iframe {
-    display: none;
+/* --- CAJA DE PREDICCIÓN DE IA/ESTADÍSTICAS --- */
+.ai-prediction-box {
+    background-color: #34495e; /* Azul grisáceo */
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 3px solid #f39c12;
+    font-size: 0.9em;
+    font-family: 'Roboto', sans-serif;
+    animation: neon-border 1.5s infinite alternate;
 }
+.ai-prediction-box p { margin: 5px 0; }
+.ai-prediction-box .prediction-result {
+    font-size: 1.2em;
+    font-weight: 900;
+    text-align: center;
+    padding: 5px;
+    border-radius: 5px;
+    color: #2c3e50;
+    text-shadow: 0 0 2px white;
+}
+
+@keyframes neon-border {
+    from { border-color: #f39c12; box-shadow: 0 0 5px #f39c12; }
+    to { border-color: #e67e22; box-shadow: 0 0 10px #e67e22; }
+}
+
+/* Colores para la caja de predicción */
+.prediction-result.rojo { background-color: var(--color-rojo-amongus); color: white; }
+.prediction-result.azul { background-color: var(--color-azul-amongus); color: white; }
+.prediction-result.blanco { background-color: var(--color-blanco-amongus); color: black; } 
+.prediction-result.verde { background-color: var(--color-verde-amongus); color: white; }
+.prediction-result.amarillo { background-color: var(--color-amarillo-amongus); color: black; }
