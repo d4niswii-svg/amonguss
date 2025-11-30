@@ -1,152 +1,181 @@
 // ===============================================
-// Among Us / Habbo Logic
+// LÓGICA DE INVENTARIO Y COLOCACIÓN (HABBO HD)
 // ===============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    const mapView = document.getElementById('map-view');
-    const player = document.getElementById('player');
-    const emergencyBtn = document.getElementById('emergency-btn');
-    const taskSpot = document.getElementById('task-spot');
-    const ventSpot = document.getElementById('vent-spot');
+    const inventoryBtn = document.getElementById('inventory-btn');
+    const inventoryModal = document.getElementById('inventory-modal');
+    const closeBtn = inventoryModal.querySelector('.close-btn');
+    const inventoryList = document.getElementById('inventory-list');
+    const placementGrid = document.getElementById('placement-grid');
+    const placementPreview = document.getElementById('placement-preview');
 
-    // Estado del Jugador (Simplificado)
-    let playerState = {
-        x: 50, // Posición X inicial
-        y: 50, // Posición Y inicial
-        targetX: 50, // Objetivo X
-        targetY: 50, // Objetivo Y
-        speed: 5, // Velocidad de movimiento (pixels por frame)
-        isImpostor: false // Lógica Among Us
-    };
+    let selectedItem = null;
+    let placedObjects = [];
+    const GRID_SIZE = 50; // Corresponde al CSS 50px
 
-    // Aplicar la posición inicial
-    updatePlayerPosition(playerState.x, playerState.y);
-
-    function updatePlayerPosition(x, y) {
-        // En un juego isométrico real, usarías `transform: translate()`
-        // Aquí usamos `left` y `bottom` para una simulación simple de 2D.
-        player.style.left = `${x}px`;
-        player.style.bottom = `${y}px`;
-    }
+    // Definición de objetos (HD)
+    const inventoryItems = [
+        { id: 'sofa', name: 'Sofá de Piel', icon: '🛋️', width: 2, height: 1, color: '#3498db' },
+        { id: 'lampara', name: 'Lámpara de Pie', icon: '💡', width: 1, height: 1, color: '#f1c40f' },
+        { id: 'planta', name: 'Planta HD', icon: '🪴', width: 1, height: 1, color: '#2ecc71' },
+        { id: 'mesa', name: 'Mesa de Cristal', icon: '🪑', width: 2, height: 2, color: '#bdc3c7' }
+    ];
 
     // ===============================================
-    // Lógica de Movimiento "Click para Mover" (Habbo Style)
+    // GESTIÓN DE INVENTARIO
     // ===============================================
-
-    mapView.addEventListener('click', (event) => {
-        // Obtener las coordenadas del clic relativas al `mapView`
-        const rect = mapView.getBoundingClientRect();
-        const clickX = event.clientX - rect.left;
-        const clickY = event.clientY - rect.top;
-
-        // Convertir las coordenadas Y de la pantalla a coordenadas de juego (bottom-based)
-        // 'bottom' es la altura total - la coordenada Y de la pantalla.
-        playerState.targetX = clickX - (player.offsetWidth / 2); // Centrar en el jugador
-        playerState.targetY = (rect.height - clickY) - (player.offsetHeight / 2);
-
-        console.log(`Objetivo: (${playerState.targetX.toFixed(0)}, ${playerState.targetY.toFixed(0)})`);
-    });
-
-    // Bucle principal del juego (Game Loop) para mover al jugador
-    function gameLoop() {
-        const { x, y, targetX, targetY, speed } = playerState;
-
-        // Calcular la distancia a recorrer en X e Y
-        const dx = targetX - x;
-        const dy = targetY - y;
-        
-        // Calcular la distancia total (hipotenusa)
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance > speed) {
-            // Si la distancia es mayor a la velocidad, moverse un paso
+    
+    // 1. Renderizar los objetos del inventario
+    function renderInventory() {
+        inventoryList.innerHTML = '';
+        inventoryItems.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'inventory-item';
+            itemDiv.dataset.id = item.id;
+            itemDiv.innerHTML = `<span class="item-icon">${item.icon}</span><span>${item.name}</span>`;
             
-            // Normalizar la dirección (obtener un vector unitario)
-            const ratio = speed / distance;
-            
-            // Mover la posición actual hacia el objetivo
-            playerState.x += dx * ratio;
-            playerState.y += dy * ratio;
-
-            updatePlayerPosition(playerState.x, playerState.y);
-        } else if (distance > 1) {
-            // Si está muy cerca, simplemente saltar al destino final para evitar oscilaciones
-            playerState.x = targetX;
-            playerState.y = targetY;
-            updatePlayerPosition(playerState.x, playerState.y);
-        }
-        
-        // Actualizar el player continuamente
-        requestAnimationFrame(gameLoop);
+            itemDiv.addEventListener('click', () => selectItem(item, itemDiv));
+            inventoryList.appendChild(itemDiv);
+        });
     }
 
-    // Iniciar el bucle de juego
-    requestAnimationFrame(gameLoop);
+    // 2. Seleccionar un objeto
+    function selectItem(itemData, itemElement) {
+        // Deseleccionar el ítem anterior
+        document.querySelectorAll('.inventory-item').forEach(el => el.classList.remove('selected'));
+        
+        // Seleccionar el nuevo
+        itemElement.classList.add('selected');
+        selectedItem = itemData;
+        
+        // Cerrar inventario y activar modo de colocación
+        inventoryModal.classList.add('hidden');
+        placementPreview.classList.remove('hidden');
+        
+        updatePlacementPreview(0, 0, itemData.width, itemData.height, itemData.color);
 
+        console.log(`Modo de colocación activado: ${itemData.name}`);
+        document.getElementById('placement-info').textContent = `Seleccionado: ${itemData.name}. Haz clic en el piso para colocar.`;
+    }
 
-    // ===============================================
-    // Lógica Among Us (Placeholders)
-    // ===============================================
-
-    emergencyBtn.addEventListener('click', callEmergencyMeeting);
-
-    taskSpot.addEventListener('click', () => {
-        if (isNear(taskSpot)) {
-            startTask();
-        } else {
-            console.log("Acércate a la tarea para interactuar.");
-        }
+    // Abrir/Cerrar Modal
+    inventoryBtn.addEventListener('click', () => {
+        inventoryModal.classList.remove('hidden');
+        renderInventory();
     });
     
-    ventSpot.addEventListener('click', () => {
-        if (playerState.isImpostor && isNear(ventSpot)) {
-            useVent();
-        } else if (!playerState.isImpostor) {
-             console.log("Solo los impostores pueden usar los conductos.");
-        } else {
-            console.log("Acércate al conducto para usarlo.");
-        }
+    closeBtn.addEventListener('click', () => {
+        inventoryModal.classList.add('hidden');
+        selectedItem = null;
+        placementPreview.classList.add('hidden');
     });
 
-    /**
-     * Revisa si el jugador está lo suficientemente cerca de un elemento interactivo.
-     * En un juego real, esto requeriría cálculo de cuadrícula y proximidad.
-     */
-    function isNear(element) {
-        const pRect = player.getBoundingClientRect();
-        const eRect = element.getBoundingClientRect();
+    // ===============================================
+    // LÓGICA DE COLOCACIÓN ISOMÉTRICA (HABBO)
+    // ===============================================
+
+    // 1. Crear el HTML para el previsualizador
+    function updatePlacementPreview(x, y, w, h, color) {
+        placementPreview.style.left = `${x * GRID_SIZE}px`;
+        placementPreview.style.bottom = `${y * GRID_SIZE}px`;
         
-        // Simplificación: comprueba si la posición X del jugador está cerca del centro del elemento
-        const dx = (pRect.left + pRect.width/2) - (eRect.left + eRect.width/2);
-        const dy = (pRect.top + pRect.height/2) - (eRect.top + eRect.height/2);
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        return distance < 150; // Distancia de proximidad (150px)
-    }
-
-    function callEmergencyMeeting() {
-        alert("¡REUNIÓN DE EMERGENCIA INICIADA!\n(Aquí es donde entraría la interfaz de votación)");
-        // Lógica de Among Us: Detener juego, iniciar chat/votación.
-    }
-
-    function startTask() {
-        // Lógica de Among Us: Abrir minijuego (ej: arrastrar cables, poner códigos).
-        alert("Iniciando minijuego de Tarea. (Aquí se abriría la interfaz de la tarea)");
-        // Lógica real: Reducir contador de tareas.
-    }
-    
-    function useVent() {
-        // Lógica de Among Us: Solo impostores. Mover al jugador a una nueva ubicación.
-        alert("¡Has usado el conducto! (Moviendo a otra parte del mapa...)");
-        playerState.targetX = 400; 
-        playerState.targetY = 400;
+        // Usar los valores de ancho/alto del ítem * el tamaño de la cuadrícula
+        placementPreview.style.width = `${w * GRID_SIZE}px`;
+        placementPreview.style.height = `${h * GRID_SIZE}px`;
+        
+        // Renderizar el objeto "HD" dentro del preview
+        if (!placementPreview.querySelector('.object-renderer')) {
+             const renderer = document.createElement('div');
+             renderer.className = 'object-renderer';
+             placementPreview.appendChild(renderer);
+        }
+        
+        // Actualizar el color (simula el modelo HD)
+        const renderer = placementPreview.querySelector('.object-renderer');
+        renderer.style.backgroundColor = color;
+        renderer.style.width = `${w * GRID_SIZE}px`;
+        renderer.style.height = `${h * GRID_SIZE}px`;
     }
     
-    // Simulación: establecer al jugador como Impostor después de 10 segundos
-    setTimeout(() => {
-        playerState.isImpostor = true;
-        document.getElementById('player-info').querySelector('h3').textContent = "Estado: Impostor (¡Cuidado!)";
-        console.log("¡Te han convertido en Impostor!");
-        player.style.backgroundColor = '#ff0000'; // Rojo
-    }, 10000);
+    // 2. Manejar el movimiento del mouse sobre la cuadrícula
+    placementGrid.addEventListener('mousemove', (event) => {
+        if (!selectedItem) return;
+
+        // Coordenadas relativas a la cuadrícula (0,0 es la esquina inferior izquierda)
+        const rect = placementGrid.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        // Calcular la posición en la cuadrícula (celda X, Y)
+        let cellX = Math.floor(mouseX / GRID_SIZE);
+        let cellY = Math.floor((rect.height - mouseY) / GRID_SIZE); // Y es inverso (bottom-up)
+        
+        // Nota: En Habbo real es más complejo por la perspectiva, pero esto simula la adhesión.
+        
+        // Actualizar el previsualizador para que se "pegue" a la celda
+        updatePlacementPreview(cellX, cellY, selectedItem.width, selectedItem.height, selectedItem.color);
+    });
+    
+    // 3. Colocar el objeto en la cuadrícula con un clic (Mecánica Habbo)
+    placementGrid.addEventListener('click', (event) => {
+        if (!selectedItem) return;
+
+        const rect = placementGrid.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        let cellX = Math.floor(mouseX / GRID_SIZE);
+        let cellY = Math.floor((rect.height - mouseY) / GRID_SIZE); 
+        
+        // *** Lógica de Colisión (Placeholder de la parte realista) ***
+        // En un juego real: habría que verificar si las celdas (cellX, cellY) a (cellX+W, cellY+H) están libres.
+        // Aquí lo simplificamos a una colocación directa.
+        
+        const placedItem = {
+            ...selectedItem,
+            gridX: cellX,
+            gridY: cellY,
+            id: Date.now() // ID única
+        };
+        
+        placedObjects.push(placedItem);
+        renderPlacedObject(placedItem);
+
+        // Terminar el modo de colocación
+        selectedItem = null;
+        placementPreview.classList.add('hidden');
+        document.querySelectorAll('.inventory-item').forEach(el => el.classList.remove('selected'));
+        console.log(`Objeto colocado en (${cellX}, ${cellY})`);
+    });
+
+    // 4. Renderizar un objeto colocado de forma permanente
+    function renderPlacedObject(item) {
+        const objDiv = document.createElement('div');
+        objDiv.className = 'placed-object';
+        objDiv.dataset.id = item.id;
+        
+        // Posicionar en la cuadrícula
+        objDiv.style.left = `${item.gridX * GRID_SIZE}px`;
+        objDiv.style.bottom = `${item.gridY * GRID_SIZE}px`;
+        
+        // Renderizar el objeto "HD" final
+        const renderer = document.createElement('div');
+        renderer.className = 'object-renderer';
+        renderer.style.backgroundColor = item.color;
+        renderer.style.width = `${item.width * GRID_SIZE}px`;
+        renderer.style.height = `${item.height * GRID_SIZE}px`;
+        
+        // Añadir icono (para simular el detalle HD)
+        renderer.innerHTML = `<span style="font-size: ${item.width * 20}px;">${item.icon}</span>`;
+        renderer.style.display = 'flex';
+        renderer.style.justifyContent = 'center';
+        renderer.style.alignItems = 'center';
+
+        objDiv.appendChild(renderer);
+        placementGrid.appendChild(objDiv);
+    }
+    
+    // Inicializar el inventario
+    renderInventory();
 });
