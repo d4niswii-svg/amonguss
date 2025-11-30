@@ -41,7 +41,6 @@ const temporizadorElement = document.getElementById('temporizador');
 const votoConfirmadoElement = document.getElementById('voto-confirmado');
 const resultadoFinalElement = document.getElementById('resultado-final');
 const resetButton = document.getElementById('reset-button');
-// *** Nuevo botón para limpiar votos ***
 const clearVotesButton = document.getElementById('clear-votes-button'); 
 const mensajePrincipal = document.getElementById('mensaje-principal'); 
 
@@ -72,7 +71,6 @@ const toggleSecretVoteButton = document.getElementById('toggle-secret-vote-butto
 
 // ** NUEVAS REFERENCIAS DE UI MODAL **
 const votingModalContainer = document.getElementById('voting-modal-container');
-// *** MODIFICACIÓN: Botón para resolver votación ***
 const resolveVoteButton = document.getElementById('resolve-vote-button');
 
 // ** NUEVAS REFERENCIAS DE PANEL ADMIN **
@@ -85,15 +83,24 @@ let participantesCache = {};
 const coloresJugadores = ['amarillo', 'azul', 'blanco', 'rojo', 'verde', 'skip']; 
 const coloresTripulantes = ['amarillo', 'azul', 'blanco', 'rojo', 'verde']; // Sin Skip
 
-
-// IDs del navegador
-function getAnonymousUserId() {
-    // ** SIMPLEMENTE GENERAMOS UN ID TEMPORAL POR SESIÓN **
-    return 'user_' + Math.random().toString(36).substring(2, 9);
+// =========================================================
+// *** MODIFICACIÓN CRUCIAL: Lógica de ID Persistente ***
+// =========================================================
+function getPersistentUserId() {
+    let userId = localStorage.getItem('amongus_user_id');
+    if (!userId) {
+        userId = 'user_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('amongus_user_id', userId);
+        // Si es un ID nuevo, guardamos un nombre por defecto en el caché local
+        localStorage.setItem('amongus_user_name', 'Incognito');
+    }
+    return userId;
 }
-const ANONYMOUS_USER_ID = getAnonymousUserId();
+
+const ANONYMOUS_USER_ID = getPersistentUserId();
 // FIX: Mostrar el ID inmediatamente
 if (userIdDisplay) userIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`; 
+// =========================================================
 
 
 // =========================================================
@@ -108,7 +115,6 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
     // ** NUEVO: Leer si el voto es secreto **
     let isSecretVote = false;
     configRef.once('value').then(snap => {
-        // *** MODIFICACIÓN: isSecretVote se activa siempre que esté configurado como ON ***
         isSecretVote = snap.val() ? snap.val().votoSecreto || false : false;
     });
 
@@ -119,12 +125,13 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
     for (const color of coloresJugadores) {
         const votosActuales = jugadores[color] ? jugadores[color].votos || 0 : 0;
         totalVotos += votosActuales;
-
+        
         // 1. Referencias UI
         const barraElement = document.getElementById(`barra-${color}`);
         const botonElement = document.getElementById(`votar-${color}`);
         const contadorElement = document.getElementById(`voto-iconos-${color}`); // Contenedor de iconos
         const crewmateIcon = botonElement ? botonElement.querySelector('.crewmate-icon') : null; // Icono grande del jugador
+        const nombreElement = botonElement ? botonElement.querySelector('.nombre') : null; // ** NUEVA REFERENCIA **
 
         // 2. Aplicar estilo de eliminado
         if (jugadores[color] && jugadores[color].eliminado === true && botonElement) {
@@ -134,6 +141,28 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
              botonElement.classList.remove('eliminado');
              if (crewmateIcon) crewmateIcon.classList.remove('ejected');
         }
+        
+        // =========================================================
+        // *** MODIFICACIÓN CRUCIAL: Mostrar Nombre o Color en Botón ***
+        // =========================================================
+        if (nombreElement) {
+            if (color !== 'skip') {
+                const participanteConColor = Object.values(participantesData)
+                    .find(p => p.color === color && p.nombre && p.nombre !== 'SIN NOMBRE');
+                
+                // Si encontramos un participante con nombre asignado a este color, usamos su nombre
+                if (participanteConColor) {
+                    nombreElement.textContent = participanteConColor.nombre.toUpperCase();
+                } else {
+                    // Si no hay nombre asignado, volvemos al color
+                    nombreElement.textContent = color.toUpperCase();
+                }
+            } else {
+                nombreElement.textContent = 'SALTAR VOTO';
+            }
+        }
+        // =========================================================
+        
         
         // 3. Barras de porcentaje
         if (barraElement && totalVotos > 0) {
@@ -204,20 +233,6 @@ votosDetalleRef.on('value', (snapshot) => {
     if (currentJugadoresSnapshot) updateVoteDisplay(currentJugadoresSnapshot, currentVotosDetalleSnapshot);
 });
 // ----------------------------------------------------
-
-
-// =========================================================
-// ** LÓGICA DE VISIBILIDAD DE MODAL DE VOTACIÓN **
-// =========================================================
-
-// *** MODIFICACIÓN: Ya no se usan, la visibilidad la controla el panel de restricción ***
-function showVotingModal() {
-    votingModalContainer.style.display = 'flex';
-}
-function hideVotingModal() {
-    // Si la votación se cierra, el modal se oculta
-    votingModalContainer.style.display = 'none';
-}
 
 
 // =========================================================
@@ -337,7 +352,7 @@ function verificarFinDePartida() {
     }
 }
 
-// *** NUEVA FUNCIÓN: Resuelve la votación (simulando el fin del temporizador) ***
+// *** FUNCIÓN: Resuelve la votación (simulando el fin del temporizador) ***
 function resolveVoting() {
     
     // *** MODIFICACIÓN: Limpiar los iconos de voto de la UI localmente ***
@@ -428,11 +443,10 @@ function updateAdminButtonsVisibility(config) {
         adminLoginButton.style.display = 'none';
 
         // Lógica de botones de Admin dentro del panel (solo para el admin)
-        // *** HACEMOS VISIBLES TODOS LOS BOTONES DE ADMIN INDEPENDIENTEMENTE DEL ESTADO DE JUEGO ***
         assignRolesButton.style.display = 'block';         // Asignar Roles
         resolveVoteButton.style.display = 'block';          // Resolver Votación
         clearVotesButton.style.display = 'block';           // Limpiar Votación Actual
-        resetButton.style.display = 'block';              // Reiniciar Juego TOTAL (¡ESTE ES EL QUE QUIERES!)
+        resetButton.style.display = 'block';              // Reiniciar Juego TOTAL
         allowMultipleVoteButton.style.display = 'block';    // Permitir Voto Múltiple
         toggleSecretVoteButton.style.display = 'block';     // Voto Secreto
         
@@ -499,8 +513,6 @@ function performVoteChecks(personaje) {
              return;
         }
         
-        // *** MODIFICACIÓN: Eliminada la restricción de votoActivo, siempre se puede votar ***
-        
         const votoRef = (personaje === 'skip') 
             ? jugadoresRef.child('skip/votos') 
             : jugadoresRef.child(`${personaje}/votos`);
@@ -554,9 +566,6 @@ configRef.on('value', (snapshot) => {
     });
     
     updateAdminButtonsVisibility(config); 
-    
-    // *** MODIFICACIÓN: Eliminar toda la lógica de temporizador ***
-    // temporizadorElement.textContent se mantiene estático en "ABIERTA" en el HTML
 });
 
 estadoRef.on('value', (snapshot) => {
@@ -611,13 +620,23 @@ function setupParticipantTracking() {
     // Si el usuario se conecta o refresca
     userRef.onDisconnect().update({ conectado: false });
     
+    // *** MODIFICACIÓN: Usar localStorage para persistir el nombre por defecto ***
+    const localName = localStorage.getItem('amongus_user_name') || 'Incognito';
+    
     // Pone un valor inicial si es la primera vez que se conecta
-    userRef.set({ 
-        conectado: true,
-        ultimaConexion: Date.now(),
-        nombre: 'Participante (Sesión temporal)', 
-        rol: 'sin asignar',
-        color: null
+    userRef.once('value').then(snapshot => {
+        if (!snapshot.exists()) {
+            userRef.set({ 
+                conectado: true,
+                ultimaConexion: Date.now(),
+                nombre: localName, 
+                rol: 'sin asignar',
+                color: null
+            });
+        } else {
+            // Si el jugador ya existe en la DB, solo actualiza el estado de conexión
+            userRef.update({ conectado: true, ultimaConexion: Date.now() });
+        }
     });
 }
 
@@ -628,8 +647,9 @@ participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
     
     if (participante) {
         
-        // FIX: Mostrar Nombre de usuario en la esquina superior
+        // *** MODIFICACIÓN: Actualizar localStorage con el nombre de la base de datos ***
         const nombreMostrado = participante.nombre || 'Incognito';
+        localStorage.setItem('amongus_user_name', nombreMostrado);
         if (userNameDisplay) userNameDisplay.textContent = `Tu Nombre: ${nombreMostrado}`;
 
 
@@ -812,7 +832,15 @@ function asignarRol(userId, rol) {
 // 5. Función de asignación de nombre (para el ADMIN)
 function asignarNombre(userId, nombre) {
     if (!isAdmin) return;
-    participantesRef.child(userId).update({ nombre: nombre.trim() || 'SIN NOMBRE' });
+    const finalName = nombre.trim() || 'SIN NOMBRE';
+    
+    // *** MODIFICACIÓN: Actualizar el nombre en la base de datos ***
+    participantesRef.child(userId).update({ nombre: finalName });
+    
+    // *** MODIFICACIÓN: Actualizar el localStorage con el nuevo nombre (para el propio usuario) ***
+    if (userId === ANONYMOUS_USER_ID) {
+        localStorage.setItem('amongus_user_name', finalName);
+    }
 }
 
 // Inicializar el rastreo de participantes al cargar
@@ -929,6 +957,7 @@ resetButton.addEventListener('click', () => {
         votosDetalleRef.set(null); // Borrar el detalle de votos
         
         // 2. Resetear el rol y el color de TODOS los participantes (Preservando solo nombres)
+        // *** IMPORTANTE: No modificamos el 'nombre' del participante, solo rol y color. ***
         participantesRef.once('value').then(snapshot => {
             const updates = {};
             snapshot.forEach(childSnapshot => {
