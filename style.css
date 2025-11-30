@@ -39,11 +39,6 @@ body {
     background-size: cover;
     background-attachment: fixed; 
     background-position: center;
-
-    /* NUEVO: Efecto de estrellas (simulado con múltiples box-shadow) */
-    box-shadow: 
-        0 0 100px rgba(57, 255, 252, 0.2) inset, 
-        0 0 50px rgba(255, 69, 69, 0.1) inset;
 }
 
 /* ** IFRAME DE KEKOCITY (ELIMINADO) ** */
@@ -102,31 +97,6 @@ body {
     overflow-y: auto; 
 }
 
-/* NUEVO: Estilos para el control de duración de voto */
-.duration-control {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    padding: 8px;
-    background-color: #ecf0f1;
-    border-radius: 5px;
-    border: 1px solid #7f8c8d;
-}
-.duration-control label {
-    font-weight: 700;
-    font-size: 0.9em;
-    color: var(--color-texto-oscuro);
-}
-.duration-control input {
-    width: 60px;
-    padding: 5px;
-    border-radius: 5px;
-    border: 1px solid #7f8c8d;
-    text-align: center;
-    font-weight: 900;
-    font-family: 'Roboto', sans-serif;
-}
 
 /* EFECTO DE REUNIÓN DE EMERGENCIA (solo fondo sin temblor) */
 body.emergency-meeting {
@@ -546,8 +516,11 @@ body.emergency-meeting {
     flex-basis: 48%; 
 }
 .admin-btn-assign { background-color: #2c3e50; } 
-.admin-btn-start { background-color: #f39c12; } /* Botón Reunión de Emergencia */
-.admin-btn-continue { background-color: #3498db; }
+/* *** NUEVO ESTILO: Botón de Resolver Votación *** */
+.admin-btn-resolve-vote { background-color: #f39c12; } 
+/* *** NUEVO ESTILO: Botón de Limpiar Votación Actual *** */
+.admin-btn-clear-vote { background-color: #3498db; } 
+
 .admin-btn-reset { background-color: #c0392b; }
 .admin-btn-permit-vote { background-color: #9b59b6; flex-basis: 100%; }
 .admin-btn-secret-vote { background-color: #008080; flex-basis: 100%; } /* Voto Secreto */
@@ -583,12 +556,6 @@ body.emergency-meeting {
     text-decoration: line-through;
 }
 
-/* NUEVO: Estilo para el avatar/emoji */
-.player-avatar {
-    margin-right: 5px;
-    font-size: 1.2em;
-}
-
 .user-role-admin {
     display: inline-block;
     width: 60%;
@@ -611,12 +578,6 @@ body.emergency-meeting {
     justify-content: space-between;
     gap: 5px;
 }
-
-/* NUEVO: Estilos para Avatar Input/Button */
-.avatar-input { flex-basis: 60%; padding: 5px; border-radius: 5px; border: 1px solid #7f8c8d; font-size: 0.8em; margin-bottom: 5px;}
-.avatar-btn { flex-basis: 35%; padding: 5px; border: none; border-radius: 5px; font-size: 0.75em; font-weight: 700; cursor: pointer; color: white; background-color: #27ae60; box-shadow: 0 2px 0 #1e8449; margin-bottom: 5px;}
-
-
 .name-input { flex-basis: 60%; padding: 5px; border-radius: 5px; border: 1px solid #7f8c8d; font-size: 0.8em; }
 .name-btn { flex-basis: 35%; padding: 5px; border: none; border-radius: 5px; font-size: 0.75em; font-weight: 700; cursor: pointer; color: white; background-color: #9b59b6; box-shadow: 0 2px 0 #8e44ad; }
 .role-btn { flex-basis: 48%; padding: 5px 8px; border: none; border-radius: 5px; font-size: 0.75em; font-weight: 700; cursor: pointer; color: white; box-shadow: 0 2px 0 rgba(0,0,0,0.5); }
@@ -648,15 +609,6 @@ body.emergency-meeting {
 .color-assignment .verde { background-color: var(--color-verde-amongus); }
 .color-assignment .amarillo { background-color: var(--color-amarillo-amongus); color: #000; }
 .color-assignment .skip { background-color: var(--color-skip); }
-
-/* NUEVO: Botón de Kick/Ban */
-.kick-btn { 
-    flex-basis: 100%; 
-    background-color: #e74c3c !important; /* Más agresivo que el reset */
-    box-shadow: 0 4px 0 #c0392b !important;
-    margin-top: 5px;
-}
-
 
 /* --- RESTRICCIÓN DE ACCESO (PANTALLA COMPLETA) --- */
 .access-restriction-message {
