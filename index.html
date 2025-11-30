@@ -3,53 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habbo Among Us (The Skeld View)</title>
+    <title>Habbo HD 4K - Colocación de Objetos</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="game-container">
-        <!-- El mapa interactivo, donde el personaje se mueve con un clic -->
-        <div id="map-view">
-            <!-- Representación simplificada del jugador -->
-            <div id="player"></div>
-
-            <!-- Botón de Reunión de Emergencia (Emergency Meeting) -->
-            <button id="emergency-btn">REUNIÓN DE EMERGENCIA</button>
-
-            <!-- Placeholder de una Tarea (Task) -->
-            <div id="task-spot" class="interactive-spot">Panel de Tarea (Click)</div>
-
-            <!-- Placeholder de un conducto (Vent) -->
-            <div id="vent-spot" class="interactive-spot">Conducto (Vent)</div>
-
-        </div>
-
-        <!-- Barra lateral de Información (Among Us UI) -->
-        <div id="sidebar">
-            <h2>Among Us | Habbo</h2>
-            <div id="task-list">
-                <h3>Tareas Pendientes:</h3>
-                <ul id="tasks-ul">
-                    <li>Arreglar Cableado (0/3)</li>
-                    <li>Vaciar Basura</li>
-                    <li>...</li>
-                </ul>
+        
+        <!-- Vista del Piso (La Habitación Isométrica) -->
+        <div id="floor-view">
+            <!-- La Cuadrícula de Colocación (El corazón de la mecánica Habbo) -->
+            <div id="placement-grid">
+                <!-- Los objetos colocados irán aquí -->
             </div>
             
-            <div id="player-info">
-                <h3>Estado: Tripulante</h3>
-                <p>Ubicación: Cafetería</p>
-            </div>
-            
-            <div id="game-status">
-                <p id="impostor-count">Impostores: ?</p>
-                <p id="sabotage-status">Sabotaje: Ninguno</p>
+            <!-- Personaje (HD) - Posición Fija para este demo -->
+            <div id="player-hd"></div>
+        </div>
+        
+        <!-- UI de Interacción -->
+        <div id="ui-bar">
+            <button id="inventory-btn">ABRIR INVENTARIO</button>
+        </div>
+        
+        <!-- Modal del Inventario (Inventario tipo "HD") -->
+        <div id="inventory-modal" class="hidden">
+            <div class="modal-content">
+                <h2>Inventario HD 4K</h2>
+                <span class="close-btn">&times;</span>
+                
+                <div id="inventory-list">
+                    <!-- Los objetos HD irán aquí -->
+                </div>
+                
+                <div id="placement-info">
+                    Selecciona un objeto para colocarlo en el piso.
+                </div>
             </div>
         </div>
+        
+        <!-- Objeto Flotante de Previsualización (Aparece al seleccionar un ítem) -->
+        <div id="placement-preview" class="hidden"></div>
     </div>
 
-    <!-- El script principal del juego -->
     <script src="app.js"></script>
 </body>
 </html>
