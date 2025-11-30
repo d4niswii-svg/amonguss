@@ -11,11 +11,28 @@
 </head>
 <body>
 
+    <!-- *** NUEVO: MODAL DE REGISTRO DE NOMBRE *** -->
+    <div id="registration-modal-container" class="registration-modal-container" style="display:none;">
+        <div class="panel registration-panel">
+            <h1 class="panel-header">REGISTRO DE JUGADOR</h1>
+            <p class="status-message">Para jugar, elige un nombre único y envíalo.</p>
+            
+            <div class="registration-form">
+                <input type="text" id="registration-name-input" placeholder="Pon tu nombre aquí" maxlength="12">
+                <button id="register-name-button" class="admin-btn-assign">Enviar Nombre</button>
+            </div>
+            
+            <p id="registration-message" class="error-message"></p>
+            <div id="user-id-display-center" class="my-id-label-center">Tu ID: ...</div>
+        </div>
+    </div>
+
+
     <!-- MENSAJE DE RESTRICCIÓN DE ACCESO -->
     <div id="access-restriction-message" class="access-restriction-message" style="display:none;">
         <h1>ACCESO DENEGADO</h1>
         <p>Ya hay 5 jugadores activos. Espera a que el administrador inicie una nueva partida.</p>
-        <div id="user-id-display-center" class="my-id-label-center">Tu ID: ...</div>
+        <div class="my-id-label-center">Tu ID: ...</div>
     </div>
 
 
@@ -43,7 +60,7 @@
         <div id="user-id-display" class="my-id-label-top">Tu ID: ...</div>
     </div>
     
-    <!-- ** 2. CONTENEDOR MODAL DE VOTACIÓN (Visible si el acceso no está restringido) ** -->
+    <!-- ** 2. CONTENEDOR MODAL DE VOTACIÓN (Visible si el acceso no está restringido Y ESTÁS REGISTRADO) ** -->
     <div id="voting-modal-container" class="voting-modal-container" style="display: none;">
         
         <!-- Contenido principal de votación -->
