@@ -22,12 +22,34 @@
     <!-- NOTIFICACIÓN DE ROL GIGANTE -->
     <div id="role-notification" class="role-notification-popup" style="display: none;"></div>
     
-    <!-- POPUP DE EXPULSIÓN (ANIMACIÓN) -->
+    <!-- POPUP DE EXPULSIÓN (VOTACIÓN) -->
     <div id="expulsion-result-popup" class="expulsion-popup" style="display:none;">
         <div class="expulsion-content">
             <div id="ejected-crewmate-icon" class="ejected-crewmate"></div>
             <p id="expulsion-message" class="expulsion-message"></p>
         </div>
+    </div>
+    
+    <!-- ** NUEVO: POPUP DE MUERTE DRAMÁTICA (KILL) ** -->
+    <div id="murder-popup" class="murder-popup" style="display:none;">
+        <div class="murder-content">
+            <h1 id="murder-victim-name"></h1>
+            <p class="murder-message">HA MUERTO</p>
+        </div>
+    </div>
+    
+    <!-- ** NUEVO: POPUP DE VICTORIA DRAMÁTICA ** -->
+    <div id="victory-popup" class="victory-popup" style="display:none;">
+        <h1 id="victory-message" class="victory-message"></h1>
+        <div class="impostor-reveal">
+            <h2>IMPOSTOR(ES)</h2>
+            <div id="impostor-list-container" class="final-player-list"></div>
+        </div>
+        <div class="crewmate-reveal">
+            <h2>TRIPULANTE(S)</h2>
+            <div id="crewmate-list-container" class="final-player-list"></div>
+        </div>
+        <p class="victory-footer">¡JUEGO TERMINADO! Presiona REINICIAR para empezar de nuevo.</p>
     </div>
 
     <!-- PANEL DE ROL PERSONAL (MODIFICADO) -->
