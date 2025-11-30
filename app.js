@@ -618,6 +618,33 @@ if (newPlayerNameInput) newPlayerNameInput.addEventListener('keyup', handleNameS
 // LÓGICA DE PARTICIPANTES Y ROLES (CONTROL DE ACCESO Y RENDERIZADO)
 // =========================================================
 
+// *** NUEVA FUNCIÓN: Actualiza el nombre de los botones de votación ***
+function updatePlayerNamesInVotingPanel() {
+    // Solo actualiza los botones de los colores de jugadores (excluye skip)
+    coloresTripulantes.forEach(color => {
+        const nameSpan = document.querySelector(`#votar-${color} .nombre`);
+        if (!nameSpan) return;
+
+        let playerName = color.toUpperCase(); // Valor por defecto si no se encuentra
+
+        // Busca el participante al que se le asignó este color
+        const participant = Object.values(participantesCache).find(p => p.color === color);
+
+        if (participant && participant.nombre) {
+             const customName = participant.nombre.trim();
+             // Solo usa el nombre personalizado si NO es el temporal o el de borrado de admin
+             if (customName !== 'Participante (Sesión temporal)' && customName !== 'SIN NOMBRE' && customName.length > 0) {
+                 playerName = customName.toUpperCase();
+             }
+        }
+
+        nameSpan.textContent = playerName;
+    });
+    // El botón de 'skip' (SALTAR VOTO) es estático y no se necesita actualizar.
+}
+// ***************************************************************
+
+
 // Muestra el mensaje de restricción de acceso si hay 5 jugadores asignados
 function checkAndRestrictAccess(participantesData) {
     const jugadoresConColor = Object.values(participantesData || {}).filter(p => coloresTripulantes.includes(p.color)).length;
@@ -853,6 +880,10 @@ function asignarColor(userId, color) {
 participantesRef.on('value', (snapshot) => {
     participantesCache = snapshot.val() || {}; 
     updateParticipantDisplay(participantesCache);
+    
+    // <<<<<<<<<<<<<<<<<<<< ESTA ES LA CLAVE >>>>>>>>>>>>>>>>>>>>>
+    updatePlayerNamesInVotingPanel(); 
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     
     if (currentJugadoresSnapshot && currentVotosDetalleSnapshot) {
         updateVoteDisplay(currentJugadoresSnapshot, currentVotosDetalleSnapshot);
