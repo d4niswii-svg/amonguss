@@ -41,12 +41,6 @@ body {
     background-position: center;
 }
 
-/* ** IFRAME DE KEKOCITY (ELIMINADO) ** */
-.fullscreen-iframe {
-    display: none !important; 
-}
-
-
 /* ** CONTENEDOR MODAL DE VOTACIÓN ** */
 .voting-modal-container {
     position: fixed;
@@ -97,12 +91,6 @@ body {
     overflow-y: auto; 
 }
 
-
-/* EFECTO DE REUNIÓN DE EMERGENCIA (solo fondo sin temblor) */
-body.emergency-meeting {
-    background-color: #ff454550; /* Solo un tinte rojo */
-    animation: none; /* ELIMINADO: No hay temblor */
-}
 
 /* ESTILO GENERAL DE PANEL (Limpio y 3D) */
 .panel {
@@ -457,7 +445,7 @@ body.emergency-meeting {
 }
 
 
-/* --- POPUP DE EXPULSIÓN (ANIMACIÓN) --- */
+/* --- POPUP DE EXPULSIÓN (Votación) --- */
 .expulsion-popup {
     position: fixed;
     top: 0;
@@ -525,6 +513,134 @@ body.emergency-meeting {
 .expulsion-popup.impostor-ejected .expulsion-message { color: var(--color-neón-cian); text-shadow: 0 0 15px var(--color-neón-cian); }
 .expulsion-popup.crewmate-ejected .expulsion-message { color: var(--color-neón-rojo); text-shadow: 0 0 15px var(--color-neón-rojo); }
 .expulsion-popup.skip-ejected .expulsion-message { color: #f1c40f; text-shadow: 0 0 15px #f1c40f; }
+
+/* ** NUEVO: POPUP DE MUERTE DRAMÁTICA ** */
+.murder-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(139, 0, 0, 0.98); /* Rojo muy oscuro / sangre */
+    z-index: 4000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: blood-fadein 0.5s forwards;
+    box-shadow: inset 0 0 50px rgba(0, 0, 0, 1);
+}
+@keyframes blood-fadein { from { opacity: 0; } to { opacity: 1; } }
+
+.murder-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Bungee Outline', sans-serif;
+    color: white;
+}
+
+#murder-victim-name {
+    font-size: 6vw;
+    color: #ffcccc; /* Rojo claro */
+    text-shadow: 0 0 20px #ff0000, 0 0 40px #aa0000;
+    animation: victim-pulse 1.5s infinite alternate;
+}
+@keyframes victim-pulse {
+    from { opacity: 0.8; transform: scale(1); }
+    to { opacity: 1; transform: scale(1.05); }
+}
+
+.murder-message {
+    font-size: 4vw;
+    color: #ff0000;
+    text-shadow: 0 0 10px #000;
+    border-top: 5px solid #ff0000;
+    padding-top: 20px;
+    margin-top: 20px;
+}
+
+/* ** NUEVO: POPUP DE VICTORIA DRAMÁTICA ** */
+.victory-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 50px;
+    animation: victory-zoom 0.5s forwards;
+}
+@keyframes victory-zoom { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+/* Estilos de Victoria por Roles */
+.victory-popup.crewmate-win {
+    background: linear-gradient(135deg, #1abc9c 0%, #3498db 100%);
+    color: white;
+    text-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+.victory-popup.impostor-win {
+    background: linear-gradient(135deg, #c0392b 0%, #2c3e50 100%);
+    color: white;
+    text-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.victory-message {
+    font-family: 'Bungee Outline', sans-serif;
+    font-size: 5vw;
+    margin-bottom: 40px;
+    animation: victory-neon 1s infinite alternate;
+}
+.crewmate-win .victory-message { color: var(--color-neón-cian); }
+.impostor-win .victory-message { color: var(--color-neón-rojo); }
+
+@keyframes victory-neon {
+    from { text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 20px currentColor; }
+    to { text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor, 0 0 40px currentColor; }
+}
+
+.impostor-reveal, .crewmate-reveal {
+    margin: 20px 0;
+}
+.impostor-reveal h2, .crewmate-reveal h2 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.5em;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.5);
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+}
+
+.final-player-list {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.final-player-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 900;
+    font-size: 1.2em;
+    padding: 8px 15px;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+.final-player-item .voto-crewmate-icon { margin: 0; }
+
+.victory-footer {
+    position: absolute;
+    bottom: 20px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.7);
+}
 
 
 /* --- LOGIN ADMIN & USER ID --- */
@@ -659,6 +775,8 @@ body.emergency-meeting {
 .color-assignment .amarillo { background-color: var(--color-amarillo-amongus); color: #000; }
 .color-assignment .skip { background-color: var(--color-skip); }
 
+.kill-btn { flex-basis: 100%; margin-top: 5px; } /* Estilo del botón de Kill */
+
 /* --- RESTRICCIÓN DE ACCESO (PANTALLA COMPLETA) --- */
 .access-restriction-message {
     position: fixed;
@@ -685,10 +803,4 @@ body.emergency-meeting {
     margin-top: 20px;
     font-size: 1.2em;
     color: #ecf0f1;
-}
-
-/* Estilo opcional para la ventana de juego */
-/* Ya no se usa, pero se mantiene la clase para evitar errores de sintaxis */
-.optional-game-iframe {
-    display: none;
 }
