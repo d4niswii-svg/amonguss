@@ -692,3 +692,147 @@ body.emergency-meeting {
 .optional-game-iframe {
     display: none;
 }
+
+/* ========================================================= */
+/* === NUEVOS ESTILOS DRAMÁTICOS (SOLICITADOS POR EL USER) === */
+/* ========================================================= */
+
+/* 1. ESTILO DRAMÁTICO PARA EL POPUP DE MUERTE (KILL) */
+.murder-popup {
+    background-color: rgba(192, 57, 43, 0.95); /* Rojo oscuro sangre */
+    z-index: 4000;
+    font-family: 'Bungee Outline', sans-serif;
+}
+
+.murder-content {
+    animation: murder-reveal 4s forwards;
+    opacity: 0;
+    text-align: center;
+}
+
+@keyframes murder-reveal {
+    0% { transform: scale(0.5); opacity: 0; }
+    20% { opacity: 1; transform: scale(1.1); }
+    80% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; } 
+}
+
+#murder-victim-name {
+    font-size: 6vw;
+    color: #fff;
+    text-shadow: 0 0 20px var(--color-neón-cian), 0 0 30px var(--color-neón-cian);
+    border-bottom: 5px solid #fff;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+.murder-message {
+    font-size: 4vw;
+    color: var(--color-neón-rojo);
+    text-shadow: 0 0 15px var(--color-neón-rojo);
+}
+
+
+/* 2. ESTILOS DE BRILLO PARA LA PANTALLA DE VICTORIA */
+.impostor-reveal, .crewmate-reveal {
+    margin-top: 30px;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+/* Contenedor de Victoria de Impostores (brillo rojo) */
+.victory-popup.impostor-win .impostor-reveal {
+    background-color: rgba(231, 76, 60, 0.1); /* Fondo muy suave */
+    box-shadow: 0 0 20px var(--color-neón-rojo);
+}
+
+/* Contenedor de Victoria de Tripulantes (brillo cian) */
+.victory-popup.crewmate-win .crewmate-reveal {
+    background-color: rgba(57, 255, 252, 0.1); /* Fondo muy suave */
+    box-shadow: 0 0 20px var(--color-neón-cian);
+}
+
+.final-player-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    font-weight: 900;
+    margin: 8px 0;
+    padding: 5px;
+    border-radius: 5px;
+    gap: 10px;
+    transition: all 0.5s;
+}
+
+.final-player-item .voto-crewmate-icon {
+    width: 30px; 
+    height: 40px; 
+}
+
+/* Brillo para los nombres/iconos del equipo ganador */
+.victory-popup.impostor-win .final-player-item.impostor {
+    color: var(--color-neón-rojo);
+    text-shadow: 0 0 8px var(--color-neón-rojo);
+    animation: neon-pulse-red 1.5s infinite alternate;
+}
+
+.victory-popup.crewmate-win .final-player-item.crewmate {
+    color: var(--color-neón-cian);
+    text-shadow: 0 0 8px var(--color-neón-cian);
+    animation: neon-pulse-cyan 1.5s infinite alternate;
+}
+
+@keyframes neon-pulse-red {
+    from { box-shadow: 0 0 5px rgba(255, 69, 69, 0.5); }
+    to { box-shadow: 0 0 15px rgba(255, 69, 69, 1); }
+}
+@keyframes neon-pulse-cyan {
+    from { box-shadow: 0 0 5px rgba(57, 255, 252, 0.5); }
+    to { box-shadow: 0 0 15px rgba(57, 255, 252, 1); }
+}
+
+
+/* 3. INDICADOR DE JUGADOR ELIMINADO/MUERTO EN PANEL ADMIN */
+/* Reemplazando el estilo simple de .ejected-player */
+.user-index-name.ejected-player {
+    position: relative;
+    color: var(--color-neón-rojo);
+    text-decoration: none; /* Quitamos el line-through por defecto */
+    opacity: 0.6;
+}
+
+/* Crear una 'X' dramática con pseudoelementos */
+.user-index-name.ejected-player strong::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--color-neón-rojo);
+    transform: translateY(-50%) rotate(45deg);
+    transition: opacity 0.3s;
+    pointer-events: none; /* Asegura que no interfiera con clics */
+}
+
+.user-index-name.ejected-player strong::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--color-neón-rojo);
+    transform: translateY(-50%) rotate(-45deg);
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+/* Ajuste para que la X no afecte el texto de (ELIMINADO) */
+.user-index-name.ejected-player strong {
+    position: relative;
+    display: inline-block;
+    padding-right: 5px; /* Espacio para que la X no colisione con el texto siguiente */
+}
