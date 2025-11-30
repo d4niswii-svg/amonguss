@@ -87,12 +87,8 @@ let participantesCache = {};
 
 // IDs del navegador
 function getAnonymousUserId() {
-    let userId = localStorage.getItem('anonymousUserId');
-    if (!userId) {
-        userId = 'user_' + Math.random().toString(36).substring(2, 9);
-        localStorage.setItem('anonymousUserId', userId);
-    }
-    return userId;
+    // ** SIMPLEMENTE GENERAMOS UN ID TEMPORAL POR SESIÓN **
+    return 'user_' + Math.random().toString(36).substring(2, 9);
 }
 const ANONYMOUS_USER_ID = getAnonymousUserId();
 // FIX: Mostrar el ID inmediatamente
@@ -514,55 +510,58 @@ function votar(personaje) {
 }
 
 function performVoteChecks(personaje) {
-    // Si ya votó, sale
-    if (localStorage.getItem('voted') === 'true') {
-        alert('¡Ya has emitido tu voto en esta ronda!');
-        return;
-    }
     
-    // Si la votación está activa (RESTRICCIÓN DE INICIO/CONTINUACIÓN)
-    configRef.child('votoActivo').once('value').then(snap => {
-        // La restricción de voto por tiempo se maneja por la deshabilitación de botones, 
-        // pero esta alerta de seguridad se mantiene:
-        if (!snap.val()) {
-             alert('La votación ha terminado o no ha iniciado. El administrador debe iniciar o continuar la votación.');
+    // ** NUEVO CHEQUEO DE VOTO ÚNICO (BASADO EN FIREBASE) **
+    votosDetalleRef.child(ANONYMOUS_USER_ID).once('value').then(votoSnap => {
+        if (votoSnap.exists()) {
+             alert('¡Ya has emitido tu voto en esta ronda!');
              return;
         }
         
-        const votoRef = (personaje === 'skip') 
-            ? jugadoresRef.child('skip/votos') 
-            : jugadoresRef.child(`${personaje}/votos`);
-        
-        const performVote = () => {
-             // 1. Voto en el contador total
-             votoRef.transaction(function (currentVotes) {
-                return (currentVotes || 0) + 1;
-            });
+        // Si la votación está activa (RESTRICCIÓN DE INICIO/CONTINUACIÓN)
+        configRef.child('votoActivo').once('value').then(snap => {
+            // La restricción de voto por tiempo se maneja por la deshabilitación de botones, 
+            // pero esta alerta de seguridad se mantiene:
+            if (!snap.val()) {
+                 alert('La votación ha terminado o no ha iniciado. El administrador debe iniciar o continuar la votación.');
+                 return;
+            }
             
-            // 2. Voto en el detalle (para los iconos)
-            votosDetalleRef.child(ANONYMOUS_USER_ID).set({
-                voto: personaje,
-                tiempo: Date.now()
-            });
+            const votoRef = (personaje === 'skip') 
+                ? jugadoresRef.child('skip/votos') 
+                : jugadoresRef.child(`${personaje}/votos`);
             
-            localStorage.setItem('voted', 'true');
-            botonesVoto.forEach(btn => btn.disabled = true);
-            votoConfirmadoElement.style.display = 'block';
-            setTimeout(() => { votoConfirmadoElement.style.display = 'none'; }, 3000);
-        }
+            const performVote = () => {
+                 // 1. Voto en el contador total
+                 votoRef.transaction(function (currentVotes) {
+                    return (currentVotes || 0) + 1;
+                });
+                
+                // 2. Voto en el detalle (para los iconos y el voto único)
+                votosDetalleRef.child(ANONYMOUS_USER_ID).set({
+                    voto: personaje,
+                    tiempo: Date.now()
+                });
+                
+                // ** ELIMINADO: localStorage.setItem('voted', 'true'); **
+                botonesVoto.forEach(btn => btn.disabled = true);
+                votoConfirmadoElement.style.display = 'block';
+                setTimeout(() => { votoConfirmadoElement.style.display = 'none'; }, 3000);
+            }
 
-        // Si vota por alguien que ya está eliminado (excluyendo 'skip')
-        if (personaje !== 'skip') {
-            jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
-                if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
-                    alert(`¡${personaje.toUpperCase()} ya ha sido eliminado! No puedes votar por él.`);
-                    return;
-                }
+            // Si vota por alguien que ya está eliminado (excluyendo 'skip')
+            if (personaje !== 'skip') {
+                jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
+                    if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
+                        alert(`¡${personaje.toUpperCase()} ya ha sido eliminado! No puedes votar por él.`);
+                        return;
+                    }
+                    performVote();
+                });
+            } else {
                 performVote();
-            });
-        } else {
-            performVote();
-        }
+            }
+        });
     });
 }
 
@@ -572,20 +571,19 @@ configRef.on('value', (snapshot) => {
     const config = snapshot.val();
     
     // --- Lógica de Sincronización de Voto Local (ID DE DISPOSITIVO) ---
-    const dbClearSignal = config.lastVoteClearSignal || 0;
-    const localClearSignal = parseInt(localStorage.getItem('localClearSignal') || 0);
-
-    if (dbClearSignal > localClearSignal) {
-        localStorage.removeItem('voted');
-        localStorage.setItem('localClearSignal', dbClearSignal);
-    }
+    // ** ELIMINADO: Toda la lógica de lastVoteClearSignal y localClearSignal **
+    
     // ------------------------------------------------------------------
 
     const votoTiempoCorriendo = config.votoActivo && config.tiempoFin > Date.now();
-    const puedeVotar = votoTiempoCorriendo && localStorage.getItem('voted') !== 'true'; 
-
-    botonesVoto.forEach(btn => {
-        btn.disabled = !puedeVotar;
+    // ** NUEVA LÓGICA: Chequear el voto único en base de datos para deshabilitar botones **
+    votosDetalleRef.child(ANONYMOUS_USER_ID).once('value').then(votoSnap => {
+        const haVotado = votoSnap.exists();
+        const puedeVotar = votoTiempoCorriendo && !haVotado;
+        
+        botonesVoto.forEach(btn => {
+            btn.disabled = !puedeVotar;
+        });
     });
     
     updateAdminButtonsVisibility(config); 
@@ -650,17 +648,16 @@ function setupParticipantTracking() {
     
     // Si el usuario se conecta o refresca
     userRef.onDisconnect().update({ conectado: false });
-    userRef.update({ conectado: true });
-
+    // ** ELIMINADO: Poner conectado: true aquí ya que no hay persistencia de ID **
+    
     // Pone un valor inicial si es la primera vez que se conecta
-    userRef.once('value').then(snapshot => {
-        if (!snapshot.exists()) {
-            userRef.update({ 
-                nombre: 'Participante Nuevo', 
-                rol: 'sin asignar',
-                color: null
-            });
-        }
+    // ** USAMOS set() en lugar de once().then().update() para no re-crear en cada sesión si el ID cambia **
+    userRef.set({ 
+        conectado: true,
+        ultimaConexion: Date.now(),
+        nombre: 'Participante (Sesión temporal)', 
+        rol: 'sin asignar',
+        color: null
     });
 }
 
@@ -668,7 +665,7 @@ function setupParticipantTracking() {
 // Escucha el rol asignado al usuario y actualiza el panel personal y el nombre
 participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
     const participante = snapshot.val();
-    const localRole = localStorage.getItem('currentRole');
+    // ** ELIMINADO: const localRole = localStorage.getItem('currentRole'); **
     
     if (participante) {
         
@@ -678,21 +675,13 @@ participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
 
 
         // --- LÓGICA DE NOTIFICACIÓN DE ROL GIGANTE ---
-        if (participante.rol && participante.rol !== localRole && localStorage.getItem('localClearSignal')) {
-            // Solo mostrar la notificación si el rol fue asignado DESPUÉS del último clear
-            configRef.child('lastVoteClearSignal').once('value').then(snap => {
-                 if (participante.ultimaConexion > snap.val() || participante.rol !== 'sin asignar') { // Lógica simple para evitar spam al cargar
-                      showRoleNotification(participante.rol);
-                 }
-            });
-            localStorage.setItem('currentRole', participante.rol); 
-        
-        } else if (participante.rol && participante.rol !== 'sin asignar' && !localRole) {
-            showRoleNotification(participante.rol);
-            localStorage.setItem('currentRole', participante.rol);
-        } else if (participante.rol) {
-             localStorage.setItem('currentRole', participante.rol);
+        // ** SIMPLIFICADO: Mostramos la notificación si el rol es asignado **
+        if (participante.rol && participante.rol !== 'sin asignar') {
+            // No podemos chequear si es diferente al local, así que la notificación será más agresiva
+            // Solo mostramos si el rol ha sido asignado y el usuario está activo.
+             showRoleNotification(participante.rol);
         }
+        // ----------------------------------------------------
         
         
         // --- LÓGICA DE PANEL PERSONAL ---
@@ -941,7 +930,7 @@ showVotingModalButton.addEventListener('click', () => {
                 configRef.update({
                     votoActivo: true, 
                     tiempoFin: tiempoFin,
-                    // ** LÍNEA CRUCIAL: Esto fuerza a todos los clientes a borrar su 'voted' local **
+                    // ** CRUCIAL: Esto fuerza a un 'reset' lógico para el voto único de los clientes **
                     lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
                 }).then(() => {
                     // El listener de config ya llama a showVotingModal()
@@ -973,7 +962,7 @@ continueButton.addEventListener('click', () => {
         configRef.update({
             votoActivo: true, 
             tiempoFin: 0,
-            // ** LÍNEA CRUCIAL: Esto fuerza a todos los clientes a borrar su 'voted' local **
+            // ** CRUCIAL: Esto fuerza a un 'reset' lógico para el voto único de los clientes **
             lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
         });
         
