@@ -30,11 +30,23 @@
         </div>
     </div>
 
-    <!-- PANEL DE ROL PERSONAL -->
+    <!-- PANEL DE ROL PERSONAL (MODIFICADO) -->
     <div id="personal-role-panel" class="personal-role-panel" style="display:none;">
-        <p class="panel-label">TÚ ERES:</p>
-        <div id="my-crewmate-icon" class="my-crewmate-icon"></div>
-        <div id="my-role-display" class="my-role-display"></div>
+        
+        <!-- Contenido Normal de Rol/Color -->
+        <div id="role-display-content">
+            <p class="panel-label">TÚ ERES:</p>
+            <div id="my-crewmate-icon" class="my-crewmate-icon"></div>
+            <div id="my-role-display" class="my-role-display"></div>
+        </div>
+
+        <!-- ** NUEVO: Formulario para Asignar Nombre Inicial ** -->
+        <div id="name-setup-form" class="name-setup-form" style="display:none;">
+            <p id="name-setup-message" class="name-setup-message"></p>
+            <input type="text" id="new-player-name-input" placeholder="Escribe tu nombre aquí" maxlength="20">
+            <button id="submit-name-button" class="submit-name-button">Confirmar</button>
+        </div>
+
     </div>
 
     <!-- INFORMACIÓN PERSONAL (ID/NOMBRE) - Ubicación fija superior izquierda -->
@@ -137,8 +149,6 @@
                     <button id="clear-votes-button" class="admin-btn-clear-vote" style="display:none;">Limpiar Votación Actual</button> 
                     
                     <!-- Botones de Control de Voto -->
-                    <!-- *** NUEVO: Botón para Ocultar/Mostrar Reunión *** -->
-                    <button id="toggle-meeting-button" class="admin-btn-toggle-meeting" style="display:none;">Ocultar Reunión</button>
                     <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
                     <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
                     
