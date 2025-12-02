@@ -46,7 +46,7 @@ try {
 }
 
 // Referencias a la Base de Datos (Inicializadas solo si database existe)
-let jugadoresRef, configRef, estadoRef, participantesRef, votosDetalleRef;
+let jugadoresRef, configRef, estadoRef, participantesRef, votosDetalleRef, chatRef; // <-- MODIFICADO: Añadido chatRef
 
 if (database) {
     jugadoresRef = database.ref('jugadores'); 
@@ -54,6 +54,7 @@ if (database) {
     estadoRef = database.ref('estado');
     participantesRef = database.ref('participantes'); 
     votosDetalleRef = database.ref('votosDetalle'); 
+    chatRef = database.ref('chat'); // <-- NUEVA REFERENCIA
 }
 
 
@@ -117,6 +118,14 @@ const resolveVoteButton = document.getElementById('resolve-vote-button');
 // ** NUEVAS REFERENCIAS DE PANEL ADMIN **
 const toggleAdminPanelButton = document.getElementById('toggle-admin-panel-button');
 const adminPanelContainer = document.getElementById('admin-panel-container');
+
+// ** NUEVAS REFERENCIAS: CHAT **
+const chatPanel = document.getElementById('chat-panel');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const chatSendButton = document.getElementById('chat-send-button');
+const chatStatusMessage = document.getElementById('chat-status-message');
+const clearChatButton = document.getElementById('clear-chat-button'); // <-- NUEVO: Botón de limpiar chat
 
 
 let isAdmin = false;
@@ -528,12 +537,13 @@ function updateAdminButtonsVisibility(config) {
              toggleSecretVoteButton.style.display = 'block';     
              toggleSecretVoteButton.textContent = config.votoSecreto ? "Voto Secreto: ON" : "Voto Secreto: OFF";
         }
-
+        if (clearChatButton) clearChatButton.style.display = 'block'; // <-- NUEVO: Limpiar Chat
 
     } else {
          if (toggleAdminPanelButton) toggleAdminPanelButton.style.display = 'none'; 
          if (adminPanelContainer) adminPanelContainer.style.display = 'none'; 
          if (adminLoginButton) adminLoginButton.style.display = 'block';
+         if (clearChatButton) clearChatButton.style.display = 'none';
     }
 }
 
@@ -784,6 +794,7 @@ if (participantesRef) {
         
         if (!participante) {
              if (personalRolePanel) personalRolePanel.style.display = 'none';
+             if (chatPanel) chatPanel.style.display = 'none'; // <-- NUEVO: Ocultar chat si no hay participante
              return;
         }
         
@@ -800,6 +811,9 @@ if (participantesRef) {
             if (nameSetupForm) nameSetupForm.style.display = 'flex';
             if (roleDisplayContent) roleDisplayContent.style.display = 'none'; 
             if (newPlayerNameInput) newPlayerNameInput.focus();
+            
+            // Ocultar Chat
+            if (chatPanel) chatPanel.style.display = 'none'; 
             return; 
         } else {
             if (nameSetupForm) nameSetupForm.style.display = 'none';
@@ -851,6 +865,32 @@ if (participantesRef) {
                  myRoleDisplay.textContent = 'SIN COLOR';
              }
         }
+        
+        // =================================================
+        // ** NUEVO: LÓGICA DE CHAT **
+        // =================================================
+        if (chatPanel) {
+            // Un jugador puede chatear si tiene color, nombre, rol asignado y NO está expulsado.
+            const puedeChatear = tieneColor && !esNombreVacio && participante.rol !== 'expulsado' && participante.rol !== 'sin asignar';
+            
+            chatPanel.style.display = 'flex'; // Mostrar el panel de chat si hay un participante registrado
+            
+            if (chatInput) chatInput.disabled = !puedeChatear;
+            if (chatSendButton) chatSendButton.disabled = !puedeChatear;
+            
+            if (chatStatusMessage) {
+                if (participante.rol === 'expulsado') {
+                     chatStatusMessage.textContent = '¡Estás eliminado! No puedes chatear.';
+                } else if (!tieneColor || esNombreVacio) {
+                     chatStatusMessage.textContent = 'Debes tener color y nombre asignado para chatear.';
+                } else if (participante.rol === 'sin asignar') {
+                     chatStatusMessage.textContent = 'Tu rol aún no ha sido asignado.';
+                } else {
+                     chatStatusMessage.textContent = `Chateando como: ${nombreMostrado} (${participante.color.toUpperCase()})`;
+                }
+            }
+        }
+        // =================================================
     });
 }
 
@@ -1251,6 +1291,105 @@ if (toggleSecretVoteButton) {
         });
     });
 }
+
+// *** NUEVO LISTENER: Botón para Limpiar Chat (ADMIN) ***
+if (clearChatButton) {
+    clearChatButton.addEventListener('click', () => {
+        if (!isAdmin || !chatRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
+
+        chatRef.set(null).then(() => {
+            alert("¡Chat limpiado!");
+        }).catch(error => {
+            console.error("Error al limpiar el chat:", error);
+            alert("Error al limpiar el chat.");
+        });
+    });
+}
+
+
+// =========================================================
+// ** NUEVA SECCIÓN: LÓGICA DE CHAT **
+// =========================================================
+
+/**
+ * Envía un mensaje al nodo 'chat' en Firebase.
+ */
+function sendMessage() {
+    if (!chatRef || !chatInput || chatInput.disabled) return;
+    
+    const message = chatInput.value.trim();
+    if (message.length === 0) return;
+    
+    const miParticipante = participantesCache[ANONYMOUS_USER_ID];
+    
+    // Doble chequeo de seguridad (ya hecho en el listener, pero por si acaso)
+    if (!miParticipante || !miParticipante.color || miParticipante.rol === 'expulsado' || miParticipante.rol === 'sin asignar') {
+         alert('No puedes enviar mensajes: rol no válido o eliminado.');
+         chatInput.value = '';
+         return;
+    }
+    
+    const senderName = miParticipante.nombre || miParticipante.color.toUpperCase();
+    const senderColor = miParticipante.color;
+
+    // 1. Enviar a Firebase
+    chatRef.push({
+        senderId: ANONYMOUS_USER_ID,
+        senderName: senderName,
+        senderColor: senderColor,
+        message: message,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+        chatInput.value = ''; // Limpiar el input
+    }).catch(error => {
+        console.error("Error al enviar mensaje:", error);
+    });
+}
+
+/**
+ * Renderiza los mensajes de chat en la UI.
+ */
+function updateChatDisplay(chatSnapshot) {
+    if (!chatMessages) return;
+
+    const messages = chatSnapshot.val();
+    chatMessages.innerHTML = '';
+    
+    // Obtener los últimos 50 mensajes para mantener el rendimiento
+    const messagesArray = messages ? Object.values(messages) : [];
+    const lastMessages = messagesArray.slice(-50); 
+    
+    lastMessages.forEach(msg => {
+        const messageItem = document.createElement('p');
+        messageItem.classList.add('chat-message-item');
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.classList.add('chat-sender-name', msg.senderColor);
+        nameSpan.textContent = `${msg.senderName}:`;
+        
+        messageItem.appendChild(nameSpan);
+        messageItem.appendChild(document.createTextNode(` ${msg.message}`));
+        
+        chatMessages.appendChild(messageItem);
+    });
+    
+    // Hacer scroll al final para ver el mensaje más reciente
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Listener de Chat (Si la referencia existe)
+if (chatRef) {
+    // Limitar a los 50 mensajes más recientes
+    chatRef.limitToLast(50).on('value', updateChatDisplay);
+}
+
+// Event Listeners para el chat
+if (chatSendButton) chatSendButton.addEventListener('click', sendMessage);
+if (chatInput) chatInput.addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
+});
 
 // Inicializar el rastreo de participantes al cargar (DEBE ESTAR AL FINAL)
 setupParticipantTracking();
