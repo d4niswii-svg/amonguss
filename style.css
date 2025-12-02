@@ -573,6 +573,7 @@ body.emergency-meeting {
 .admin-btn-reset { background-color: #c0392b; }
 .admin-btn-permit-vote { background-color: #9b59b6; flex-basis: 100%; }
 .admin-btn-secret-vote { background-color: #008080; flex-basis: 100%; } /* Voto Secreto */
+.admin-btn-chat-reset { background-color: #6c5ce7; } /* Limpiar Chat */
 
 
 /* --- PANEL DE PARTICIPANTES --- */
@@ -687,8 +688,101 @@ body.emergency-meeting {
     color: #ecf0f1;
 }
 
-/* Estilo opcional para la ventana de juego */
-/* Ya no se usa, pero se mantiene la clase para evitar errores de sintaxis */
-.optional-game-iframe {
-    display: none;
+/* ** ESTILOS NUEVOS: PANEL DE CHAT ** */
+.chat-panel {
+    position: fixed;
+    bottom: 20px;
+    left: 20px; /* Posición: inferior izquierda */
+    background: rgba(44, 62, 80, 0.9); /* Gris oscuro semi-transparente */
+    border: 3px solid var(--color-borde-panel);
+    border-radius: 15px;
+    padding: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    z-index: 101; 
+    width: 300px;
+    height: 350px; /* Altura fija para el chat */
+    display: flex; 
+    flex-direction: column;
+    font-family: 'Roboto', sans-serif;
+    transition: all 0.3s;
+}
+
+.chat-header {
+    color: #ecf0f1;
+    font-size: 1.2em;
+    margin: 0 0 10px 0;
+    text-align: center;
+    border-bottom: 1px solid #7f8c8d;
+    padding-bottom: 5px;
+    font-weight: 900;
+}
+
+.chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    background-color: #2c3e50; /* Fondo más oscuro para el área de mensajes */
+    padding: 8px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #4a637d;
+    color: #ecf0f1;
+    font-size: 0.9em;
+}
+
+.chat-message-item {
+    margin-bottom: 5px;
+    line-height: 1.3;
+    word-wrap: break-word;
+}
+
+.chat-sender-name {
+    font-weight: 900;
+    margin-right: 5px;
+}
+/* Colores de los jugadores en el chat */
+.chat-sender-name.rojo { color: var(--color-rojo-amongus); }
+.chat-sender-name.azul { color: var(--color-azul-amongus); }
+.chat-sender-name.blanco { color: var(--color-blanco-amongus); }
+.chat-sender-name.verde { color: var(--color-verde-amongus); }
+.chat-sender-name.amarillo { color: var(--color-amarillo-amongus); }
+
+
+.chat-input-container {
+    display: flex;
+    gap: 5px;
+}
+
+#chat-input {
+    flex-grow: 1;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #7f8c8d;
+    font-size: 0.9em;
+    background-color: #ecf0f1;
+    color: #2c3e50;
+}
+#chat-input:disabled { background-color: #bdc3c7; }
+
+#chat-send-button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    font-weight: 700;
+    cursor: pointer;
+    color: white;
+    background-color: #3498db; /* Azul */
+    box-shadow: 0 3px 0 #2980b9;
+    transition: transform 0.1s;
+}
+#chat-send-button:disabled {
+    background-color: #95a5a6;
+    box-shadow: 0 2px 0 #7f8c8d;
+    cursor: not-allowed;
+}
+
+.chat-status-message {
+    margin: 5px 0 0 0;
+    font-size: 0.8em;
+    color: #f1c40f;
+    text-align: center;
 }
