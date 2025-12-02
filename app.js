@@ -1219,6 +1219,9 @@ if (resetButton) {
                  tiempoFin: 0,
                  lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
              });
+             
+             // También reiniciamos el chat en el reinicio total
+             if (chatRef) chatRef.set(null);
 
              estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Asigna roles y color!" });
              alert("Juego reiniciado. Todos los jugadores están de vuelta, sus roles y colores fueron borrados.");
@@ -1362,6 +1365,11 @@ function updateChatDisplay(chatSnapshot) {
     lastMessages.forEach(msg => {
         const messageItem = document.createElement('p');
         messageItem.classList.add('chat-message-item');
+
+        // ** MODIFICACIÓN CLAVE: Icono del Crewmate en el chat **
+        const iconDiv = document.createElement('div');
+        iconDiv.classList.add('chat-crewmate-icon', msg.senderColor);
+        messageItem.appendChild(iconDiv);
         
         const nameSpan = document.createElement('span');
         nameSpan.classList.add('chat-sender-name', msg.senderColor);
