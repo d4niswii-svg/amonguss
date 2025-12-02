@@ -71,6 +71,20 @@
 
     </div>
 
+    <!-- ** NUEVO: PANEL DE CHAT ** (Esquina inferior izquierda) -->
+    <div id="chat-panel" class="chat-panel" style="display:none;">
+        <h3 class="chat-header">CHAT DE PARTIDA</h3>
+        <div id="chat-messages" class="chat-messages">
+            <!-- Los mensajes se insertan aquí -->
+        </div>
+        <div class="chat-input-container">
+            <input type="text" id="chat-input" placeholder="Escribe un mensaje..." maxlength="100" disabled>
+            <button id="chat-send-button" disabled>Enviar</button>
+        </div>
+        <p id="chat-status-message" class="chat-status-message">Conectando...</p>
+    </div>
+
+
     <!-- INFORMACIÓN PERSONAL (ID/NOMBRE) - Ubicación fija superior izquierda -->
     <div class="personal-info-box">
         <div id="user-name-display-top" class="my-id-label-top">Tu Nombre: ...</div>
@@ -171,6 +185,9 @@
                     <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
                     <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
                     
+                    <!-- BOTÓN DE LIMPIAR CHAT (ADMIN) -->
+                    <button id="clear-chat-button" class="admin-btn-chat-reset" style="display:none;">Limpiar Chat</button> <!-- NUEVO BOTÓN -->
+
                     <!-- Botones de Control de Partida (¡ESTE ES EL BOTÓN DE REINICIAR!) -->
                     <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
                 </div>
