@@ -1,5 +1,3 @@
---- START OF FILE style.css ---
-
 /* PALETA Y FUENTES HD / Among Us Style */
 :root {
     --color-fondo-blanco: #f4f6f7; /* Fondo principal blanco - NO SE USA AHORA */
@@ -721,97 +719,6 @@ body.emergency-meeting {
     color: #ecf0f1;
 }
 
-/* ** ESTILOS NUEVOS: PANEL DE TAREAS ** */
-.task-panel {
-    position: fixed;
-    /* Colocamos el panel de tareas 400px desde abajo (encima del chat de 350px) */
-    bottom: 400px; 
-    left: 20px; /* Posición: inferior izquierda */
-    background: rgba(44, 62, 80, 0.9); 
-    border: 3px solid var(--color-borde-panel);
-    border-radius: 15px;
-    padding: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    z-index: 101; 
-    width: 300px;
-    display: flex; 
-    flex-direction: column;
-    font-family: 'Roboto', sans-serif;
-    transition: all 0.3s;
-    max-height: calc(100vh - 80px - 400px); /* Ajuste de altura máxima si es necesario */
-}
-.task-header {
-    color: #ecf0f1;
-    font-size: 1.2em;
-    margin: 0 0 10px 0;
-    text-align: center;
-    border-bottom: 1px solid #7f8c8d;
-    padding-bottom: 5px;
-    font-weight: 900;
-}
-.task-list-container {
-    padding: 5px 0;
-}
-.task-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px dashed #4a637d;
-    color: #ecf0f1;
-    font-size: 0.9em;
-}
-.task-item:last-child { border-bottom: none; }
-
-.task-icon {
-    width: 30px; /* Tamaño uniforme */
-    height: 30px; /* Tamaño uniforme */
-    object-fit: contain; /* Ajustar imagen */
-    margin-right: 10px;
-    filter: drop-shadow(0 0 2px black);
-    flex-shrink: 0;
-    /* QUITADO: background-color: #ffffff; para que el blanco puro sea "transparente" contra el fondo oscuro. */
-    border-radius: 4px; 
-    padding: 2px; 
-}
-
-/* Checklist Box (Caja de Tarea) */
-.task-completion-box {
-    width: 18px;
-    height: 18px;
-    border: 2px solid #ecf0f1;
-    border-radius: 4px;
-    margin-right: 10px;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: background-color 0.3s, border-color 0.3s;
-    background-color: #7f8c8d; /* Gris para no completado */
-    position: relative;
-}
-
-/* Estado Completado */
-.task-completion-box.completed {
-    background-color: #2ecc71; /* Verde */
-    border-color: #27ae60;
-}
-.task-completion-box.completed::after {
-    content: '✓';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 14px;
-    font-weight: 900;
-}
-
-.task-description {
-    word-wrap: break-word;
-    flex-grow: 1;
-}
-
-/* ** FIN ESTILOS NUEVOS: PANEL DE TAREAS ** */
-
-
 /* ** ESTILOS NUEVOS: PANEL DE CHAT ** */
 .chat-panel {
     position: fixed;
@@ -916,4 +823,101 @@ body.emergency-meeting {
     font-size: 0.8em;
     color: #f1c40f;
     text-align: center;
+}
+
+/* ** NUEVOS ESTILOS: PANEL DE TAREAS (CREWMATE) ** */
+.task-panel {
+    position: fixed;
+    bottom: 390px; /* 20px de margen + 350px de altura del chat + 20px de espacio */
+    left: 20px;
+    background: rgba(44, 62, 80, 0.9); /* Igual que el chat */
+    border: 3px solid var(--color-borde-panel);
+    border-radius: 15px;
+    padding: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    z-index: 101; 
+    width: 300px;
+    max-height: 300px; /* Altura máxima visible */
+    display: flex; 
+    flex-direction: column;
+    font-family: 'Roboto', sans-serif;
+    transition: all 0.3s;
+    overflow-y: auto;
+}
+
+.task-panel-header {
+    color: var(--color-neón-cian); /* Color crewmate/cian */
+    font-size: 1.2em;
+    margin: 0 0 10px 0;
+    text-align: center;
+    border-bottom: 1px solid #7f8c8d;
+    padding-bottom: 5px;
+    font-weight: 900;
+    text-shadow: 0 0 5px rgba(57, 255, 252, 0.5);
+}
+
+.task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.task-item {
+    display: flex;
+    align-items: flex-start; /* Alineación superior para textos largos */
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 8px;
+    background-color: #34495e; /* Gris oscuro para las filas */
+    border-radius: 5px;
+    font-size: 0.9em;
+    color: #ecf0f1;
+    line-height: 1.3;
+}
+
+.task-text {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+/* Checkbox visual customizado (gris, solo para admin) */
+.task-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #bdc3c7; /* Borde gris claro */
+    background-color: #7f8c8d; /* Fondo gris oscuro */
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s, border-color 0.2s;
+    font-size: 1.2em;
+    color: white; /* Color del tick */
+    font-weight: 900;
+    cursor: default; /* Solo el admin lo cambia */
+}
+
+.task-checkbox.completed {
+    background-color: var(--color-crewmate); /* Verde completado */
+    border-color: #27ae60;
+    box-shadow: 0 0 5px var(--color-crewmate);
+}
+
+/* Mensaje de Impostor (en el panel personal) */
+.impostor-task-message {
+    color: var(--color-neón-rojo);
+    font-family: 'Bungee Outline', sans-serif;
+    font-size: 1.1em;
+    text-align: center;
+    margin-top: 10px;
+    padding: 8px;
+    border: 3px solid var(--color-neón-rojo);
+    border-radius: 10px;
+    box-shadow: 0 0 10px var(--color-neón-rojo);
+}
+
+/* Estilo para el panel de control de tareas en Admin */
+.admin-task-control {
+    margin-bottom: 15px;
 }
