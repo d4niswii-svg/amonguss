@@ -769,7 +769,7 @@ body.emergency-meeting {
     margin-right: 10px;
     filter: drop-shadow(0 0 2px black);
     flex-shrink: 0;
-    /* Eliminamos background-color: #ffffff; para que el blanco de la imagen sea transparente contra el fondo oscuro. */
+    /* QUITADO: background-color: #ffffff; para que el blanco puro sea "transparente" contra el fondo oscuro. */
     border-radius: 4px; 
     padding: 2px; 
 }
