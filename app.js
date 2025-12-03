@@ -1,3 +1,5 @@
+--- START OF FILE app.js ---
+
 // app.js
 
 // =========================================================
@@ -46,7 +48,7 @@ try {
 }
 
 // Referencias a la Base de Datos (Inicializadas solo si database existe)
-let jugadoresRef, configRef, estadoRef, participantesRef, votosDetalleRef, chatRef;
+let jugadoresRef, configRef, estadoRef, participantesRef, votosDetalleRef, chatRef, tasksStatusRef; // NUEVA REFERENCIA
 
 if (database) {
     jugadoresRef = database.ref('jugadores'); 
@@ -54,7 +56,8 @@ if (database) {
     estadoRef = database.ref('estado');
     participantesRef = database.ref('participantes'); 
     votosDetalleRef = database.ref('votosDetalle'); 
-    chatRef = database.ref('chat'); // NUEVA REFERENCIA
+    chatRef = database.ref('chat'); 
+    tasksStatusRef = database.ref('tasksStatus'); // NUEVA REFERENCIA
 }
 
 
@@ -127,6 +130,10 @@ const chatSendButton = document.getElementById('chat-send-button');
 const chatStatusMessage = document.getElementById('chat-status-message');
 const clearChatButton = document.getElementById('clear-chat-button'); // Botón de limpiar chat
 
+// ** NUEVAS REFERENCIAS: TAREAS **
+const taskPanel = document.getElementById('task-panel'); // Panel de tareas
+const taskListContainer = document.getElementById('task-list-container'); // Contenedor de la lista
+
 
 let isAdmin = false;
 let participantesCache = {}; 
@@ -135,6 +142,33 @@ const coloresTripulantes = ['amarillo', 'azul', 'blanco', 'rojo', 'verde']; // S
 
 // FIX: Mostrar el ID inmediatamente
 if (userIdDisplay) userIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`; 
+
+
+// =========================================================
+// DEFINICIÓN DE TAREAS (Basado en la imagen y los PNGs)
+// =========================================================
+const gameTasks = {
+    'dados': { 
+        icon: 'dados.png', 
+        description: 'Introducir el número indicado en el marcador del dado.' 
+    },
+    'canasta': { 
+        icon: 'canasta.png', 
+        description: 'Encestar el balón 3 veces para completar la tarea.' 
+    },
+    'carrera_obstaculos': { // Usamos un nombre más descriptivo para el ID
+        icon: 'trono.png', // Usado como placeholder para el icono de la carrera (asumiendo que 'trono' es el icono que quieres para esto)
+        description: 'Superar la carrera de obstáculos. (Requiere 2 jugadores)' 
+    },
+    'busqueda_peluches': { 
+        icon: 'osito.png', 
+        description: 'Encontrar los 4 peluches escondidos y notificar.' 
+    },
+    'llamar_perro': { 
+        icon: 'perrito.png', 
+        description: 'Dirigir al perro a la cafetería.' 
+    }
+};
 
 
 // =========================================================
@@ -795,6 +829,7 @@ if (participantesRef) {
         if (!participante) {
              if (personalRolePanel) personalRolePanel.style.display = 'none';
              if (chatPanel) chatPanel.style.display = 'none'; // NUEVO: Ocultar chat si no hay participante
+             if (taskPanel) taskPanel.style.display = 'none'; // NUEVO: Ocultar tareas si no hay participante
              return;
         }
         
@@ -812,8 +847,9 @@ if (participantesRef) {
             if (roleDisplayContent) roleDisplayContent.style.display = 'none'; 
             if (newPlayerNameInput) newPlayerNameInput.focus();
             
-            // Ocultar Chat
+            // Ocultar Chat y Tareas
             if (chatPanel) chatPanel.style.display = 'none'; 
+            if (taskPanel) taskPanel.style.display = 'none'; 
             return; 
         } else {
             if (nameSetupForm) nameSetupForm.style.display = 'none';
@@ -867,11 +903,12 @@ if (participantesRef) {
         }
         
         // =================================================
-        // ** NUEVO: LÓGICA DE CHAT **
+        // ** NUEVO: LÓGICA DE CHAT Y TAREAS **
         // =================================================
+        const puedeVerPanelesIzquierda = tieneColor && !esNombreVacio && participante.rol !== 'sin asignar';
+        
         if (chatPanel) {
-            // Un jugador puede chatear si tiene color, nombre, rol asignado y NO está expulsado.
-            const puedeChatear = tieneColor && !esNombreVacio && participante.rol !== 'expulsado' && participante.rol !== 'sin asignar';
+            const puedeChatear = puedeVerPanelesIzquierda && participante.rol !== 'expulsado';
             
             chatPanel.style.display = 'flex'; // Mostrar el panel de chat si hay un participante registrado
             
@@ -889,6 +926,11 @@ if (participantesRef) {
                      chatStatusMessage.textContent = `Chateando como: ${nombreMostrado} (${participante.color.toUpperCase()})`;
                 }
             }
+        }
+        
+        if (taskPanel) {
+             // Muestra las tareas si tiene color y rol asignado
+             taskPanel.style.display = puedeVerPanelesIzquierda ? 'flex' : 'none';
         }
         // =================================================
     });
@@ -1220,8 +1262,9 @@ if (resetButton) {
                  lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
              });
              
-             // También reiniciamos el chat en el reinicio total
+             // También reiniciamos el chat y las tareas en el reinicio total
              if (chatRef) chatRef.set(null);
+             if (tasksStatusRef) tasksStatusRef.set(null);
 
              estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Asigna roles y color!" });
              alert("Juego reiniciado. Todos los jugadores están de vuelta, sus roles y colores fueron borrados.");
@@ -1309,6 +1352,94 @@ if (clearChatButton) {
     });
 }
 
+
+// =========================================================
+// ** NUEVA SECCIÓN: LÓGICA DE TAREAS **
+// =========================================================
+
+/**
+ * Renderiza los elementos de la lista de tareas en la UI.
+ * @param {firebase.database.DataSnapshot} tasksStatusSnapshot - Snapshot de tasksStatus en Firebase.
+ */
+function updateTasksDisplay(tasksStatusSnapshot) {
+    if (!taskListContainer) return;
+    
+    const completedTasks = tasksStatusSnapshot.val() || {};
+    
+    taskListContainer.innerHTML = ''; 
+
+    // Determinar si el usuario actual es Admin
+    const userIsAdmin = isAdmin; 
+    
+    // Obtenemos una lista de las tareas en el orden definido
+    Object.entries(gameTasks).forEach(([taskId, taskData]) => {
+        const isCompleted = completedTasks[taskId] === true;
+        
+        const taskItem = document.createElement('div');
+        taskItem.classList.add('task-item');
+        taskItem.dataset.taskId = taskId;
+
+        // 1. Completion Box (Clickable by Admin)
+        const completionBox = document.createElement('span');
+        completionBox.classList.add('task-completion-box');
+        completionBox.dataset.taskId = taskId;
+        
+        if (isCompleted) {
+             completionBox.classList.add('completed');
+        } else {
+             completionBox.classList.remove('completed');
+        }
+        
+        // Solo el Admin puede hacer clic
+        if (userIsAdmin) {
+             completionBox.addEventListener('click', () => toggleTaskCompletion(taskId, isCompleted));
+             completionBox.title = isCompleted ? 'Click para desmarcar' : 'Click para marcar como completada';
+        } else {
+             completionBox.style.cursor = 'default';
+        }
+
+        // 2. Icon
+        const iconImg = document.createElement('img');
+        iconImg.src = taskData.icon; 
+        iconImg.alt = taskId;
+        iconImg.classList.add('task-icon');
+
+        // 3. Description
+        const descriptionSpan = document.createElement('span');
+        descriptionSpan.classList.add('task-description');
+        descriptionSpan.textContent = taskData.description;
+
+        // Append elements
+        taskItem.appendChild(completionBox);
+        taskItem.appendChild(iconImg);
+        taskItem.appendChild(descriptionSpan);
+        
+        taskListContainer.appendChild(taskItem);
+    });
+}
+
+
+/**
+ * Marca o desmarca una tarea como completada en Firebase (Solo Admin).
+ * @param {string} taskId - ID de la tarea a alternar.
+ * @param {boolean} isCurrentlyCompleted - Estado actual.
+ */
+function toggleTaskCompletion(taskId, isCurrentlyCompleted) {
+    if (!isAdmin || !tasksStatusRef) return;
+    
+    if (isCurrentlyCompleted) {
+        // Marcar como incompleta (eliminar el nodo)
+        tasksStatusRef.child(taskId).set(null);
+    } else {
+        // Marcar como completa
+        tasksStatusRef.child(taskId).set(true);
+    }
+}
+
+// Listener para el estado de las tareas
+if (tasksStatusRef) {
+    tasksStatusRef.on('value', updateTasksDisplay);
+}
 
 // =========================================================
 // ** NUEVA SECCIÓN: LÓGICA DE CHAT **
@@ -1406,3 +1537,4 @@ if (chatInput) chatInput.addEventListener('keyup', (e) => {
 
 // Inicializar el rastreo de participantes al cargar (DEBE ESTAR AL FINAL)
 setupParticipantTracking();
+---
