@@ -298,9 +298,10 @@ body.emergency-meeting {
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
     border: 1px solid white;
     position: relative;
-    display: inline-block; /* Crucial para inline-block en la línea del texto */
+    display: inline-block; 
     vertical-align: middle;
     margin-right: 5px;
+    flex-shrink: 0;
 }
 .chat-crewmate-icon::before { 
     content: ''; 
@@ -773,8 +774,10 @@ body.emergency-meeting {
     margin-right: 5px;
     /* Evita que el nombre se rompa si el mensaje es muy largo */
     flex-shrink: 0; 
+    /* AJUSTE CLAVE: Asegura que NO tenga un background-color */
+    background-color: transparent; 
 }
-/* Colores de los jugadores en el chat */
+/* Colores de los jugadores en el chat: SÓLO TEXTO */
 .chat-sender-name.rojo { color: var(--color-rojo-amongus); }
 .chat-sender-name.azul { color: var(--color-azul-amongus); }
 .chat-sender-name.blanco { color: var(--color-blanco-amongus); }
