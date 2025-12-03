@@ -1,3 +1,5 @@
+--- START OF FILE index.html ---
+
 <!-- index.html -->
 
 <!DOCTYPE html>
@@ -71,6 +73,15 @@
 
     </div>
 
+    <!-- ** NUEVO: PANEL DE TAREAS ** (Esquina inferior izquierda, encima del chat) -->
+    <div id="task-panel" class="task-panel" style="display:none;">
+        <h3 class="task-header">TAREAS PENDIENTES</h3>
+        <div id="task-list-container" class="task-list-container">
+            <!-- Las tareas se inyectarán y gestionarán desde app.js -->
+        </div>
+    </div>
+
+
     <!-- ** NUEVO: PANEL DE CHAT ** (Esquina inferior izquierda) -->
     <div id="chat-panel" class="chat-panel" style="display:none;">
         <h3 class="chat-header">CHAT DE PARTIDA</h3>
@@ -130,79 +141,3 @@
                 <button id="votar-verde" class="boton-voto player-row verde-bg" data-color="verde">
                     <div class="crewmate-icon verde"></div> 
                     <span class="nombre">VERDE</span>
-                    <div class="voto-iconos-container" id="voto-iconos-verde"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-verde"></div></div>
-                </button>
-
-                <button id="votar-amarillo" class="boton-voto player-row amarillo-bg" data-color="amarillo">
-                    <div class="crewmate-icon amarillo"></div> 
-                    <span class="nombre">AMARILLO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-amarillo"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-amarillo"></div></div>
-                </button>
-
-                <button id="votar-skip" class="boton-voto player-row skip-bg" data-color="skip">
-                    <div class="crewmate-icon skip"></div> 
-                    <span class="nombre">SALTAR VOTO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-skip"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-skip"></div></div>
-                </button>
-            </div>
-
-            <div id="voto-confirmado" class="confirmation-box">¡Voto Registrado!</div>
-            <div id="resultado-final" class="summary-box"></div>
-            
-        </div>
-        
-    </div>
-
-    
-    <!-- ** PANEL DE ADMINISTRADOR FLOTANTE FIJO (ESQUINA SUPERIOR DERECHA) ** -->
-    <div class="admin-fixed-panel">
-        
-        <!-- Botón de Login Admin -->
-        <button id="admin-login-button" class="admin-login-button">Login Admin</button>
-        
-        <!-- Botón: Ocultar/Mostrar Panel Admin -->
-        <button id="toggle-admin-panel-button" class="admin-login-button" style="display:none; margin-bottom: 10px;">Mostrar Panel Admin</button>
-
-        <!-- Contenedor del Panel (Se oculta/muestra con el botón) -->
-        <div id="admin-panel-container" style="display:none;">
-            <div id="participant-panel" class="panel participant-panel">
-                <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
-                <div id="participant-list-container" class="participant-list">
-                    <!-- La lista se genera aquí (Admin) -->
-                </div>
-                
-                <!-- Panel de Administración -->
-                <div class="admin-panel">
-                    <!-- BOTONES DE CONTROL DE PARTIDA -->
-                    <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles</button>
-                    <button id="resolve-vote-button" class="admin-btn-resolve-vote" style="display:none;">Resolver Votación</button> 
-                    <button id="clear-votes-button" class="admin-btn-clear-vote" style="display:none;">Limpiar Votación Actual</button> 
-                    
-                    <!-- Botones de Control de Voto -->
-                    <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
-                    <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
-                    
-                    <!-- BOTÓN DE LIMPIAR CHAT (ADMIN) -->
-                    <button id="clear-chat-button" class="admin-btn-chat-reset" style="display:none;">Limpiar Chat</button> 
-
-                    <!-- Botones de Control de Partida (¡ESTE ES EL BOTÓN DE REINICIAR!) -->
-                    <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
-                </div>
-                
-            </div>
-        </div>
-    </div>
-
-    <!-- Contenedor anterior (vacío, se mantiene para compatibilidad con CSS) -->
-    <div id="app-container" style="display: none;"></div>
-
-    <!-- Carga del SDK de Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-
-    <script src="app.js"></script>
-</body>
-</html>
