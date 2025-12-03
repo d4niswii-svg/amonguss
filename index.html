@@ -1,5 +1,3 @@
---- START OF FILE index.html ---
-
 <!-- index.html -->
 
 <!DOCTYPE html>
@@ -62,6 +60,8 @@
             <p class="panel-label">TÚ ERES:</p>
             <div id="my-crewmate-icon" class="my-crewmate-icon"></div>
             <div id="my-role-display" class="my-role-display"></div>
+            <!-- ** NUEVO: Mensaje de Impostor ** -->
+            <p id="impostor-task-message" class="impostor-task-message" style="display:none;"></p>
         </div>
 
         <!-- Formulario para Asignar Nombre Inicial -->
@@ -73,12 +73,31 @@
 
     </div>
 
-    <!-- ** NUEVO: PANEL DE TAREAS ** (Esquina inferior izquierda, encima del chat) -->
+    <!-- ** NUEVO: PANEL DE TAREAS (CREWMATE) ** (Esquina inferior izquierda - Arriba del Chat) -->
     <div id="task-panel" class="task-panel" style="display:none;">
-        <h3 class="task-header">TAREAS PENDIENTES</h3>
-        <div id="task-list-container" class="task-list-container">
-            <!-- Las tareas se inyectarán y gestionarán desde app.js -->
-        </div>
+        <h3 class="task-panel-header">TAREAS DE LA NAVE</h3>
+        <ul id="task-list" class="task-list">
+            <li class="task-item" data-task-id="dados">
+                <span class="task-text">Dados: Igualar el número en el dado al marcador indicado.</span>
+                <span id="task-check-dados" class="task-checkbox"></span>
+            </li>
+            <li class="task-item" data-task-id="encestas">
+                <span class="task-text">Encestas: Cada jugador debe encestar 3 veces (Total: 3 por jugador).</span>
+                <span id="task-check-encestas" class="task-checkbox"></span>
+            </li>
+            <li class="task-item" data-task-id="carrera">
+                <span class="task-text">Carrera de Obstáculos: Dos jugadores distintos deben completar el recorrido.</span>
+                <span id="task-check-carrera" class="task-checkbox"></span>
+            </li>
+            <li class="task-item" data-task-id="busqueda">
+                <span class="task-text">Búsqueda de Objetos: Encontrar los 4 peluches escondidos y notificar.</span>
+                <span id="task-check-busqueda" class="task-checkbox"></span>
+            </li>
+            <li class="task-item" data-task-id="perro">
+                <span class="task-text">Llamar al Perro: Dirigirlo a la cafetería de la sala.</span>
+                <span id="task-check-perro" class="task-checkbox"></span>
+            </li>
+        </ul>
     </div>
 
 
@@ -179,6 +198,8 @@
 
         <!-- Contenedor del Panel (Se oculta/muestra con el botón) -->
         <div id="admin-panel-container" style="display:none;">
+            <!-- El panel de control de tareas se insertará aquí por JS: <div id="admin-task-control"></div> -->
+            
             <div id="participant-panel" class="panel participant-panel">
                 <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
                 <div id="participant-list-container" class="participant-list">
@@ -217,4 +238,3 @@
     <script src="app.js"></script>
 </body>
 </html>
----
