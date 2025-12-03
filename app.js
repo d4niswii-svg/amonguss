@@ -46,7 +46,7 @@ try {
 }
 
 // Referencias a la Base de Datos (Inicializadas solo si database existe)
-let jugadoresRef, configRef, estadoRef, participantesRef, votosDetalleRef, chatRef; // <-- MODIFICADO: Añadido chatRef
+let jugadoresRef, configRef, estadoRef, participantesRef, votosDetalleRef, chatRef;
 
 if (database) {
     jugadoresRef = database.ref('jugadores'); 
@@ -54,7 +54,7 @@ if (database) {
     estadoRef = database.ref('estado');
     participantesRef = database.ref('participantes'); 
     votosDetalleRef = database.ref('votosDetalle'); 
-    chatRef = database.ref('chat'); // <-- NUEVA REFERENCIA
+    chatRef = database.ref('chat'); // NUEVA REFERENCIA
 }
 
 
@@ -125,7 +125,7 @@ const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const chatSendButton = document.getElementById('chat-send-button');
 const chatStatusMessage = document.getElementById('chat-status-message');
-const clearChatButton = document.getElementById('clear-chat-button'); // <-- NUEVO: Botón de limpiar chat
+const clearChatButton = document.getElementById('clear-chat-button'); // Botón de limpiar chat
 
 
 let isAdmin = false;
@@ -537,7 +537,7 @@ function updateAdminButtonsVisibility(config) {
              toggleSecretVoteButton.style.display = 'block';     
              toggleSecretVoteButton.textContent = config.votoSecreto ? "Voto Secreto: ON" : "Voto Secreto: OFF";
         }
-        if (clearChatButton) clearChatButton.style.display = 'block'; // <-- NUEVO: Limpiar Chat
+        if (clearChatButton) clearChatButton.style.display = 'block'; // Limpiar Chat
 
     } else {
          if (toggleAdminPanelButton) toggleAdminPanelButton.style.display = 'none'; 
@@ -794,7 +794,7 @@ if (participantesRef) {
         
         if (!participante) {
              if (personalRolePanel) personalRolePanel.style.display = 'none';
-             if (chatPanel) chatPanel.style.display = 'none'; // <-- NUEVO: Ocultar chat si no hay participante
+             if (chatPanel) chatPanel.style.display = 'none'; // NUEVO: Ocultar chat si no hay participante
              return;
         }
         
@@ -1366,18 +1366,23 @@ function updateChatDisplay(chatSnapshot) {
         const messageItem = document.createElement('p');
         messageItem.classList.add('chat-message-item');
 
-        // ** MODIFICACIÓN CLAVE: Icono del Crewmate en el chat **
+        // 1. Icono del Crewmate (Chibi)
         const iconDiv = document.createElement('div');
         iconDiv.classList.add('chat-crewmate-icon', msg.senderColor);
-        messageItem.appendChild(iconDiv);
+        messageItem.appendChild(iconDiv); 
         
+        // 2. Nombre del Remitente
         const nameSpan = document.createElement('span');
         nameSpan.classList.add('chat-sender-name', msg.senderColor);
         nameSpan.textContent = `${msg.senderName}:`;
         
-        messageItem.appendChild(nameSpan);
-        messageItem.appendChild(document.createTextNode(` ${msg.message}`));
+        messageItem.appendChild(nameSpan); 
         
+        // 3. Mensaje
+        const messageTextNode = document.createElement('span'); // Usamos span para el texto del mensaje
+        messageTextNode.textContent = ` ${msg.message}`;
+        messageItem.appendChild(messageTextNode);
+
         chatMessages.appendChild(messageItem);
     });
     
