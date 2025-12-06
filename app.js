@@ -73,7 +73,7 @@ const participantPanel = document.getElementById('participant-panel');
 const participantListContainer = document.getElementById('participant-list-container');
 const adminLoginButton = document.getElementById('admin-login-button');
 const roleNotification = document.getElementById('role-notification'); 
-const allowMultipleVoteButton = document.getElementById('allow-multiple-vote-button');
+const allowMultipleVoteButton = document.getElementById('allow-multiple-vote-button'); // ELIMINADO EN HTML
 const accessRestrictionMessage = document.getElementById('access-restriction-message'); 
 // REFERENCIAS DE EXPULSIÓN (Votación)
 const expulsionPopup = document.getElementById('expulsion-result-popup');
@@ -107,12 +107,12 @@ const userIdDisplay = document.getElementById('user-id-display');
 const userNameDisplay = document.getElementById('user-name-display-top');
 
 // NUEVA REFERENCIA DE BOTÓN
-const assignRolesButton = document.getElementById('assign-roles-button');
+const assignRolesButton = document.getElementById('assign-roles-button'); // ELIMINADO EN HTML
 // *** NUEVA REFERENCIA: BOTÓN COMBINADO ASIGNAR TODO ***
 const assignAllButton = document.getElementById('assign-all-button'); 
 
 // ** NUEVA REFERENCIA: Voto Secreto **
-const toggleSecretVoteButton = document.getElementById('toggle-secret-vote-button');
+const toggleSecretVoteButton = document.getElementById('toggle-secret-vote-button'); // ELIMINADO EN HTML
 
 // ** NUEVAS REFERENCIAS DE UI MODAL **
 const votingModalContainer = document.getElementById('voting-modal-container');
@@ -134,6 +134,12 @@ const clearChatButton = document.getElementById('clear-chat-button'); // Botón 
 // ** NUEVAS REFERENCIAS: TAREAS **
 const taskPanel = document.getElementById('task-panel');
 const taskListContainer = document.getElementById('task-list-container');
+
+// *** NUEVA REFERENCIA: FILA DE JUGADORES ASIGNADOS ***
+const assignedPlayersDisplay = document.getElementById('assigned-players-display');
+// *** NUEVA REFERENCIA: BOTÓN DE LIMPIEZA MASIVA ***
+const clearAllParticipantsButton = document.getElementById('clear-all-participants-button');
+
 
 let isAdmin = false;
 let participantesCache = {}; 
@@ -194,7 +200,7 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
             jugadorMasVotado = "EMPATE";
         }
         
-        // 5. RENDERIZAR ICONOS DE VOTO (Mejorado con Voto Secreto)
+        // 5. RENDERIZAR ICONOS DE VOTO (Mejorado con Voto Secreto, aunque el botón fue eliminado, la lógica de la bandera sigue siendo útil)
         if (contadorElement) {
              contadorElement.innerHTML = '';
              
@@ -536,17 +542,15 @@ function updateAdminButtonsVisibility(config) {
         if (adminLoginButton) adminLoginButton.style.display = 'none';
 
         // Lógica de botones de Admin
-        if (assignRolesButton) assignRolesButton.style.display = 'block';         
-        if (assignAllButton) assignAllButton.style.display = 'block';         // NUEVO BOTÓN
+        // if (assignRolesButton) assignRolesButton.style.display = 'block'; // ELIMINADO        
+        if (assignAllButton) assignAllButton.style.display = 'block';         
         if (resolveVoteButton) resolveVoteButton.style.display = 'block';          
         if (clearVotesButton) clearVotesButton.style.display = 'block';           
         if (resetButton) resetButton.style.display = 'block';              
-        if (allowMultipleVoteButton) allowMultipleVoteButton.style.display = 'block';    
-        if (toggleSecretVoteButton) {
-             toggleSecretVoteButton.style.display = 'block';     
-             toggleSecretVoteButton.textContent = config.votoSecreto ? "Voto Secreto: ON" : "Voto Secreto: OFF";
-        }
+        // if (allowMultipleVoteButton) allowMultipleVoteButton.style.display = 'block'; // ELIMINADO    
+        // if (toggleSecretVoteButton) toggleSecretVoteButton.style.display = 'block'; // ELIMINADO
         if (clearChatButton) clearChatButton.style.display = 'block'; // Limpiar Chat
+        if (clearAllParticipantsButton) clearAllParticipantsButton.style.display = 'block'; // NUEVO BOTÓN
         
         // NUEVO: Botones de Conteo de Impostores
         const currentImpostors = config.numImpostors || 1;
@@ -573,6 +577,7 @@ function updateAdminButtonsVisibility(config) {
          if (adminPanelContainer) adminPanelContainer.style.display = 'none'; 
          if (adminLoginButton) adminLoginButton.style.display = 'block';
          if (clearChatButton) clearChatButton.style.display = 'none';
+         if (clearAllParticipantsButton) clearAllParticipantsButton.style.display = 'none';
          
          // Ocultar botones de conteo
          if (document.getElementById('set-impostor-1')) document.getElementById('set-impostor-1').style.display = 'none';
@@ -838,6 +843,9 @@ function setupParticipantTracking() {
              updates.nombre = SAVED_USERNAME || ''; // Asegurar que el nombre del localStorage se propague a Firebase
         }
         
+        // *** NUEVA LÓGICA: Si un jugador regresa/actualiza, se desmarca como adminHidden ***
+        updates.adminHidden = null; 
+
         // 3. Solo actualiza el nodo sin sobrescribir el rol/color si ya existen
         userRef.update(updates);
     });
@@ -948,6 +956,47 @@ if (participantesRef) {
             }
         }
         // =================================================
+    });
+}
+
+// *** NUEVA FUNCIÓN: Display de jugadores asignados y conectados (Abajo de votación) ***
+function updateAssignedPlayersDisplay() {
+    if (!assignedPlayersDisplay) return;
+
+    assignedPlayersDisplay.innerHTML = '';
+
+    // Filtrar: Jugadores con color asignado, con rol asignado y conectados.
+    const jugadoresVisibles = Object.entries(participantesCache)
+        .map(([id, p]) => ({ id, ...p }))
+        .filter(p => 
+            p.color && 
+            coloresTripulantes.includes(p.color) && 
+            p.rol !== 'sin asignar' && 
+            p.rol !== 'expulsado' && 
+            p.conectado === true // Solo los conectados se muestran
+        )
+        .sort((a, b) => a.color.localeCompare(b.color)); // Orden alfabético por color para consistencia
+
+    if (jugadoresVisibles.length === 0) {
+        assignedPlayersDisplay.style.display = 'none';
+        return;
+    }
+    
+    assignedPlayersDisplay.style.display = 'flex';
+
+    jugadoresVisibles.forEach(p => {
+        const nameText = p.nombre || p.color.toUpperCase();
+        
+        const playerDiv = document.createElement('div');
+        playerDiv.classList.add('assigned-player-item');
+        playerDiv.classList.add(p.rol); // Para estilizar tripulante/impostor
+        
+        playerDiv.innerHTML = `
+            <div class="assigned-crewmate-icon ${p.color}"></div>
+            <span class="assigned-player-name">${nameText}</span>
+        `;
+        
+        assignedPlayersDisplay.appendChild(playerDiv);
     });
 }
 
@@ -1081,7 +1130,7 @@ function updateParticipantDisplay(participantesData) {
 function toggleAdminHidden(userId, isCurrentlyHidden) {
     if (!isAdmin || !participantesRef) return;
     
-    // Si está oculto (true), lo mostramos (null/false). Si es visible (false/null), lo ocultamos (true).
+    // Si está oculto (true), lo mostramos (null). Si es visible (false/null), lo ocultamos (true).
     const newValue = isCurrentlyHidden ? null : true; 
 
     participantesRef.child(userId).update({ adminHidden: newValue })
@@ -1124,6 +1173,7 @@ if (participantesRef) {
     participantesRef.on('value', (snapshot) => {
         participantesCache = snapshot.val() || {}; 
         updateParticipantDisplay(participantesCache);
+        updateAssignedPlayersDisplay(); // *** NUEVO: Actualizar la fila de jugadores
         
         updatePlayerNamesInVotingPanel(); 
         
@@ -1288,6 +1338,59 @@ if (clearVotesButton) {
     });
 }
 
+// *** NUEVO LISTENER: ELIMINAR/OCULTAR TODOS LOS PARTICIPANTES ***
+if (clearAllParticipantsButton) {
+    clearAllParticipantsButton.addEventListener('click', () => {
+        if (!isAdmin || !participantesRef || !jugadoresRef || !estadoRef || !configRef) {
+             alert('Requiere privilegios de administrador y conexión a la base de datos.'); 
+             return;
+        }
+
+        if (!confirm("¿ESTÁS SEGURO? Esto eliminará roles y colores de TODOS los jugadores y los ocultará de la lista de Admin. Solo los jugadores que recarguen/entren de nuevo reaparecerán.")) {
+            return;
+        }
+        
+        // 1. Marcar a TODOS como adminHidden y resetear color/rol/conectado
+        participantesRef.once('value').then(snapshot => {
+            const updates = {};
+            snapshot.forEach(childSnapshot => {
+                updates[`${childSnapshot.key}/rol`] = 'sin asignar';
+                updates[`${childSnapshot.key}/color`] = null; 
+                updates[`${childSnapshot.key}/conectado`] = false; 
+                updates[`${childSnapshot.key}/adminHidden`] = true; // Ocultar de la lista de admin
+            });
+            participantesRef.update(updates).then(() => {
+                
+                // 2. Resetear los estados de la partida (Jugadores, Votos, Config, Estado)
+                const jugadoresReset = {};
+                for (const color of coloresJugadores) {
+                    if (color === 'skip') {
+                        jugadoresReset[color] = { votos: 0 };
+                    } else {
+                        jugadoresReset[color] = { votos: 0, eliminado: false };
+                    }
+                }
+                
+                jugadoresRef.set(jugadoresReset);
+                votosDetalleRef.set(null); 
+                chatRef.set(null);
+                setupInitialTasks(); 
+                
+                configRef.update({ 
+                    votoActivo: false, 
+                    tiempoFin: 0,
+                    votoSecreto: false, 
+                    numImpostors: 1,
+                    lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
+                });
+
+                estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Limpiado! ¡Asigna Roles y Color a los nuevos participantes!" });
+                alert("Limpieza masiva completada. Recarga la página y solo los jugadores que recarguen o entren de nuevo aparecerán.");
+            });
+        });
+    });
+}
+
 
 // 3. Reiniciar JUEGO TOTAL (Solo Admin - ROLES Y COLORES SE RESETEAN)
 if (resetButton) {
@@ -1335,60 +1438,6 @@ if (resetButton) {
     });
 }
 
-/**
- * Asigna un impostor al azar y el resto como tripulantes entre los jugadores con color asignado.
- */
-if (assignRolesButton) {
-    assignRolesButton.addEventListener('click', () => {
-        if (!isAdmin || !participantesRef || !configRef || !estadoRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
-
-        const jugadoresActivos = Object.entries(participantesCache)
-            .filter(([id, p]) => p.color && coloresTripulantes.includes(p.color));
-
-        const numJugadores = jugadoresActivos.length;
-
-        if (numJugadores < 2) {
-            alert("Se necesitan al menos 2 jugadores con color asignado para iniciar la asignación de roles.");
-            return;
-        }
-        
-        // --- MODIFICACIÓN CLAVE: Lógica de Impostores ---
-        const desiredImpostors = participantesCache.config.numImpostors || 1; 
-        let numImpostores = 1;
-
-        if (desiredImpostors === 'auto') {
-            if (numJugadores >= 9) numImpostores = 3;
-            else if (numJugadores >= 5) numImpostores = 2;
-            else numImpostores = 1;
-        } else {
-            // Se usa el valor seleccionado por el admin (1 o 2)
-            numImpostores = parseInt(desiredImpostors); 
-        }
-        
-        if (numImpostores >= numJugadores) numImpostores = 1; // Seguridad por si acaso
-
-        const shuffledPlayers = jugadoresActivos.map(p => p[0]).sort(() => 0.5 - Math.random());
-        const impostorIds = shuffledPlayers.slice(0, numImpostores);
-
-        const updates = {};
-        for (const [id] of jugadoresActivos) {
-            const rol = impostorIds.includes(id) ? 'impostor' : 'tripulante';
-            updates[`${id}/rol`] = rol;
-        }
-        
-        participantesRef.update(updates)
-            .then(() => {
-                configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
-                alert(`Roles asignados: ${numImpostores} Impostor(es) y ${numJugadores - numImpostores} Tripulante(s).`);
-                estadoRef.update({ mensaje: `¡Roles asignados! ${numImpostores} Impostor(es) a bordo.` });
-            })
-            .catch(error => {
-                console.error("Error al asignar roles:", error);
-                alert("Error al asignar roles.");
-            });
-    });
-}
-
 // ** NUEVA FUNCIÓN Y LISTENER: ASIGNAR ROLES Y COLORES (COMBINADO) **
 function assignRolesAndColors() {
     if (!isAdmin || !participantesRef || !configRef || !estadoRef || !jugadoresRef) { 
@@ -1396,9 +1445,13 @@ function assignRolesAndColors() {
          return; 
     }
     
-    // Jugadores conectados que NO tienen color asignado
+    // Jugadores conectados (no ocultos) que NO tienen color asignado
     const jugadoresSinColor = Object.entries(participantesCache)
-        .filter(([id, p]) => p.conectado === true && (!p.color || !coloresTripulantes.includes(p.color)));
+        .filter(([id, p]) => 
+             p.conectado === true && 
+            !p.adminHidden && 
+            (!p.color || !coloresTripulantes.includes(p.color))
+        );
 
     // 1. Asignar Colores a jugadores SIN color (al azar)
     const coloresUsados = Object.values(participantesCache).map(p => p.color).filter(c => coloresTripulantes.includes(c));
@@ -1489,30 +1542,10 @@ function setImpostorCount(count) {
     });
 }
 
+// ELIMINADO: PERMITIR VOTO MÚLTIPLE
 
-// 4. PERMITIR VOTO MÚLTIPLE (Solo Admin)
-if (allowMultipleVoteButton) {
-    allowMultipleVoteButton.addEventListener('click', () => {
-        if (!isAdmin || !configRef) { alert('Requiere privilegios de administrador.'); return; }
-        
-        configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP).then(() => {
-            alert("Señal enviada: ¡Se permite un nuevo voto a todos los participantes!");
-        });
-    });
-}
+// ELIMINADO: Toggle Voto Secreto
 
-// ** NUEVO: Toggle Voto Secreto **
-if (toggleSecretVoteButton) {
-    toggleSecretVoteButton.addEventListener('click', () => {
-        if (!isAdmin || !configRef) { alert('Requiere privilegios de administrador.'); return; }
-        
-        configRef.child('votoSecreto').once('value').then(snap => {
-            const currentStatus = snap.val() || false;
-            configRef.child('votoSecreto').set(!currentStatus);
-            alert(`Voto Secreto ha sido ${!currentStatus ? 'ACTIVADO' : 'DESACTIVADO'}.`);
-        });
-    });
-}
 
 // *** NUEVO LISTENER: Botón para Limpiar Chat (ADMIN) ***
 if (clearChatButton) {
