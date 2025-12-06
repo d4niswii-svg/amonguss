@@ -89,6 +89,13 @@
     <div class="personal-info-box">
         <div id="user-name-display-top" class="my-id-label-top">Tu Nombre: ...</div>
         <div id="user-id-display" class="my-id-label-top">Tu ID: ...</div>
+        
+        <!-- ** [MODIFICACIÓN REQUERIDA] **: Contador de Tareas (para Tripulantes) -->
+        <div id="crewmate-task-count" class="my-id-label-top task-count-display">Tareas (0/5)</div>
+        <!-- Contenedor de la lista de Tareas -->
+        <div id="game-stages-panel" class="game-stages-panel task-list-display">
+            <!-- Tareas/stages se insertan aquí por JS (Vista de todos) -->
+        </div>
     </div>
     
     <!-- ** CONTENEDOR MODAL DE VOTACIÓN (Centro de la Pantalla) ** -->
@@ -105,7 +112,7 @@
             </div>
 
             <div class="opciones">
-                <!-- Botones de Voto -->
+                <!-- Botones de Voto (no cambiados) -->
                 <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
                     <div class="crewmate-icon rojo"></div> 
                     <span class="nombre">ROJO</span>
@@ -168,33 +175,43 @@
 
         <!-- Contenedor del Panel (Se oculta/muestra con el botón) -->
         <div id="admin-panel-container" style="display:none;">
-            <div id="participant-panel" class="panel participant-panel">
-                <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
+            
+            <!-- ** [MODIFICACIÓN REQUERIDA] **: PANEL DE STAGES/TAREAS (ADMIN) -->
+            <div id="game-stages-admin-panel" class="panel participant-panel">
+                 <h2 class="panel-header-small">GESTIÓN DE ETAPAS DE JUEGO / TAREAS</h2>
+                 <p>Marca las casillas para actualizar el progreso:</p>
+                 <div id="game-stages-panel" class="participant-list">
+                    <!-- Los inputs/checkboxes de admin se insertan aquí -->
+                 </div>
+            </div>
+            
+            
+            <div id="participant-panel" class="panel participant-panel" style="margin-top: 10px;">
+                <h2 class="panel-header-small">PARTICIPANTES ACTIVOS CONECTADOS</h2>
+                <button id="expel-unassigned-button" class="admin-btn-clear-vote" style="display:none; margin-bottom: 10px; width: 100%;">ECHAR NO ASIGNADOS (Color/Rol)</button>
+
                 <div id="participant-list-container" class="participant-list">
                     <!-- La lista se genera aquí (Admin) -->
                 </div>
                 
                 <!-- Panel de Administración -->
                 <div class="admin-panel">
-                    <!-- Selector de número de impostores -->
-                    <div class="impostor-count-container">
-                        <span class="impostor-count-label">Impostores:</span>
-                        <button id="set-impostors-1" class="admin-btn-impostor-count">1</button>
-                        <button id="set-impostors-2" class="admin-btn-impostor-count">2</button>
-                        <span id="current-impostor-count" class="impostor-count-display">Actual: 1</span>
+                    
+                    <!-- ** [MODIFICACIÓN REQUERIDA] **: Selector de Impostores -->
+                    <div id="impostor-count-selector" class="impostor-count-selector" style="display: none;">
+                        <span>Impostores:</span>
+                        <button class="impostor-count-btn active" data-count="1">1</button>
+                        <button class="impostor-count-btn" data-count="2">2</button>
+                        <button class="impostor-count-btn" data-count="3">3</button>
                     </div>
 
                     <!-- BOTONES DE CONTROL DE PARTIDA -->
-                    <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles</button>
-                    <!-- NUEVO: asignar roles + colores -->
-                    <button id="assign-roles-colors-button" class="admin-btn-assign" style="display:none;">Asignar Roles + Colores</button>
-
+                    <button id="assign-all-button" class="admin-btn-assign" style="display:none;">Asignar TODO (Color + Rol)</button>
+                    <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar SÓLO Roles</button>
+                    
                     <button id="resolve-vote-button" class="admin-btn-resolve-vote" style="display:none;">Resolver Votación</button> 
                     <button id="clear-votes-button" class="admin-btn-clear-vote" style="display:none;">Limpiar Votación Actual</button> 
                     
-                    <!-- Botón para expulsar a los no configurados -->
-                    <button id="eject-unconfigured-button" class="admin-btn-eject-unconfigured" style="display:none;">Echar No Configurados</button>
-
                     <!-- Botones de Control de Voto -->
                     <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
                     <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
@@ -204,14 +221,6 @@
 
                     <!-- Botones de Control de Partida (¡ESTE ES EL BOTÓN DE REINICIAR!) -->
                     <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
-                </div>
-
-                <!-- NUEVO PANEL DE TAREAS (SOLO ADMIN EDITA, TODOS VEN) -->
-                <div class="tasks-panel">
-                    <h3 class="panel-header-small">TAREAS</h3>
-                    <div id="tasks-list-container" class="tasks-list">
-                        <!-- Checkboxes de tareas se generan aquí -->
-                    </div>
                 </div>
                 
             </div>
