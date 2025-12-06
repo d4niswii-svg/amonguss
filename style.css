@@ -2,6 +2,7 @@
 :root {
     --color-fondo-blanco: #f4f6f7; /* Fondo principal blanco - NO SE USA AHORA */
     --color-panel-amongus: #d5dadf; /* Gris claro/plata para los paneles */
+    --color-panel-glass: rgba(213, 218, 223, 0.85); /* 85% opacidad del gris claro para efecto Glass */
     --color-borde-panel: #2c3e50; /* Gris oscuro para el borde */
     --color-neón-cian: #39fffc; 
     --color-neón-rojo: #ff4545; 
@@ -14,10 +15,6 @@
     --color-blanco-amongus: #d6e0f0;
     --color-verde-amongus: #117f2d;
     --color-amarillo-amongus: #f6e58d;
-    
-    /* Colores de Tarea */
-    --color-tarea-pendiente: #7f8c8d; /* Gris */
-    --color-tarea-completada: #2ecc71; /* Verde */
 }
 
 /* FONT: Usar Bungee si está disponible, si no, Roboto 900 */
@@ -38,8 +35,8 @@ body {
     overflow-x: hidden;
     transition: background-color 0.5s; 
     
-    /* ** FONDO: IMAGEN DE GALAXIA ** */
-    background-image: url('https://wallpapers.com/images/hd/black-galaxy-glowing-earth-eo77rcgn6knba9f6.jpg');
+    /* ** FONDO: IMAGEN DE GALAXIA (ACTUALIZADO) ** */
+    background-image: url('https://www.skyweaver.net/images/media/wallpapers/wallpaper1.jpg');
     background-size: cover;
     background-attachment: fixed; 
     background-position: center;
@@ -51,7 +48,7 @@ body {
 }
 
 
-/* ** CONTENEDOR MODAL DE VOTACIÓN ** */
+/* ** CONTENEDOR MODAL DE VOTACIÓN (Glass effect wrapper) ** */
 .voting-modal-container {
     position: fixed;
     top: 0;
@@ -63,7 +60,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    backdrop-filter: blur(5px); /* Efecto de desenfoque */
+    backdrop-filter: blur(8px); /* Efecto de desenfoque (aumentado para el "glass") */
 }
 /* El panel de votación dentro del modal, para que se centre */
 .votacion-container {
@@ -74,6 +71,9 @@ body {
     transform: scale(0.8);
     opacity: 0;
     animation: modal-fadein 0.5s forwards;
+    
+    /* *** APLICACIÓN DEL EFECTO GLASS *** */
+    background: var(--color-panel-glass); /* Fondo semitransparente */
 }
 
 /* Animación de entrada del modal */
@@ -109,6 +109,7 @@ body.emergency-meeting {
 }
 
 /* ESTILO GENERAL DE PANEL (Limpio y 3D) */
+/* NOTA: Este selector mantiene los paneles NO de votación como opacos */
 .panel {
     background: var(--color-panel-amongus);
     border: 5px solid var(--color-borde-panel);
@@ -404,11 +405,11 @@ body.emergency-meeting {
 }
 .my-role-display.impostor {
     color: var(--color-neón-rojo);
-    text-shadow: 0 0 5px var(--color-neón-rojo), 0 0 10px rgba(255, 69, 69, 0.5);
+    text-shadow: 0 0 5px var(--color-neón-rojo), 0 0 20px rgba(255, 69, 69, 0.5);
 }
 .my-role-display.crewmate {
     color: var(--color-neón-cian);
-    text-shadow: 0 0 5px var(--color-neón-cian), 0 0 10px rgba(57, 255, 252, 0.5);
+    text-shadow: 0 0 5px var(--color-neón-cian), 0 0 20px rgba(57, 255, 252, 0.5);
 }
 .my-role-display.sin-asignar {
     color: #fff;
@@ -564,18 +565,15 @@ body.emergency-meeting {
 
 /* --- LOGIN ADMIN & USER ID --- */
 .personal-info-box {
-    position: fixed; /* Cambiado a fixed para que se quede en su sitio */
+    position: absolute;
     top: 15px;
     left: 20px;
     font-family: 'Roboto', sans-serif;
     z-index: 101;
-    background: rgba(44, 62, 80, 0.7); /* Fondo semi-transparente para contraste */
-    padding: 5px 10px;
-    border-radius: 5px;
 }
 .my-id-label-top {
     font-size: 0.9em;
-    color: #ecf0f1;
+    color: #7f8c8d;
     font-weight: 400;
     margin-bottom: 3px;
 }
@@ -603,6 +601,18 @@ body.emergency-meeting {
     flex-basis: 48%; 
 }
 .admin-btn-assign { background-color: #2c3e50; } 
+
+/* *** NUEVO ESTILO: Botón de Asignar Roles Y Color (Combinado) *** */
+.admin-btn-assign-all {
+    background-color: #2ecc71; 
+    box-shadow: 0 4px 0 #27ae60;
+    flex-basis: 100%;
+}
+.admin-btn-assign-all:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #27ae60;
+}
+
 /* *** NUEVO ESTILO: Botón de Resolver Votación *** */
 .admin-btn-resolve-vote { background-color: #f39c12; } 
 /* *** NUEVO ESTILO: Botón de Limpiar Votación Actual *** */
@@ -612,40 +622,29 @@ body.emergency-meeting {
 .admin-btn-permit-vote { background-color: #9b59b6; flex-basis: 100%; }
 .admin-btn-secret-vote { background-color: #008080; flex-basis: 100%; } /* Voto Secreto */
 .admin-btn-chat-reset { background-color: #6c5ce7; } /* Limpiar Chat */
-.admin-btn-kick { background-color: #e67e22; } /* Kick individual */
 
-
-/* ** NUEVO: Selector de Impostores ** */
-.impostor-count-selector {
+/* --- Control de Impostores --- */
+.impostor-count-control {
+    flex-basis: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-around;
-    padding: 10px;
-    border: 1px solid #7f8c8d;
-    border-radius: 8px;
-    background-color: #ecf0f1;
-    flex-basis: 100%;
+    justify-content: center;
+    gap: 5px;
+    margin-bottom: 5px;
 }
-.impostor-count-selector span {
+.control-label {
+    font-size: 0.8em;
+    color: #ecf0f1;
     font-weight: 700;
-    color: #2c3e50;
-    margin-right: 10px;
 }
-.impostor-count-selector button {
-    padding: 8px 15px;
-    border: 2px solid #34495e;
-    border-radius: 5px;
-    background-color: #7f8c8d;
-    color: white;
-    font-weight: 900;
-    cursor: pointer;
-    box-shadow: 0 2px 0 #34495e;
+.admin-btn-small {
+    padding: 5px 10px; border: none; border-radius: 5px; font-weight: 700; cursor: pointer;
+    color: white; background-color: #34495e; box-shadow: 0 2px 0 #2c3e50;
     transition: background-color 0.2s;
 }
-.impostor-count-selector button.active {
-    background-color: #e74c3c;
-    border-color: #c0392b;
-    box-shadow: 0 2px 0 #c0392b;
+.admin-btn-small.active-impostor-count {
+    background-color: var(--color-neón-rojo); 
+    box-shadow: 0 2px 0 #8b0000;
 }
 
 
@@ -678,6 +677,10 @@ body.emergency-meeting {
     color: var(--color-neón-rojo);
     text-decoration: line-through;
 }
+/* Colores para el estado de conexión */
+.user-index-name.online strong { color: var(--color-crewmate); }
+.user-index-name.offline strong { color: var(--color-neón-rojo); }
+
 
 .user-role-admin {
     display: inline-block;
@@ -867,10 +870,10 @@ body.emergency-meeting {
     text-align: center;
 }
 
-/* ** NUEVO: ESTILOS DE TAREAS (PANEL PARTICIPANTE) ** */
-.task-panel-container {
+/* ** ESTILOS NUEVOS: PANEL DE TAREAS (Arriba del Chat) ** */
+.task-panel {
     position: fixed;
-    top: 100px; /* Debajo de la info personal */
+    bottom: 390px; /* Colocado arriba del chat (350px de altura + 20px de espacio + 20px de bottom) */
     left: 20px; 
     background: rgba(44, 62, 80, 0.9);
     border: 3px solid var(--color-borde-panel);
@@ -878,79 +881,90 @@ body.emergency-meeting {
     padding: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     z-index: 101; 
-    width: 280px;
+    width: 300px;
     font-family: 'Roboto', sans-serif;
+    display: flex; 
+    flex-direction: column;
 }
+
 .task-header {
-    color: var(--color-neón-cian);
-    font-size: 1.1em;
+    color: #ecf0f1;
+    font-size: 1.2em;
     margin: 0 0 10px 0;
     text-align: center;
     border-bottom: 1px solid #7f8c8d;
     padding-bottom: 5px;
     font-weight: 900;
 }
-.task-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.task-item {
-    display: flex;
-    align-items: center;
-    color: #ecf0f1;
+
+.task-completion-status {
+    margin: 0 0 10px 0;
     font-size: 0.9em;
+    color: #f1c40f;
+    text-align: center;
+    font-weight: 700;
 }
-.task-status-icon {
-    width: 15px;
-    height: 15px;
-    border-radius: 4px;
-    margin-right: 10px;
-    border: 2px solid white;
-    box-shadow: 0 0 3px black;
-    flex-shrink: 0;
-}
-.task-status-icon.pending {
-    background-color: var(--color-tarea-pendiente);
-}
-.task-status-icon.completed {
-    background-color: var(--color-tarea-completada);
+.task-completion-status.all-completed {
+    color: var(--color-neón-cian);
+    text-shadow: 0 0 5px var(--color-neón-cian);
 }
 
-/* ** NUEVO: ESTILOS DE CONTROL DE TAREAS (PANEL ADMIN) ** */
-.admin-task-panel {
-    background-color: #ecf0f1;
-    border-radius: 8px;
+.task-list {
+    background-color: #2c3e50;
     padding: 10px;
-    margin-top: 10px;
-    flex-basis: 100%;
-}
-.admin-task-control-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-family: 'Roboto', sans-serif;
-}
-.admin-task-control-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px 0;
-    border-bottom: 1px dashed #ccc;
-    font-size: 0.9em;
-}
-.task-toggle-button {
-    padding: 5px 10px;
-    border: none;
     border-radius: 5px;
-    font-weight: 700;
-    color: white;
+    border: 1px solid #4a637d;
+}
+
+.task-item {
+    display: flex;
+    align-items: flex-start; /* Alineación al inicio por si el texto es largo */
+    margin-bottom: 8px;
+    color: #ecf0f1;
+    font-size: 0.9em;
+    line-height: 1.2;
+}
+.task-item label {
+    margin-left: 8px;
     cursor: pointer;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+    font-weight: 400;
 }
-.task-toggle-button.pending-btn {
-    background-color: #3498db;
+.task-item input[type="checkbox"] {
+    /* Estilo de casilla de Among Us (paloma gris/verde) */
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #7f8c8d;
+    border-radius: 4px;
+    background-color: #5d6d7e; /* Gris para la casilla inactiva */
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
 }
-.task-toggle-button.completed-btn {
-    background-color: #2ecc71;
+
+.task-item input[type="checkbox"]:checked {
+    border-color: var(--color-neón-cian);
+    background-color: var(--color-crewmate); /* Verde */
+}
+
+/* El checkmark (paloma) */
+.task-item input[type="checkbox"]:checked::after {
+    content: '✔'; 
+    font-size: 16px;
+    color: #fff;
+    position: absolute;
+    top: -2px; 
+    left: 2px;
+    font-family: Arial, sans-serif;
+}
+.task-item input[type="checkbox"]:disabled {
+    opacity: 0.7; 
+    cursor: not-allowed;
+}
+
+/* --- Botón de matar/eliminar --- */
+.kill-btn {
+    flex-basis: 100%;
+    margin-top: 5px;
 }
