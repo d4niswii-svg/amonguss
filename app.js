@@ -964,13 +964,19 @@ function updateParticipantDisplay(participantesData) {
     if (participantListContainer) participantListContainer.innerHTML = ''; 
     let index = 1;
     
-    // FILTRA SÓLO JUGADORES REGISTRADOS (CON ID)
+    // FILTRA Y ORDENA: Conectados primero, y excluye a los marcados como ocultos
     const participantesArray = Object.entries(participantesData || {})
         .map(([id, data]) => ({ id, ...data }))
-        // NO FILTRAMOS POR CONECTADO: TRUE para mantener a todos los jugadores hasta el reset
+        .filter(p => p.adminHidden !== true) // *** NUEVO FILTRO: Ocultar los marcados como adminHidden ***
+        .sort((a, b) => {
+            // Orden principal: Conectado (true) primero
+            if (a.conectado && !b.conectado) return -1;
+            if (!a.conectado && b.conectado) return 1;
+            return 0;
+        });
     
     if (participantesArray.length === 0) {
-        if (participantListContainer) participantListContainer.innerHTML = '<p class="admin-message">No hay participantes registrados actualmente.</p>';
+        if (participantListContainer) participantListContainer.innerHTML = '<p class="admin-message">No hay participantes registrados actualmente (o todos están ocultos).</p>';
         return;
     }
 
@@ -1018,6 +1024,13 @@ function updateParticipantDisplay(participantesData) {
                         ${!p.color || jugadorEliminado ? 'disabled' : ''}>
                         MATAR/ELIMINAR
                 </button>
+                
+                <!-- *** NUEVO BOTÓN: OCULTAR/MOSTRAR EN LISTA *** -->
+                <button class="hide-toggle-btn ${p.adminHidden ? 'admin-btn-show' : 'admin-btn-hide'}" 
+                        data-id="${p.id}" 
+                        data-hidden="${p.adminHidden ? 'true' : 'false'}">
+                        ${p.adminHidden ? 'Mostrar en lista' : 'Ocultar de lista'}
+                </button>
             </div>
         `;
         if (participantListContainer) participantListContainer.appendChild(pElement);
@@ -1053,7 +1066,34 @@ function updateParticipantDisplay(participantesData) {
             adminKillPlayer(e.target.dataset.id, e.target.dataset.color, e.target.dataset.name);
         });
     });
+    
+    // ** NUEVO LISTENER PARA OCULTAR/MOSTRAR **
+    document.querySelectorAll('.hide-toggle-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const userId = e.target.dataset.id;
+            const isHidden = e.target.dataset.hidden === 'true';
+            toggleAdminHidden(userId, isHidden);
+        });
+    });
 }
+
+// *** NUEVA FUNCIÓN: OCULTAR/MOSTRAR JUGADOR ***
+function toggleAdminHidden(userId, isCurrentlyHidden) {
+    if (!isAdmin || !participantesRef) return;
+    
+    // Si está oculto (true), lo mostramos (null/false). Si es visible (false/null), lo ocultamos (true).
+    const newValue = isCurrentlyHidden ? null : true; 
+
+    participantesRef.child(userId).update({ adminHidden: newValue })
+        .then(() => {
+            alert(`Participante ${userId} ha sido ${isCurrentlyHidden ? 'MOSTRADO' : 'OCULTADO'} de la lista de Admin.`);
+        })
+        .catch(error => {
+            console.error("Error al ocultar/mostrar participante:", error);
+            alert("Error al ocultar/mostrar participante.");
+        });
+}
+
 
 // 4. Función de asignación de color (para el ADMIN)
 function asignarColor(userId, color) {
@@ -1272,6 +1312,7 @@ if (resetButton) {
                     updates[`${childSnapshot.key}/rol`] = 'sin asignar';
                     updates[`${childSnapshot.key}/color`] = null; 
                     updates[`${childSnapshot.key}/conectado`] = false; // Resetear conectado para limpiar la lista de admin hasta que vuelvan a cargar
+                    updates[`${childSnapshot.key}/adminHidden`] = null; // Quitar la marca de oculto
                 });
                 participantesRef.update(updates);
             });
