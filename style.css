@@ -401,7 +401,7 @@ body {
     background-color: rgba(0, 0, 0, 0.95);
     /* Fondo negro casi opaco */
     z-index: 5000;
-    /* Alto z-index para estar por encima de todo */
+    /* Alto z-index para estar por encima de todo lo normal */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -657,7 +657,7 @@ body {
     top: 15px;
     left: 20px;
     font-family: 'Roboto', sans-serif;
-    z-index: 101;
+    z-index: 5001; /* Z-INDEX AUMENTADO */
 }
 
 .my-id-label-top {
@@ -691,8 +691,7 @@ body {
     top: 50px;
     /* Separado del borde superior */
     right: 20px;
-    z-index: 200;
-    /* Delante de todo lo normal */
+    z-index: 5001; /* Z-INDEX AUMENTADO */
     display: flex;
     flex-direction: column;
     align-items: flex-end;
