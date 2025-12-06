@@ -1,3 +1,5 @@
+<!-- index.html -->
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,10 +11,7 @@
 </head>
 <body>
 
-    <div id="global-admin-check-indicator" class="global-admin-check-indicator" style="display:none;">
-        <h1>¡ATENCIÓN! El Admin ha marcado algo.</h1>
-    </div>
-
+    <!-- MENSAJE DE RESTRICCIÓN DE ACCESO (FULLSCREEN) -->
     <div id="access-restriction-message" class="access-restriction-message" style="display:none;">
         <h1>ACCESO DENEGADO</h1>
         <p>Ya hay 5 jugadores activos. Espera a que el administrador inicie una nueva partida.</p>
@@ -20,8 +19,10 @@
     </div>
 
 
+    <!-- NOTIFICACIÓN DE ROL GIGANTE (FULLSCREEN) -->
     <div id="role-notification" class="role-notification-popup" style="display: none;"></div>
     
+    <!-- POPUP DE EXPULSIÓN (VOTACIÓN) (FULLSCREEN) -->
     <div id="expulsion-result-popup" class="expulsion-popup" style="display:none;">
         <div class="expulsion-content">
             <div id="ejected-crewmate-icon" class="ejected-crewmate"></div>
@@ -29,6 +30,7 @@
         </div>
     </div>
     
+    <!-- ** POPUP DE MUERTE DRAMÁTICA (KILL) (FULLSCREEN) ** -->
     <div id="murder-popup" class="murder-popup" style="display:none;">
         <div class="murder-content">
             <h1 id="murder-victim-name"></h1>
@@ -36,6 +38,7 @@
         </div>
     </div>
     
+    <!-- ** POPUP DE VICTORIA DRAMÁTICA (FULLSCREEN) ** -->
     <div id="victory-popup" class="victory-popup" style="display:none;">
         <h1 id="victory-message" class="victory-message"></h1>
         <div class="impostor-reveal">
@@ -46,93 +49,65 @@
             <h2>TRIPULANTE(S)</h2>
             <div id="crewmate-list-container" class="final-player-list"></div>
         </div>
-        <p class="victory-footer">¡JUEGO TERMINADO! Presiona REINICIAR...</p>
+        <p class="victory-footer">¡JUEGO TERMINADO! Presiona REINICIAR para empezar de nuevo.</p>
     </div>
 
-    <div id="main-app-container">
-    
-        <div id="personal-role-panel" class="personal-role-panel" style="display:none;">
-            <div id="name-setup-form" style="display:none;">
-                <p id="name-setup-message" class="panel-label">Elige tu nombre:</p>
-                <div class="name-input-container">
-                    <input type="text" id="new-player-name-input" placeholder="Tu Nombre Aquí" maxlength="15">
-                    <button id="submit-name-button">Entrar</button>
-                </div>
-            </div>
-            
-            <div id="role-display-content" style="display:none;">
-                <p class="panel-label">TU ROL</p>
-                <div id="my-crewmate-icon" class="my-crewmate-icon"></div>
-                <h3 id="my-role-display">...</h3>
-                <p id="user-name-display-top" class="my-name-label">Nombre</p>
-                <p id="user-id-display" class="my-id-label">Tu ID: ...</p>
-            </div>
-        </div>
-
-        <div id="chat-panel" class="chat-panel" style="display:none;">
-            <div class="panel-header-small">CHAT</div>
-            <div id="chat-status-message" class="chat-status-message"></div>
-            <div id="chat-messages" class="chat-messages">
-                </div>
-            <div class="chat-input-container">
-                <input type="text" id="chat-input" placeholder="Escribe tu mensaje..." maxlength="50">
-                <button id="chat-send-button" disabled>Enviar</button>
-            </div>
-        </div>
-
-    </div> <div class="admin-fixed-panel">
+    <!-- PANEL DE ROL PERSONAL (ESQUINA INFERIOR DERECHA) -->
+    <div id="personal-role-panel" class="personal-role-panel" style="display:none;">
         
-        <button id="toggle-admin-panel-button" class="admin-login-button">Panel Admin</button>
-
-        <div class="participant-panel panel" id="admin-panel-container" style="display:none;">
-            
-            <div class="panel-header-small">Participantes Conectados</div>
-            
-            <div class="participant-list-container" id="participant-list-container">
-                </div>
-            
-            <div class="admin-panel">
-                
-                <div class="impostor-selector-container">
-                    <label>Impostores:</label>
-                    <button id="impostor-count-1" class="admin-btn-impostor-count active" data-count="1">1 Impostor</button>
-                    <button id="impostor-count-2" class="admin-btn-impostor-count" data-count="2">2 Impostores</button>
-                </div>
-            
-                <button id="assign-roles-colors-button" class="admin-btn-assign-combined">ASIGNAR ROLES Y COLORES (Al Azar)</button>
-
-                <button id="kick-unassigned-button" class="admin-btn-kick-unassigned">ECHAR AL RESTO DE SIN ASIGNAR</button>
-                
-                <div class="panel-header-small" style="width: 100%; margin-top: 20px; border-top: 1px dashed #7f8c8d;">Controles de Votación</div>
-
-                <button id="resolve-vote-button" class="admin-btn-resolve-vote" style="display:none;">Resolver Votación</button> 
-                <button id="clear-votes-button" class="admin-btn-clear-vote" style="display:none;">Limpiar Votación Actual</button> 
-                
-                <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
-                <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
-                
-                <button id="clear-chat-button" class="admin-btn-chat-reset" style="display:none;">Limpiar Chat</button> 
-
-                <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
-            </div>
-            
+        <!-- Contenido Normal de Rol/Color -->
+        <div id="role-display-content">
+            <p class="panel-label">TÚ ERES:</p>
+            <div id="my-crewmate-icon" class="my-crewmate-icon"></div>
+            <div id="my-role-display" class="my-role-display"></div>
         </div>
+
+        <!-- Formulario para Asignar Nombre Inicial -->
+        <div id="name-setup-form" class="name-setup-form" style="display:none;">
+            <p id="name-setup-message" class="name-setup-message"></p>
+            <input type="text" id="new-player-name-input" placeholder="Escribe tu nombre aquí" maxlength="20">
+            <button id="submit-name-button" class="submit-name-button">Confirmar</button>
+        </div>
+
+    </div>
+
+    <!-- ** NUEVO: PANEL DE CHAT ** (Esquina inferior izquierda) -->
+    <div id="chat-panel" class="chat-panel" style="display:none;">
+        <h3 class="chat-header">CHAT DE PARTIDA</h3>
+        <div id="chat-messages" class="chat-messages">
+            <!-- Los mensajes se insertan aquí -->
+        </div>
+        <div class="chat-input-container">
+            <input type="text" id="chat-input" placeholder="Escribe un mensaje..." maxlength="100" disabled>
+            <button id="chat-send-button" disabled>Enviar</button>
+        </div>
+        <p id="chat-status-message" class="chat-status-message">Conectando...</p>
     </div>
 
 
-    <div id="voting-modal-container" class="voting-modal-container" style="display:none;">
+    <!-- INFORMACIÓN PERSONAL (ID/NOMBRE) - Ubicación fija superior izquierda -->
+    <div class="personal-info-box">
+        <div id="user-name-display-top" class="my-id-label-top">Tu Nombre: ...</div>
+        <div id="user-id-display" class="my-id-label-top">Tu ID: ...</div>
+    </div>
     
-        <div class="votacion-container panel">
-            <h1 class="panel-header">REUNIÓN DE EMERGENCIA</h1>
-            <p id="mensaje-principal" class="status-message">Discutiendo quién es el Impostor...</p>
+    <!-- ** CONTENEDOR MODAL DE VOTACIÓN (Centro de la Pantalla) ** -->
+    <div id="voting-modal-container" class="voting-modal-container" style="display: none;">
+        
+        <!-- Contenido principal de votación -->
+        <div class="panel votacion-container">
+            <h1 class="panel-header">¡REUNIÓN DE EMERGENCIA!</h1>
+            <p id="mensaje-principal" class="status-message">¡Vota por el Impostor!</p>
             
+            <!-- TEMPORIZADOR (Ahora estático) -->
             <div class="info-bar">
-                <div id="resultado-final" class="timer-display" style="display:none;">VOTOS TOTALES: 0 | LÍDER ACTUAL: NADIE</div>
+                <div class="timer-display">VOTACIÓN <span id="temporizador">ABIERTA</span></div>
             </div>
 
             <div class="opciones">
+                <!-- Botones de Voto -->
                 <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
-                    <div class="crewmate-icon rojo"></div>
+                    <div class="crewmate-icon rojo"></div> 
                     <span class="nombre">ROJO</span>
                     <div class="voto-iconos-container" id="voto-iconos-rojo"></div>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-rojo"></div></div>
@@ -151,33 +126,105 @@
                     <div class="voto-iconos-container" id="voto-iconos-blanco"></div>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-blanco"></div></div>
                 </button>
-                
+
                 <button id="votar-verde" class="boton-voto player-row verde-bg" data-color="verde">
-                    <div class="crewmate-icon verde"></div>
+                    <div class="crewmate-icon verde"></div> 
                     <span class="nombre">VERDE</span>
                     <div class="voto-iconos-container" id="voto-iconos-verde"></div>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-verde"></div></div>
                 </button>
-                
+
                 <button id="votar-amarillo" class="boton-voto player-row amarillo-bg" data-color="amarillo">
-                    <div class="crewmate-icon amarillo"></div>
+                    <div class="crewmate-icon amarillo"></div> 
                     <span class="nombre">AMARILLO</span>
                     <div class="voto-iconos-container" id="voto-iconos-amarillo"></div>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-amarillo"></div></div>
                 </button>
 
                 <button id="votar-skip" class="boton-voto player-row skip-bg" data-color="skip">
-                    <div class="crewmate-icon skip"></div>
+                    <div class="crewmate-icon skip"></div> 
                     <span class="nombre">SALTAR VOTO</span>
                     <div class="voto-iconos-container" id="voto-iconos-skip"></div>
                     <div class="vote-bar-container"><div class="vote-bar" id="barra-skip"></div></div>
                 </button>
+            </div>
 
-            </div> <p id="voto-confirmado" class="voto-confirmado-mensaje" style="display:none;">¡Voto emitido!</p>
+            <div id="voto-confirmado" class="confirmation-box">¡Voto Registrado!</div>
+            <div id="resultado-final" class="summary-box"></div>
+            
+        </div>
+        
+    </div>
 
-        </div> </div> <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    
+    <!-- ** PANEL DE ADMINISTRADOR FLOTANTE FIJO (ESQUINA SUPERIOR DERECHA) ** -->
+    <div class="admin-fixed-panel">
+        
+        <!-- Botón de Login Admin -->
+        <button id="admin-login-button" class="admin-login-button">Login Admin</button>
+        
+        <!-- Botón: Ocultar/Mostrar Panel Admin -->
+        <button id="toggle-admin-panel-button" class="admin-login-button" style="display:none; margin-bottom: 10px;">Mostrar Panel Admin</button>
+
+        <!-- Contenedor del Panel (Se oculta/muestra con el botón) -->
+        <div id="admin-panel-container" style="display:none;">
+            <div id="participant-panel" class="panel participant-panel">
+                <h2 class="panel-header-small">PARTICIPANTES CONECTADOS</h2>
+                <div id="participant-list-container" class="participant-list">
+                    <!-- La lista se genera aquí (Admin) -->
+                </div>
+                
+                <!-- Panel de Administración -->
+                <div class="admin-panel">
+                    <!-- Selector de número de impostores -->
+                    <div class="impostor-count-container">
+                        <span class="impostor-count-label">Impostores:</span>
+                        <button id="set-impostors-1" class="admin-btn-impostor-count">1</button>
+                        <button id="set-impostors-2" class="admin-btn-impostor-count">2</button>
+                        <span id="current-impostor-count" class="impostor-count-display">Actual: 1</span>
+                    </div>
+
+                    <!-- BOTONES DE CONTROL DE PARTIDA -->
+                    <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles</button>
+                    <!-- NUEVO: asignar roles + colores -->
+                    <button id="assign-roles-colors-button" class="admin-btn-assign" style="display:none;">Asignar Roles + Colores</button>
+
+                    <button id="resolve-vote-button" class="admin-btn-resolve-vote" style="display:none;">Resolver Votación</button> 
+                    <button id="clear-votes-button" class="admin-btn-clear-vote" style="display:none;">Limpiar Votación Actual</button> 
+                    
+                    <!-- Botón para expulsar a los no configurados -->
+                    <button id="eject-unconfigured-button" class="admin-btn-eject-unconfigured" style="display:none;">Echar No Configurados</button>
+
+                    <!-- Botones de Control de Voto -->
+                    <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
+                    <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
+                    
+                    <!-- BOTÓN DE LIMPIAR CHAT (ADMIN) -->
+                    <button id="clear-chat-button" class="admin-btn-chat-reset" style="display:none;">Limpiar Chat</button> 
+
+                    <!-- Botones de Control de Partida (¡ESTE ES EL BOTÓN DE REINICIAR!) -->
+                    <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
+                </div>
+
+                <!-- NUEVO PANEL DE TAREAS (SOLO ADMIN EDITA, TODOS VEN) -->
+                <div class="tasks-panel">
+                    <h3 class="panel-header-small">TAREAS</h3>
+                    <div id="tasks-list-container" class="tasks-list">
+                        <!-- Checkboxes de tareas se generan aquí -->
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor anterior (vacío, se mantiene para compatibilidad con CSS) -->
+    <div id="app-container" style="display: none;"></div>
+
+    <!-- Carga del SDK de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <script src="app.js"></script>
 
+    <script src="app.js"></script>
 </body>
 </html>
