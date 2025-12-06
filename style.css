@@ -619,6 +619,7 @@ body.emergency-meeting {
 .admin-btn-clear-vote { background-color: #3498db; } 
 
 .admin-btn-reset { background-color: #c0392b; }
+.admin-btn-reset-all { background-color: #e74c3c; flex-basis: 100%; box-shadow: 0 4px 0 #c0392b;} /* Limpiar todos */
 .admin-btn-permit-vote { background-color: #9b59b6; flex-basis: 100%; }
 .admin-btn-secret-vote { background-color: #008080; flex-basis: 100%; } /* Voto Secreto */
 .admin-btn-chat-reset { background-color: #6c5ce7; } /* Limpiar Chat */
@@ -984,3 +985,77 @@ body.emergency-meeting {
 }
 .admin-btn-hide { background-color: #e67e22; } /* Naranja */
 .admin-btn-show { background-color: #3498db; } /* Azul */
+
+
+/* *** ESTILOS PARA LA FILA DE JUGADORES ASIGNADOS (NUEVO) *** */
+.assigned-players-display {
+    position: fixed;
+    bottom: 20px; /* Debajo de todo, pero no cubriendo */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 90; /* Detrás del modal de votación */
+    
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    
+    background: rgba(44, 62, 80, 0.7); /* Fondo semi-transparente oscuro */
+    border: 3px solid var(--color-borde-panel);
+    border-radius: 15px;
+    padding: 15px 25px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+    max-width: 90vw;
+}
+
+.assigned-player-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: opacity 0.3s;
+}
+
+.assigned-player-item.impostor .assigned-player-name {
+    color: var(--color-neón-rojo);
+    text-shadow: 0 0 3px rgba(255, 69, 69, 0.5);
+}
+.assigned-player-item.tripulante .assigned-player-name {
+    color: var(--color-neón-cian);
+    text-shadow: 0 0 3px rgba(57, 255, 252, 0.5);
+}
+
+.assigned-crewmate-icon {
+    /* Basado en my-crewmate-icon */
+    width: 40px; 
+    height: 35px; 
+    border-radius: 60% 60% 15% 15%; 
+    border: 3px solid white;
+    position: relative;
+    margin-bottom: 5px;
+}
+.assigned-crewmate-icon::before {
+    content: ''; 
+    position: absolute; 
+    top: 5px; 
+    left: 10px; 
+    width: 20px; 
+    height: 12px; 
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #a9d4f2, #609bc6, #ffc0cb 90%); /* Rubor */
+    border: 1px solid #333;
+}
+/* Colores aplicados dinámicamente */
+.assigned-crewmate-icon.rojo { background-color: var(--color-rojo-amongus); }
+.assigned-crewmate-icon.azul { background-color: var(--color-azul-amongus); }
+.assigned-crewmate-icon.blanco { background-color: var(--color-blanco-amongus); }
+.assigned-crewmate-icon.verde { background-color: var(--color-verde-amongus); }
+.assigned-crewmate-icon.amarillo { background-color: var(--color-amarillo-amongus); }
+
+.assigned-player-name {
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.8em;
+    font-weight: 900;
+    line-height: 1.1;
+    color: #ecf0f1;
+}
