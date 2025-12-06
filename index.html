@@ -165,6 +165,11 @@
         
     </div>
 
+    <!-- *** NUEVA FILA DE JUGADORES ASIGNADOS (DEBAJO DE VOTACIÓN) *** -->
+    <div id="assigned-players-display" class="assigned-players-display" style="display:none;">
+        <!-- Los iconos y nombres se insertan aquí -->
+    </div>
+
     
     <!-- ** PANEL DE ADMINISTRADOR FLOTANTE FIJO (ESQUINA SUPERIOR DERECHA) ** -->
     <div class="admin-fixed-panel">
@@ -186,6 +191,9 @@
                 <!-- Panel de Administración -->
                 <div class="admin-panel">
                     
+                    <!-- BOTÓN DE ELIMINACIÓN/OCULTACIÓN MASIVA -->
+                    <button id="clear-all-participants-button" class="admin-btn-reset-all" style="display:none;">ELIMINAR/OCULTAR TODOS</button>
+                    
                     <!-- NUEVOS BOTONES DE CONTROL DE IMPOSTORES -->
                     <div class="impostor-count-control">
                          <span class="control-label">Impostores:</span>
@@ -196,15 +204,15 @@
                     
                     <!-- BOTONES DE ASIGNACIÓN -->
                     <button id="assign-all-button" class="admin-btn-assign-all" style="display:none;">Asignar Roles Y Color</button>
-                    <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Solo Roles</button>
+                    <!-- <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Solo Roles</button> -->
                     
                     <!-- BOTONES DE CONTROL DE PARTIDA -->
                     <button id="resolve-vote-button" class="admin-btn-resolve-vote" style="display:none;">Resolver Votación</button> 
                     <button id="clear-votes-button" class="admin-btn-clear-vote" style="display:none;">Limpiar Votación Actual</button> 
                     
-                    <!-- Botones de Control de Voto -->
-                    <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
-                    <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
+                    <!-- Botones de Control de Voto (ELIMINADOS) -->
+                    <!-- <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button> -->
+                    <!-- <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button> -->
                     
                     <!-- BOTÓN DE LIMPIAR CHAT (ADMIN) -->
                     <button id="clear-chat-button" class="admin-btn-chat-reset" style="display:none;">Limpiar Chat</button> 
