@@ -58,15 +58,16 @@ body {
     background-color: rgba(0, 0, 0, 0.7); /* Fondo oscuro transparente */
     z-index: 100; /* Delante del fondo */
     display: flex;
+    flex-direction: column; /* Cambiado para contener la barra superior */
     justify-content: center;
     align-items: center;
-    backdrop-filter: blur(8px); /* Efecto de desenfoque (aumentado para el "glass") */
+    backdrop-filter: none; /* *** CAMBIO: Eliminado el blur del fondo *** */
 }
 /* El panel de votación dentro del modal, para que se centre */
 .votacion-container {
     max-width: 700px;
     width: 90%;
-    margin: auto; /* Centrado dentro del modal flex */
+    /* margin: auto; - Eliminado para centrar con el flex container */ 
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
     transform: scale(0.8);
     opacity: 0;
@@ -74,6 +75,8 @@ body {
     
     /* *** APLICACIÓN DEL EFECTO GLASS *** */
     background: var(--color-panel-glass); /* Fondo semitransparente */
+    /* margin-top: 20px; - Eliminado ya que el container lo centra */
+    margin-bottom: 20px;
 }
 
 /* Animación de entrada del modal */
@@ -989,11 +992,9 @@ body.emergency-meeting {
 
 /* *** ESTILOS PARA LA FILA DE JUGADORES ASIGNADOS (NUEVO) *** */
 .assigned-players-display {
-    position: fixed;
-    bottom: 20px; /* Debajo de todo, pero no cubriendo */
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 90; /* Detrás del modal de votación */
+    /* *** CAMBIO: Fila de jugadores en la parte superior del modal de votación *** */
+    position: relative;
+    z-index: 10;
     
     display: flex;
     flex-wrap: wrap;
@@ -1016,13 +1017,14 @@ body.emergency-meeting {
     transition: opacity 0.3s;
 }
 
-.assigned-player-item.impostor .assigned-player-name {
-    color: var(--color-neón-rojo);
-    text-shadow: 0 0 3px rgba(255, 69, 69, 0.5);
-}
-.assigned-player-item.tripulante .assigned-player-name {
-    color: var(--color-neón-cian);
-    text-shadow: 0 0 3px rgba(57, 255, 252, 0.5);
+/* *** CAMBIO: Nombres Blancos e Ignorando el Rol *** */
+.assigned-player-name {
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.8em;
+    font-weight: 900;
+    line-height: 1.1;
+    color: #ecf0f1; /* Blanco para no revelar el rol */
+    text-shadow: none;
 }
 
 .assigned-crewmate-icon {
@@ -1051,11 +1053,3 @@ body.emergency-meeting {
 .assigned-crewmate-icon.blanco { background-color: var(--color-blanco-amongus); }
 .assigned-crewmate-icon.verde { background-color: var(--color-verde-amongus); }
 .assigned-crewmate-icon.amarillo { background-color: var(--color-amarillo-amongus); }
-
-.assigned-player-name {
-    font-family: 'Roboto', sans-serif;
-    font-size: 0.8em;
-    font-weight: 900;
-    line-height: 1.1;
-    color: #ecf0f1;
-}
