@@ -46,7 +46,7 @@ try {
 }
 
 // Referencias a la Base de Datos (Inicializadas solo si database existe)
-let jugadoresRef, configRef, estadoRef, participantesRef, votosDetalleRef, chatRef;
+let jugadoresRef, configRef, estadoRef, participantesRef, votosDetalleRef, chatRef, tareasRef;
 
 if (database) {
     jugadoresRef = database.ref('jugadores'); 
@@ -54,7 +54,8 @@ if (database) {
     estadoRef = database.ref('estado');
     participantesRef = database.ref('participantes'); 
     votosDetalleRef = database.ref('votosDetalle'); 
-    chatRef = database.ref('chat'); // NUEVA REFERENCIA
+    chatRef = database.ref('chat');
+    tareasRef = database.ref('tareas'); // NUEVA REFERENCIA DE TAREAS
 }
 
 
@@ -127,6 +128,9 @@ const chatSendButton = document.getElementById('chat-send-button');
 const chatStatusMessage = document.getElementById('chat-status-message');
 const clearChatButton = document.getElementById('clear-chat-button'); // Botón de limpiar chat
 
+// ** NUEVAS REFERENCIAS: TAREAS **
+const taskPanel = document.getElementById('task-panel');
+const taskListContainer = document.getElementById('task-list-container');
 
 let isAdmin = false;
 let participantesCache = {}; 
@@ -345,7 +349,7 @@ function showMurderPopup(victimName) {
         if (estadoRef) {
             estadoRef.update({ mensaje: `${victimName.toUpperCase()} ha muerto. ¡Reunión de emergencia!` });
         }
-    }, 4000); // Duración de la animación de muerte
+    }, 5000); // Duración de la animación de muerte
 }
 
 
@@ -476,6 +480,7 @@ function resolveVoting() {
 
             // 3. Actualizar la base de datos (eliminado y mensaje)
             jugadoresRef.child(`${ejectedColor}/eliminado`).set(true).then(() => {
+                 // *** MODIFICACIÓN CLAVE: El jugador expulsado de la votación queda como 'expulsado' (no se desconecta)
                  if (ejectedPlayerId && participantesRef) participantesRef.child(ejectedPlayerId).update({ rol: 'expulsado' });
                  
                  estadoRef.update({ 
@@ -544,6 +549,15 @@ function updateAdminButtonsVisibility(config) {
          if (adminPanelContainer) adminPanelContainer.style.display = 'none'; 
          if (adminLoginButton) adminLoginButton.style.display = 'block';
          if (clearChatButton) clearChatButton.style.display = 'none';
+    }
+    
+    // NUEVO: Mostrar panel de tareas para todos, pero deshabilitar interacción si no es admin
+    if (taskPanel) {
+        taskPanel.style.display = 'flex';
+        // Deshabilitar checkboxes si no es admin
+        taskListContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.disabled = !isAdmin;
+        });
     }
 }
 
@@ -717,7 +731,7 @@ if (newPlayerNameInput) newPlayerNameInput.addEventListener('keyup', handleNameS
 
 
 // =========================================================
-// LÓGICA DE PARTICIPANTES Y ROLES (CONTROL DE ACCESO Y RENDERIZADO)
+// LÓGICA DE PARTICIPANTES Y ROLES (CONTROL DE ACCESO Y PERSISTENCIA)
 // =========================================================
 
 // *** NUEVA FUNCIÓN: Actualiza el nombre de los botones de votación ***
@@ -774,15 +788,31 @@ function setupParticipantTracking() {
     
     userRef.onDisconnect().update({ conectado: false });
     
-    // *** MODIFICACIÓN CLAVE: Usar el nombre guardado, si existe. Si no, cadena vacía. ***
-    const initialName = SAVED_USERNAME || ''; 
-
-    userRef.set({ 
-        conectado: true,
-        ultimaConexion: Date.now(),
-        nombre: initialName, // Usa el nombre de LocalStorage
-        rol: 'sin asignar',
-        color: null
+    // ** MODIFICACIÓN CLAVE DE PERSISTENCIA **
+    // 1. Obtener la data actual (para preservar rol/color/nombre)
+    userRef.once('value').then(snapshot => {
+        const existingData = snapshot.val();
+        
+        // El estado 'conectado' se establece en TRUE solo si el rol no es 'expulsado'
+        // Si es 'expulsado', solo actualiza la hora y mantiene 'conectado: false'
+        const isExpulsado = existingData && existingData.rol === 'expulsado';
+        
+        const updates = { 
+            conectado: isExpulsado ? false : true, // <--- MODIFICADO: Mantiene 'conectado: false' si es expulsado
+            ultimaConexion: Date.now(),
+        };
+        
+        // 2. Si el usuario es completamente nuevo o no tiene rol/color (e.g., por un reset total), se inicializan
+        if (!existingData || existingData.rol === undefined || existingData.color === undefined) {
+             updates.nombre = SAVED_USERNAME || ''; // Usa el nombre guardado o vacío
+             updates.rol = 'sin asignar';
+             updates.color = null;
+        } else if (existingData.nombre === undefined) {
+             updates.nombre = SAVED_USERNAME || ''; // Asegurar que el nombre del localStorage se propague a Firebase
+        }
+        
+        // 3. Solo actualiza el nodo sin sobrescribir el rol/color si ya existen
+        userRef.update(updates);
     });
 }
 
@@ -907,6 +937,7 @@ function updateParticipantDisplay(participantesData) {
     if (participantListContainer) participantListContainer.innerHTML = ''; 
     let index = 1;
     
+    // FILTRA SÓLO JUGADORES CONECTADOS: Los eliminados por adminKillPlayer NO aparecerán
     const participantesArray = Object.entries(participantesData || {})
         .map(([id, data]) => ({ id, ...data }))
         .filter(p => p.conectado === true); 
@@ -923,6 +954,7 @@ function updateParticipantDisplay(participantesData) {
         pElement.classList.add('participant-item');
         
         let jugadorEliminado = false;
+        // Solo comprueba el estado de eliminado de la votación, el de 'rol:expulsado' ya fue filtrado
         if (p.color && currentJugadoresSnapshot) {
             const jugadorData = currentJugadoresSnapshot.val()[p.color];
             if (jugadorData && jugadorData.eliminado) {
@@ -930,7 +962,7 @@ function updateParticipantDisplay(participantesData) {
             }
         }
         
-        const statusText = jugadorEliminado ? ' (ELIMINADO)' : '';
+        const statusText = jugadorEliminado ? ' (ELIMINADO POR VOTACIÓN)' : '';
         const roleAndColorText = `${p.rol ? p.rol.toUpperCase() : 'SIN ASIGNAR'} (${p.color || 'N/A'})`;
 
 
@@ -951,7 +983,7 @@ function updateParticipantDisplay(participantesData) {
                 <button class="role-btn tripulante" data-id="${p.id}" data-rol="tripulante" ${jugadorEliminado ? 'disabled' : ''}>Tripulante</button>
                 <button class="role-btn impostor" data-id="${p.id}" data-rol="impostor" ${jugadorEliminado ? 'disabled' : ''}>Impostor</button>
                 
-                <!-- ** NUEVO BOTÓN DE ELIMINAR / MATAR ** -->
+                <!-- ** BOTÓN DE MATAR/ELIMINAR ** -->
                 <button class="kill-btn admin-btn-reset" 
                         data-id="${p.id}" 
                         data-color="${p.color}" 
@@ -1011,7 +1043,8 @@ function asignarColor(userId, color) {
                 return;
             }
             
-            participantesRef.child(userId).update({ color: color });
+            // Si el admin asigna un color, se asegura que el jugador no esté marcado como expulsado/desconectado.
+            participantesRef.child(userId).update({ color: color, rol: 'sin asignar', conectado: true }); 
         });
     } else {
         participantesRef.child(userId).update({ color: null });
@@ -1074,9 +1107,10 @@ function adminKillPlayer(userId, color, name) {
     // 1. Mostrar el pop-up dramático de muerte
     showMurderPopup(name);
     
-    // 2. Actualizar la base de datos (eliminado y rol)
+    // 2. Actualizar la base de datos (eliminado, rol y **CONECTADO: FALSE**)
     jugadoresRef.child(`${color}/eliminado`).set(true).then(() => {
-         participantesRef.child(userId).update({ rol: 'expulsado' });
+         // *** MODIFICACIÓN CLAVE: Establece conectado a false para que desaparezca de la lista
+         participantesRef.child(userId).update({ rol: 'expulsado', conectado: false });
          
          // 3. Forzar el mensaje de la muerte (se actualizará en el popup de murder)
          estadoRef.update({ 
@@ -1190,7 +1224,7 @@ if (clearVotesButton) {
 // 3. Reiniciar JUEGO TOTAL (Solo Admin - ROLES Y COLORES SE RESETEAN)
 if (resetButton) {
     resetButton.addEventListener('click', () => {
-        if (!isAdmin || !jugadoresRef || !votosDetalleRef || !participantesRef || !configRef || !estadoRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
+        if (!isAdmin || !jugadoresRef || !votosDetalleRef || !participantesRef || !configRef || !estadoRef || !tareasRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
         
         const jugadoresReset = {};
         for (const color of coloresJugadores) {
@@ -1209,7 +1243,7 @@ if (resetButton) {
                 snapshot.forEach(childSnapshot => {
                     updates[`${childSnapshot.key}/rol`] = 'sin asignar';
                     updates[`${childSnapshot.key}/color`] = null; 
-                    // No se toca el nombre para mantener la persistencia local.
+                    updates[`${childSnapshot.key}/conectado`] = false; // Resetear conectado para limpiar la lista de admin hasta que vuelvan a cargar
                 });
                 participantesRef.update(updates);
             });
@@ -1217,11 +1251,13 @@ if (resetButton) {
              configRef.update({ 
                  votoActivo: false, 
                  tiempoFin: 0,
+                 votoSecreto: false, 
                  lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
              });
              
-             // También reiniciamos el chat en el reinicio total
+             // También reiniciamos el chat y las tareas en el reinicio total
              if (chatRef) chatRef.set(null);
+             if (tareasRef) setupInitialTasks(); 
 
              estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Asigna roles y color!" });
              alert("Juego reiniciado. Todos los jugadores están de vuelta, sus roles y colores fueron borrados.");
@@ -1245,9 +1281,13 @@ if (assignRolesButton) {
         }
         
         const numJugadores = jugadoresActivos.length;
-        let numImpostores = 1;
-        if (numJugadores >= 6) numImpostores = 2;
-        if (numJugadores >= 10) numImpostores = 3; 
+        
+        // ** LÓGICA DE DOS IMPOSTORES **
+        let numImpostores = 1; // Default
+        if (numJugadores >= 5) numImpostores = 2; // 5+ jugadores: 2 impostores
+        if (numJugadores >= 9) numImpostores = 3; // 9+ jugadores: 3 impostores
+
+        if (numImpostores >= numJugadores) numImpostores = 1; // Seguridad por si acaso
 
         const shuffledPlayers = jugadoresActivos.map(p => p[0]).sort(() => 0.5 - Math.random());
         const impostorIds = shuffledPlayers.slice(0, numImpostores);
@@ -1404,5 +1444,103 @@ if (chatInput) chatInput.addEventListener('keyup', (e) => {
     }
 });
 
+
+// =========================================================
+// ** NUEVA SECCIÓN: LÓGICA DE TAREAS **
+// =========================================================
+
+const TAREAS_INICIALES = [
+    { id: 't1', texto: 'Encestar el balón en el basurero 3 veces (1 por cada jugador designado).', completada: false },
+    { id: 't2', texto: 'Llamar al perro espacial "Werw" y guiarlo hasta la cafetería de la nave.', completada: false },
+    { id: 't3', texto: 'Localizar los 4 peluches de la mascota dispersos en las salas y notificar su ubicación al Host.', completada: false },
+    { id: 't4', texto: 'Girar los dados hasta que la suma de los resultados coincida con el número indicado en el marcador de la misión.', completada: false },
+    { id: 't5', texto: 'Dos jugadores deben completar la carrera de obstáculos en menos de 10 segundos cada uno.', completada: false },
+];
+
+/**
+ * Inicializa la lista de tareas en Firebase (llamado al inicio y al reset).
+ */
+function setupInitialTasks() {
+    if (tareasRef) {
+        const initialTasksObject = {};
+        TAREAS_INICIALES.forEach(t => {
+            initialTasksObject[t.id] = { texto: t.texto, completada: t.completada };
+        });
+        tareasRef.set(initialTasksObject).catch(error => {
+            console.error("Error al inicializar tareas:", error);
+        });
+    }
+}
+
+/**
+ * Renderiza la lista de tareas y sus casillas de verificación.
+ */
+function updateTaskDisplay(taskSnapshot) {
+    if (!taskListContainer) return;
+    
+    const tareas = taskSnapshot.val();
+    taskListContainer.innerHTML = ''; 
+    let todasCompletadas = true;
+
+    if (!tareas) {
+         taskListContainer.innerHTML = '<p class="task-message">No hay tareas activas.</p>';
+         return;
+    }
+
+    Object.entries(tareas).forEach(([id, tarea]) => {
+        if (!tarea.completada) todasCompletadas = false;
+
+        const taskItem = document.createElement('div');
+        taskItem.classList.add('task-item');
+        taskItem.classList.add(tarea.completada ? 'completed' : 'pending');
+
+        taskItem.innerHTML = `
+            <input type="checkbox" id="task-${id}" data-id="${id}" ${tarea.completada ? 'checked' : ''} ${!isAdmin ? 'disabled' : ''}>
+            <label for="task-${id}">${tarea.texto}</label>
+        `;
+        taskListContainer.appendChild(taskItem);
+    });
+
+    // Agregar listeners de cambio (solo el admin los puede activar)
+    if (isAdmin) {
+        taskListContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                tareasRef.child(`${e.target.dataset.id}/completada`).set(e.target.checked);
+            });
+        });
+    }
+    
+    // Mensaje de victoria/estado
+    const statusMessage = document.getElementById('task-completion-status');
+    if (statusMessage) {
+        if (todasCompletadas && Object.keys(tareas).length > 0) {
+            statusMessage.textContent = '¡TODAS LAS TAREAS COMPLETADAS! Los Tripulantes ganan.';
+            statusMessage.classList.add('all-completed');
+             // Si las tareas son la condición de victoria, se dispararía aquí la verificación
+        } else {
+             statusMessage.textContent = `${Object.values(tareas).filter(t => t.completada).length} de ${Object.keys(tareas).length} Tareas Completadas.`;
+             statusMessage.classList.remove('all-completed');
+        }
+    }
+}
+
+// Listener de Tareas
+if (tareasRef) {
+    tareasRef.on('value', updateTaskDisplay, error => {
+         console.error("Error al leer tareas:", error);
+         // Si la base de datos de tareas está vacía, la inicializa
+         tareasRef.once('value').then(snap => {
+             if (!snap.exists()) setupInitialTasks();
+         });
+    });
+}
+
+
 // Inicializar el rastreo de participantes al cargar (DEBE ESTAR AL FINAL)
 setupParticipantTracking();
+// Si las tareas no existen, inicializarlas al cargar la app
+if (tareasRef) {
+    tareasRef.once('value').then(snap => {
+        if (!snap.exists()) setupInitialTasks();
+    });
+}
