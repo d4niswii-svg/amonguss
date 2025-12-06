@@ -31,6 +31,40 @@
         <button id="admin-login-button" class="admin-login-button">Admin Login (zxz)</button>
     </div>
 
+    <div class="admin-fixed-panel">
+        <button id="toggle-admin-panel-button" class="admin-btn-toggle" style="display:none;">Mostrar Panel Admin</button>
+
+        <div id="admin-panel-container" class="admin-panel" style="display:none;">
+            <h2 class="panel-header">PANEL DE ADMINISTRADOR</h2>
+
+            <div id="participant-panel" class="participant-panel">
+                <h3>Participantes Conectados:</h3>
+                <div id="participant-list-container" class="participant-list-container">
+                    <p class="admin-message">Cargando participantes...</p>
+                </div>
+            </div>
+
+            <div class="game-control-panel">
+                <h3>Controles de Partida:</h3>
+
+                <div class="impostor-count-control">
+                    <p>Impostores:</p>
+                    <button id="set-impostors-1" class="admin-btn impostor-count-btn">1 Impostor</button>
+                    <button id="set-impostors-2" class="admin-btn impostor-count-btn">2 Impostores</button>
+                    <span id="impostor-count-display">Actual: 1</span>
+                </div>
+
+                <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles & Colores</button>
+                <button id="resolve-vote-button" class="admin-btn-resolve" style="display:none;">Resolver Votación</button>
+                <button id="clear-votes-button" class="admin-btn-clear" style="display:none;">Limpiar Votos Actuales</button>
+                <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
+                <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
+                <button id="clear-chat-button" class="admin-btn-chat-reset" style="display:none;">Limpiar Chat</button>
+                <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
+            </div>
+        </div>
+    </div>
+
 
     <div id="main-game-wrapper" style="display:none;">
 
@@ -130,40 +164,6 @@
                     </button>
                 </div>
                 <p id="resultado-final" class="resultado-final"></p>
-            </div>
-        </div>
-
-        <div class="admin-fixed-panel">
-            <button id="toggle-admin-panel-button" class="admin-btn-toggle" style="display:none;">Mostrar Panel Admin</button>
-
-            <div id="admin-panel-container" class="admin-panel" style="display:none;">
-                <h2 class="panel-header">PANEL DE ADMINISTRADOR</h2>
-
-                <div id="participant-panel" class="participant-panel">
-                    <h3>Participantes Conectados:</h3>
-                    <div id="participant-list-container" class="participant-list-container">
-                        <p class="admin-message">Cargando participantes...</p>
-                    </div>
-                </div>
-
-                <div class="game-control-panel">
-                    <h3>Controles de Partida:</h3>
-
-                    <div class="impostor-count-control">
-                        <p>Impostores:</p>
-                        <button id="set-impostors-1" class="admin-btn impostor-count-btn">1 Impostor</button>
-                        <button id="set-impostors-2" class="admin-btn impostor-count-btn">2 Impostores</button>
-                        <span id="impostor-count-display">Actual: 1</span>
-                    </div>
-
-                    <button id="assign-roles-button" class="admin-btn-assign" style="display:none;">Asignar Roles & Colores</button>
-                    <button id="resolve-vote-button" class="admin-btn-resolve" style="display:none;">Resolver Votación</button>
-                    <button id="clear-votes-button" class="admin-btn-clear" style="display:none;">Limpiar Votos Actuales</button>
-                    <button id="allow-multiple-vote-button" class="admin-btn-permit-vote" style="display:none;">Permitir Voto Múltiple</button>
-                    <button id="toggle-secret-vote-button" class="admin-btn-secret-vote" style="display:none;">Voto Secreto: OFF</button>
-                    <button id="clear-chat-button" class="admin-btn-chat-reset" style="display:none;">Limpiar Chat</button>
-                    <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
-                </div>
             </div>
         </div>
     </div> <div id="app-container" style="display: none;"></div>
