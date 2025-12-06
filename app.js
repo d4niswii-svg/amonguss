@@ -991,6 +991,7 @@ function updateAssignedPlayersDisplay() {
         playerDiv.classList.add('assigned-player-item');
         playerDiv.classList.add(p.rol); // Para estilizar tripulante/impostor
         
+        // Se mantiene el rol para la clase, pero el CSS ahora oculta el color del nombre.
         playerDiv.innerHTML = `
             <div class="assigned-crewmate-icon ${p.color}"></div>
             <span class="assigned-player-name">${nameText}</span>
@@ -1057,6 +1058,7 @@ function updateParticipantDisplay(participantesData) {
                 <input type="text" class="name-input" data-id="${p.id}" placeholder="Nuevo Nombre" value="${p.nombre || ''}">
                 <button class="name-btn" data-id="${p.id}">Asignar Nombre</button>
                 <div class="color-assignment">
+                    <p style="width: 100%; font-size: 0.8em; margin: 0 0 3px 0; color: #34495e; font-weight: 700;">Asignar Color:</p>
                     ${coloresTripulantes.map(color => `
                         <button class="color-btn ${color}" data-id="${p.id}" data-color="${color}" ${p.color === color ? 'disabled' : ''}>${color.charAt(0).toUpperCase()}</button>
                     `).join('')}
@@ -1148,6 +1150,12 @@ function toggleAdminHidden(userId, isCurrentlyHidden) {
 function asignarColor(userId, color) {
     if (!isAdmin || !participantesRef) return;
     
+    // VERIFICACIÓN DE adminHidden para asignación individual (Seguridad extra)
+    if (participantesCache[userId] && participantesCache[userId].adminHidden) {
+         alert('No se puede asignar color. El participante está actualmente OCULTO de la lista de Admin.');
+         return;
+    }
+    
     if (color) {
         participantesRef.once('value').then(snapshot => {
             const participantesData = snapshot.val();
@@ -1187,6 +1195,13 @@ if (participantesRef) {
 // 4. Función de asignación de rol (para el ADMIN)
 function asignarRol(userId, rol) {
     if (!isAdmin || !participantesRef) return;
+    
+    // VERIFICACIÓN DE adminHidden para asignación individual (Seguridad extra)
+    if (participantesCache[userId] && participantesCache[userId].adminHidden) {
+         alert('No se puede asignar rol. El participante está actualmente OCULTO de la lista de Admin.');
+         return;
+    }
+    
     participantesRef.child(userId).update({ rol: rol });
 }
 
@@ -1449,7 +1464,7 @@ function assignRolesAndColors() {
     const jugadoresSinColor = Object.entries(participantesCache)
         .filter(([id, p]) => 
              p.conectado === true && 
-            !p.adminHidden && 
+            !p.adminHidden && // *** FILTRO: Solo jugadores NO ocultos ***
             (!p.color || !coloresTripulantes.includes(p.color))
         );
 
@@ -1468,6 +1483,7 @@ function assignRolesAndColors() {
             updatesParticipantes[`${id}/color`] = newColor;
             updatesParticipantes[`${id}/rol`] = 'sin asignar'; // Resetear rol
             updatesParticipantes[`${id}/conectado`] = true;
+            updatesParticipantes[`${id}/adminHidden`] = null; // Asegurar que sea visible
             
             updatesJugadores[`${newColor}/eliminado`] = false; 
             updatesJugadores[`${newColor}/votos`] = 0;
@@ -1483,7 +1499,11 @@ function assignRolesAndColors() {
     
     // 2. Asignar Roles a TODOS con color
     const jugadoresConColor = Object.entries(participantesCache)
-         .filter(([id, p]) => p.color && coloresTripulantes.includes(p.color));
+         .filter(([id, p]) => 
+            p.color && 
+            coloresTripulantes.includes(p.color) && 
+            !p.adminHidden // *** FILTRO: Solo jugadores NO ocultos ***
+        );
 
     const numJugadores = jugadoresConColor.length;
     if (numJugadores === 0) {
@@ -1541,6 +1561,7 @@ function setImpostorCount(count) {
        alert(`Número de impostores establecido en: ${newCount === 'auto' ? 'AUTOMÁTICO' : newCount}.`);
     });
 }
+
 
 // ELIMINADO: PERMITIR VOTO MÚLTIPLE
 
