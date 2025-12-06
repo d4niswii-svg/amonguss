@@ -14,12 +14,14 @@ const firebaseConfig = {
   appId: "1:234305709468:web:18e64d68b5b8f9e89dd459",
   measurementId: "G-0N3PESVFHR"
 };
+
 let database = null; // Inicialmente null
 
 // IDs del navegador (Debe estar al inicio para ser usado inmediatamente)
 // *** MODIFICACIÓN CLAVE: ID PERSISTENTE y Nombre en LocalStorage ***
 function getAnonymousUserId() {
     let userId = localStorage.getItem('amongus_user_id');
+    // Mantenemos la persistencia del ID, si no existe lo crea.
     if (!userId) {
         userId = 'user_' + Math.random().toString(36).substring(2, 9);
         localStorage.setItem('amongus_user_id', userId);
@@ -28,8 +30,7 @@ function getAnonymousUserId() {
 }
 
 const ANONYMOUS_USER_ID = getAnonymousUserId();
-const SAVED_USERNAME = localStorage.getItem('amongus_username') || '';
-// Cargar el nombre guardado
+const SAVED_USERNAME = localStorage.getItem('amongus_username') || ''; // Cargar el nombre guardado
 
 
 try {
@@ -46,14 +47,16 @@ try {
 }
 
 // Referencias a la Base de Datos (Inicializadas solo si database existe)
-let jugadoresRef, configRef, estadoRef, participantesRef, votosDetalleRef, chatRef;
+let jugadoresRef, configRef, estadoRef, participantesRef, votosDetalleRef, chatRef, tareasRef;
+
 if (database) {
     jugadoresRef = database.ref('jugadores'); 
     configRef = database.ref('config');
     estadoRef = database.ref('estado');
-    participantesRef = database.ref('participantes');
+    participantesRef = database.ref('participantes'); 
     votosDetalleRef = database.ref('votosDetalle'); 
-    chatRef = database.ref('chat'); // NUEVA REFERENCIA
+    chatRef = database.ref('chat'); 
+    tareasRef = database.ref('tareas'); // NUEVA REFERENCIA: TAREAS
 }
 
 
@@ -63,7 +66,7 @@ const temporizadorElement = document.getElementById('temporizador');
 const votoConfirmadoElement = document.getElementById('voto-confirmado');
 const resultadoFinalElement = document.getElementById('resultado-final');
 const resetButton = document.getElementById('reset-button');
-const clearVotesButton = document.getElementById('clear-votes-button');
+const clearVotesButton = document.getElementById('clear-votes-button'); 
 const mensajePrincipal = document.getElementById('mensaje-principal'); 
 
 // UI de Administrador/Roles
@@ -99,30 +102,25 @@ const nameSetupForm = document.getElementById('name-setup-form');
 const nameSetupMessage = document.getElementById('name-setup-message');
 const newPlayerNameInput = document.getElementById('new-player-name-input');
 const submitNameButton = document.getElementById('submit-name-button');
+
 // REFERENCIAS DE ID/NOMBRE
 const userIdDisplay = document.getElementById('user-id-display');
 const userNameDisplay = document.getElementById('user-name-display-top');
 
 // NUEVA REFERENCIA DE BOTÓN
 const assignRolesButton = document.getElementById('assign-roles-button');
-
-// ** NUEVAS REFERENCIAS DE ADMINISTRADOR (AÑADIDAS) **
-const setImpostor1Button = document.getElementById('set-impostor-1');
-const setImpostor2Button = document.getElementById('set-impostor-2');
-const impostorCountDisplay = document.getElementById('impostor-count-display');
-const assignRolesAndColorsButton = document.getElementById('assign-roles-colors-button');
-const expelUnassignedButton = document.getElementById('expel-unassigned-button');
-
-
 // ** NUEVA REFERENCIA: Voto Secreto **
 const toggleSecretVoteButton = document.getElementById('toggle-secret-vote-button');
+
 // ** NUEVAS REFERENCIAS DE UI MODAL **
 const votingModalContainer = document.getElementById('voting-modal-container');
 // *** MODIFICACIÓN: Botón para resolver votación ***
 const resolveVoteButton = document.getElementById('resolve-vote-button');
+
 // ** NUEVAS REFERENCIAS DE PANEL ADMIN **
 const toggleAdminPanelButton = document.getElementById('toggle-admin-panel-button');
 const adminPanelContainer = document.getElementById('admin-panel-container');
+
 // ** NUEVAS REFERENCIAS: CHAT **
 const chatPanel = document.getElementById('chat-panel');
 const chatMessages = document.getElementById('chat-messages');
@@ -131,16 +129,21 @@ const chatSendButton = document.getElementById('chat-send-button');
 const chatStatusMessage = document.getElementById('chat-status-message');
 const clearChatButton = document.getElementById('clear-chat-button'); // Botón de limpiar chat
 
+// ** NUEVAS REFERENCIAS: TAREAS **
+const participantTaskPanel = document.getElementById('participant-task-panel'); // Panel visible para todos
+const taskListContainer = document.getElementById('task-list-container');
+const adminTaskPanelContainer = document.getElementById('admin-task-panel-container'); // Panel de control Admin
+const kickUnassignedButton = document.getElementById('kick-unassigned-button'); // Botón de expulsar no asignados
+const impostorCountSelector = document.getElementById('impostor-count-selector'); // Selector de Impostores
 
 let isAdmin = false;
 let participantesCache = {}; 
-const coloresJugadores = ['amarillo', 'azul', 'blanco', 'rojo', 'verde', 'skip'];
+const coloresJugadores = ['amarillo', 'azul', 'blanco', 'rojo', 'verde', 'skip']; 
 const coloresTripulantes = ['amarillo', 'azul', 'blanco', 'rojo', 'verde']; // Sin Skip
 
-let selectedImpostorCount = 1; // ** NUEVA VARIABLE: Contador de Impostores (Por defecto 1) **
-
 // FIX: Mostrar el ID inmediatamente
-if (userIdDisplay) userIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
+if (userIdDisplay) userIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`; 
+
 
 // =========================================================
 // LÓGICA DE TIEMPO REAL: VOTACIÓN Y VISUALIZACIÓN (ICONOS)
@@ -148,6 +151,7 @@ if (userIdDisplay) userIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
 
 function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
     if (!jugadoresSnapshot || !votosDetalleSnapshot) return;
+
     const jugadores = jugadoresSnapshot.val();
     const votosDetalle = votosDetalleSnapshot.val() || {};
     const participantesData = participantesCache; 
@@ -158,16 +162,14 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
     let totalVotos = 0;
     
     for (const color of coloresJugadores) {
-        const votosActuales = jugadores[color] ?
-        jugadores[color].votos || 0 : 0;
+        const votosActuales = jugadores[color] ? jugadores[color].votos || 0 : 0;
         totalVotos += votosActuales;
 
         // 1. Referencias UI
         const barraElement = document.getElementById(`barra-${color}`);
         const botonElement = document.getElementById(`votar-${color}`);
         const contadorElement = document.getElementById(`voto-iconos-${color}`); // Contenedor de iconos
-        const crewmateIcon = botonElement ?
-        botonElement.querySelector('.crewmate-icon') : null; // Icono grande del jugador
+        const crewmateIcon = botonElement ? botonElement.querySelector('.crewmate-icon') : null; // Icono grande del jugador
 
         // 2. Aplicar estilo de eliminado
         if (jugadores[color] && jugadores[color].eliminado === true && botonElement) {
@@ -175,7 +177,7 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
             if (crewmateIcon) crewmateIcon.classList.add('ejected'); // Nuevo estilo de ojo muerto
         } else if (botonElement) {
              botonElement.classList.remove('eliminado');
-            if (crewmateIcon) crewmateIcon.classList.remove('ejected');
+             if (crewmateIcon) crewmateIcon.classList.remove('ejected');
         }
         
         // 3. Barras de porcentaje
@@ -196,42 +198,41 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
         // 5. RENDERIZAR ICONOS DE VOTO (Mejorado con Voto Secreto)
         if (contadorElement) {
              contadorElement.innerHTML = '';
+             
              // ** FIX: isSecretVote se obtiene de la caché de config **
-             const currentConfig = participantesCache.config ||
-            {};
+             const currentConfig = participantesCache.config || {};
              const isSecretVote = currentConfig.votoSecreto || false;
 
              if (isSecretVote) {
                  contadorElement.textContent = 'VOTO SECRETO ACTIVO';
-                contadorElement.classList.add('voto-secreto-activo');
+                 contadorElement.classList.add('voto-secreto-activo');
              } else {
                  contadorElement.classList.remove('voto-secreto-activo');
-                const votantes = Object.keys(votosDetalle).filter(id => votosDetalle[id].voto === color);
+                 
+                 const votantes = Object.keys(votosDetalle).filter(id => votosDetalle[id].voto === color);
                  
                  votantes.forEach(votanteId => {
                      const participante = participantesData[votanteId];
                      const colorVotante = participante && coloresTripulantes.includes(participante.color) ? participante.color : 'skip';
                      
-               
-              const icon = document.createElement('div');
+                     const icon = document.createElement('div');
                      icon.classList.add('voto-crewmate-icon', colorVotante);
                      contadorElement.appendChild(icon);
                  });
-            }
+             }
         }
     }
 
     // 6. Mostrar el resultado (Líder Actual)
     let liderTexto = jugadorMasVotado === "EMPATE" 
-        ?
-        "EMPATE" 
+        ? "EMPATE" 
         : jugadorMasVotado ? jugadorMasVotado.toUpperCase() : "NADIE";
+        
     if (totalVotos === 0) {
          resultadoFinalElement.style.display = 'none';
     } else {
         resultadoFinalElement.style.display = 'block';
-        resultadoFinalElement.textContent = `VOTOS TOTALES: ${totalVotos} |
-        LÍDER ACTUAL: ${liderTexto}`;
+        resultadoFinalElement.textContent = `VOTOS TOTALES: ${totalVotos} | LÍDER ACTUAL: ${liderTexto}`;
     }
 }
 
@@ -239,11 +240,13 @@ function updateVoteDisplay(jugadoresSnapshot, votosDetalleSnapshot) {
 // Listener Combinado
 let currentJugadoresSnapshot = null;
 let currentVotosDetalleSnapshot = null;
+
 if (jugadoresRef && votosDetalleRef) {
     jugadoresRef.on('value', (snapshot) => {
         currentJugadoresSnapshot = snapshot;
         if (currentVotosDetalleSnapshot) updateVoteDisplay(currentJugadoresSnapshot, currentVotosDetalleSnapshot);
     });
+
     votosDetalleRef.on('value', (snapshot) => {
         currentVotosDetalleSnapshot = snapshot;
         if (currentJugadoresSnapshot) updateVoteDisplay(currentJugadoresSnapshot, currentVotosDetalleSnapshot);
@@ -261,9 +264,9 @@ function obtenerJugadorMasVotado(jugadoresData) {
     let jugadorMasVotado = 'NADIE';
     let esEmpate = false;
     let isEliminado = false;
+
     for (const color of coloresTripulantes) {
-        const jugador = jugadoresData[color] ||
-        { votos: 0, eliminado: false };
+        const jugador = jugadoresData[color] || { votos: 0, eliminado: false };
         if (jugador.eliminado) continue;
 
         if (jugador.votos > maxVotos) {
@@ -271,7 +274,7 @@ function obtenerJugadorMasVotado(jugadoresData) {
             jugadorMasVotado = color;
             esEmpate = false;
         } else if (jugador.votos === maxVotos && maxVotos > 0) {
-            jugadorMasVotado = "EMPATE";
+            jugadorMasVotado = "EMPATE"; 
             esEmpate = true;
         }
     }
@@ -280,7 +283,7 @@ function obtenerJugadorMasVotado(jugadoresData) {
         jugadorMasVotado = 'EMPATE';
         isEliminado = false;
     } else if (jugadorMasVotado !== 'NADIE') {
-        isEliminado = true;
+        isEliminado = true; 
     }
     
     const skipVotos = jugadoresData['skip'] ? jugadoresData['skip'].votos || 0 : 0;
@@ -289,7 +292,7 @@ function obtenerJugadorMasVotado(jugadoresData) {
         isEliminado = false;
     } else if (skipVotos === maxVotos && maxVotos > 0) {
          jugadorMasVotado = 'EMPATE';
-        isEliminado = false;
+         isEliminado = false;
     }
     
     return { nombre: jugadorMasVotado, esEliminado: isEliminado };
@@ -299,11 +302,12 @@ function obtenerJugadorMasVotado(jugadoresData) {
 function showExpulsionResult(ejectedColor, ejectedRole, ejectedName) {
     // Esconder otras pantallas de resultados
     if (victoryPopup) victoryPopup.style.display = 'none';
+
     // Resetear clases de animación y color
     if (expulsionPopup) expulsionPopup.classList.remove('impostor-ejected', 'crewmate-ejected', 'skip-ejected');
     if (ejectedCrewmate) {
         ejectedCrewmate.classList.remove(...coloresJugadores);
-        ejectedCrewmate.style.display = 'block';
+        ejectedCrewmate.style.display = 'block'; 
     }
 
     if (expulsionPopup) expulsionPopup.style.display = 'flex';
@@ -314,8 +318,7 @@ function showExpulsionResult(ejectedColor, ejectedRole, ejectedName) {
         if (expulsionPopup) expulsionPopup.classList.add('skip-ejected');
         if (ejectedCrewmate) ejectedCrewmate.style.display = 'none'; 
     } else {
-        const roleText = ejectedRole === 'impostor' ?
-        'ERA EL IMPOSTOR' : 'ERA INOCENTE';
+        const roleText = ejectedRole === 'impostor' ? 'ERA EL IMPOSTOR' : 'ERA INOCENTE';
         if (expulsionMessage) expulsionMessage.textContent = `${ejectedName.toUpperCase()} (${ejectedColor.toUpperCase()}) ${roleText}.`;
         
         if (ejectedCrewmate) ejectedCrewmate.classList.add(ejectedColor);
@@ -328,13 +331,12 @@ function showExpulsionResult(ejectedColor, ejectedRole, ejectedName) {
         
         // Asegurarse de que el mensaje principal se actualice solo después del pop-up
          if (estadoRef && mensajePrincipal) {
-            
              estadoRef.once('value').then(snap => {
                 mensajePrincipal.textContent = snap.val().mensaje;
              });
          }
 
-    }, 5000);
+    }, 5000); 
 }
 
 // ** NUEVA FUNCIÓN: Muestra el pop-up de MUERTE (Kill del admin) **
@@ -344,14 +346,14 @@ function showMurderPopup(victimName) {
     if (victoryPopup) victoryPopup.style.display = 'none';
 
     if (murderPopup) murderPopup.style.display = 'flex';
-    if (murderVictimName) murderVictimName.textContent = victimName.toUpperCase();
+    if (murderVictimName) murderVictimName.textContent = victimName.toUpperCase(); 
+
     setTimeout(() => {
         if (murderPopup) murderPopup.style.display = 'none';
         if (estadoRef) {
             estadoRef.update({ mensaje: `${victimName.toUpperCase()} ha muerto. ¡Reunión de emergencia!` });
         }
-    }, 4000);
-    // Duración de la animación de muerte
+    }, 4000); // Duración de la animación de muerte
 }
 
 
@@ -365,6 +367,7 @@ function showVictoryScreen(mensaje, ganador) {
     victoryPopup.classList.remove('crewmate-win', 'impostor-win');
     victoryPopup.classList.add(ganador === 'crewmate' ? 'crewmate-win' : 'impostor-win');
     victoryMessage.textContent = mensaje;
+    
     // 1. Obtener la lista de roles
     let impostores = [];
     let tripulantes = [];
@@ -378,15 +381,16 @@ function showVictoryScreen(mensaje, ganador) {
     
     // 2. Renderizar Impostores
     impostorListContainer.innerHTML = impostores.length === 0 
-        ?
-        '<p>No había impostores activos.</p>'
+        ? '<p>No había impostores activos.</p>'
         : impostores.map(p => 
             `<div class="final-player-item impostor"><div class="voto-crewmate-icon ${p.color}"></div>${p.nombre}</div>`
         ).join('');
+
     // 3. Renderizar Tripulantes (Para el contraste)
     crewmateListContainer.innerHTML = tripulantes.map(p => 
         `<div class="final-player-item crewmate"><div class="voto-crewmate-icon ${p.color}"></div>${p.nombre}</div>`
         ).join('');
+    
     // 4. Mostrar la pantalla
     victoryPopup.style.display = 'flex';
 }
@@ -400,11 +404,13 @@ function verificarFinDePartida() {
 
     // Asegurarse de que tenemos los datos para la verificación
     if (!currentJugadoresSnapshot || !participantesCache) return;
+    
     // 1. Contar Impostores y Tripulantes NO ELIMINADOS (solo con color asignado)
     const jugadoresSnapshot = currentJugadoresSnapshot.val();
     for (const [id, p] of Object.entries(participantesCache)) {
         if (p.color && coloresTripulantes.includes(p.color)) {
             const isEliminated = jugadoresSnapshot[p.color] && jugadoresSnapshot[p.color].eliminado;
+
             if (!isEliminated) {
                 totalActivos++;
                 if (p.rol === 'impostor') {
@@ -433,7 +439,7 @@ function verificarFinDePartida() {
 
     // 3. Aplicar el resultado si el juego termina
     if (juegoTerminado && configRef && estadoRef) {
-        configRef.update({ votoActivo: false, tiempoFin: 0 });
+        configRef.update({ votoActivo: false, tiempoFin: 0 }); 
         estadoRef.update({ mensaje: mensajeVictoria });
         showVictoryScreen(mensajeVictoria, ganador); 
     }
@@ -442,6 +448,7 @@ function verificarFinDePartida() {
 // *** NUEVA FUNCIÓN: Resuelve la votación (simulando el fin del temporizador) ***
 function resolveVoting() {
     if (!jugadoresRef || !votosDetalleRef || !configRef || !estadoRef) return;
+    
     // Limpiar los iconos de voto de la UI localmente
     coloresJugadores.forEach(color => {
         const contadorElement = document.getElementById(`voto-iconos-${color}`);
@@ -450,6 +457,7 @@ function resolveVoting() {
              contadorElement.classList.remove('voto-secreto-activo');
         }
     });
+
     jugadoresRef.once('value').then(snapshot => {
         const jugadoresData = snapshot.val();
         const resultado = obtenerJugadorMasVotado(jugadoresData);
@@ -458,42 +466,40 @@ function resolveVoting() {
         if (resultado.esEliminado) {
             const ejectedColor = resultado.nombre;
             let ejectedPlayerRole = 'tripulante'; 
-            let 
-            ejectedPlayerName = ejectedColor; 
+            let ejectedPlayerName = ejectedColor; 
             let ejectedPlayerId = null;
 
             // 1. Obtener el rol y nombre del jugador
             for (const [id, p] of Object.entries(participantesCache)) {
                 if (p.color === ejectedColor) {
                     ejectedPlayerRole = p.rol;
-  
                     ejectedPlayerName = p.nombre || ejectedColor.toUpperCase();
                     ejectedPlayerId = id;
                     break;
                 }
             }
-        
-        
+            
             // 2. Mostrar la animación antes de actualizar el estado final
             showExpulsionResult(ejectedColor, ejectedPlayerRole, ejectedPlayerName);
+
             // 3. Actualizar la base de datos (eliminado y mensaje)
             jugadoresRef.child(`${ejectedColor}/eliminado`).set(true).then(() => {
                  if (ejectedPlayerId && participantesRef) participantesRef.child(ejectedPlayerId).update({ rol: 'expulsado' });
                  
                  estadoRef.update({ 
-                  
                     mensaje: `¡${ejectedPlayerName.toUpperCase()} ha sido ELIMINADO!`, 
                     ultimoEliminado: ejectedColor 
                  }).then(() => {
                     // 4. Verificar fin de partida después de la expulsión
                     verificarFinDePartida();
-   
-               });
+                 });
             });
+
+
         } else {
              // Caso SKIP o EMPATE
-             showExpulsionResult('SKIP', 'none', 'none');
-            estadoRef.update({ mensaje: "Nadie ha sido expulsado (SKIP o EMPATE)." });
+             showExpulsionResult('SKIP', 'none', 'none'); 
+             estadoRef.update({ mensaje: "Nadie ha sido expulsado (SKIP o EMPATE)." });
         }
         
         // Borrar votos y resetear señal
@@ -502,12 +508,12 @@ function resolveVoting() {
             for (const color of coloresJugadores) {
                 updates[`${color}/votos`] = 0;
             }
-      
             jugadoresRef.update(updates).then(() => {
                 votosDetalleRef.set(null); 
                 configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP); 
             });
          });
+
         // Llamar a la función de visibilidad para actualizar los botones
         configRef.once('value').then(snap => {
             updateAdminButtonsVisibility(snap.val());
@@ -519,6 +525,7 @@ function resolveVoting() {
 // *** REVISADO: Función de visibilidad de Admin simplificada y asegurada ***
 function updateAdminButtonsVisibility(config) {
     if (!config) return;
+
     // El modal de votación ahora solo se oculta si la restricción de acceso está activa
     if (accessRestrictionMessage && accessRestrictionMessage.style.display !== 'flex' && votingModalContainer) {
          votingModalContainer.style.display = 'flex';
@@ -527,39 +534,38 @@ function updateAdminButtonsVisibility(config) {
     if (isAdmin) {
         if (toggleAdminPanelButton) toggleAdminPanelButton.style.display = 'block';
         if (adminLoginButton) adminLoginButton.style.display = 'none';
+        if (adminTaskPanelContainer) adminTaskPanelContainer.style.display = 'flex'; // Mostrar panel admin de tareas
 
         // Lógica de botones de Admin
-        // if (assignRolesButton) assignRolesButton.style.display = 'block'; // Ocultado para usar el nuevo
+        if (impostorCountSelector) impostorCountSelector.style.display = 'flex'; // Selector de Impostores
+        if (assignRolesButton) assignRolesButton.style.display = 'block';         
         if (resolveVoteButton) resolveVoteButton.style.display = 'block';          
         if (clearVotesButton) clearVotesButton.style.display = 'block';           
         if (resetButton) resetButton.style.display = 'block';              
-        if (allowMultipleVoteButton) allowMultipleVoteButton.style.display = 'block';
+        if (allowMultipleVoteButton) allowMultipleVoteButton.style.display = 'block';    
         if (toggleSecretVoteButton) {
-             toggleSecretVoteButton.style.display = 'block';
+             toggleSecretVoteButton.style.display = 'block';     
              toggleSecretVoteButton.textContent = config.votoSecreto ? "Voto Secreto: ON" : "Voto Secreto: OFF";
         }
-        if (clearChatButton) clearChatButton.style.display = 'block';
-
-        // ** NUEVOS BOTONES DE ADMIN **
-        if (setImpostor1Button) setImpostor1Button.style.display = 'block';
-        if (setImpostor2Button) setImpostor2Button.style.display = 'block';
-        if (impostorCountDisplay) impostorCountDisplay.style.display = 'block';
-        if (assignRolesAndColorsButton) assignRolesAndColorsButton.style.display = 'block';
-        if (expelUnassignedButton) expelUnassignedButton.style.display = 'block';
-
+        if (clearChatButton) clearChatButton.style.display = 'block'; // Limpiar Chat
+        if (kickUnassignedButton) kickUnassignedButton.style.display = 'block'; // Expulsar no asignados
 
     } else {
-         if (toggleAdminPanelButton) toggleAdminPanelButton.style.display = 'none';
+         if (toggleAdminPanelButton) toggleAdminPanelButton.style.display = 'none'; 
          if (adminPanelContainer) adminPanelContainer.style.display = 'none'; 
          if (adminLoginButton) adminLoginButton.style.display = 'block';
          if (clearChatButton) clearChatButton.style.display = 'none';
-         
-        // ** NUEVOS BOTONES OCULTOS PARA NO ADMIN **
-        if (setImpostor1Button) setImpostor1Button.style.display = 'none';
-        if (setImpostor2Button) setImpostor2Button.style.display = 'none';
-        if (impostorCountDisplay) impostorCountDisplay.style.display = 'none';
-        if (assignRolesAndColorsButton) assignRolesAndColorsButton.style.display = 'none';
-        if (expelUnassignedButton) expelUnassignedButton.style.display = 'none';
+         if (adminTaskPanelContainer) adminTaskPanelContainer.style.display = 'none';
+         if (impostorCountSelector) impostorCountSelector.style.display = 'none';
+         if (kickUnassignedButton) kickUnassignedButton.style.display = 'none';
+    }
+    
+    // Actualizar el estado del selector de impostores
+    if (impostorCountSelector) {
+        const currentCount = config.impostorCount || 1;
+        const selector = impostorCountSelector.querySelector(`button[data-count="${currentCount}"]`);
+        impostorCountSelector.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+        if (selector) selector.classList.add('active');
     }
 }
 
@@ -570,6 +576,7 @@ function showRoleNotification(rol) {
     roleNotification.classList.remove('crewmate', 'impostor');
     roleNotification.classList.add(rol === 'impostor' ? 'impostor' : 'crewmate');
     roleNotification.style.display = 'flex';
+    
     setTimeout(() => {
         roleNotification.style.display = 'none';
     }, 5000);
@@ -579,6 +586,7 @@ function showRoleNotification(rol) {
 // Lógica de Votación (Restricción por color asignado y eliminado)
 function votar(personaje) {
     if (!participantesRef || !jugadoresRef) return;
+    
     participantesRef.child(ANONYMOUS_USER_ID).once('value').then(participanteSnap => {
         const participante = participanteSnap.val();
         const miColor = participante ? participante.color : null;
@@ -586,23 +594,20 @@ function votar(personaje) {
         
         // --- RESTRICCIÓN 1: Solo jugadores con color asignado (rojo, azul, etc.) pueden votar ---
         if (!miColor || !coloresTripulantes.includes(miColor)) {
-            alert('No puedes 
-            votar. El administrador debe asignarte un color de jugador (rojo, azul, etc.).');
+            alert('No puedes votar. El administrador debe asignarte un color de jugador (rojo, azul, etc.).');
             return;
         }
         
         // --- RESTRICCIÓN 2: Solo jugadores con ROL asignado (no 'sin asignar' ni 'expulsado') ---
          if (!miRol || miRol === 'sin asignar' || miRol === 'expulsado') {
-             alert(`No puedes votar. Tu estado actual 
-            es ${miRol ? miRol.toUpperCase() : 'SIN ASIGNAR'}.`);
+             alert(`No puedes votar. Tu estado actual es ${miRol ? miRol.toUpperCase() : 'SIN ASIGNAR'}.`);
              return;
          }
 
         // --- RESTRICCIÓN 3: Jugador eliminado no puede votar ---
         jugadoresRef.child(miColor).once('value').then(jugadorSnap => {
             if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
-                alert(`¡Tu personaje (${miColor.toUpperCase()}) ha sido ELIMINADO!
-            No puedes emitir más votos.`);
+                alert(`¡Tu personaje (${miColor.toUpperCase()}) ha sido ELIMINADO! No puedes emitir más votos.`);
                 return;
             }
             // Si no está eliminado, procede con la votación
@@ -613,33 +618,40 @@ function votar(personaje) {
 
 function performVoteChecks(personaje) {
     if (!votosDetalleRef || !jugadoresRef) return;
+    
     // ** CHEQUEO DE VOTO ÚNICO (BASADO EN FIREBASE) **
     votosDetalleRef.child(ANONYMOUS_USER_ID).once('value').then(votoSnap => {
-        if (votoSnap.exists()) {
+        
+        // El botón está deshabilitado por el listener, pero por seguridad
+        const currentConfig = participantesCache.config || {};
+        const isMultipleVoteAllowed = currentConfig.lastVoteClearSignal !== undefined; 
+        
+        if (votoSnap.exists() && !isMultipleVoteAllowed) { // Si ya votó Y no se ha dado la señal de voto múltiple
              alert('¡Ya has emitido tu voto en esta ronda!');
              return;
         }
         
         const votoRef = (personaje === 'skip') 
-            
-        ? jugadoresRef.child('skip/votos') 
+            ? jugadoresRef.child('skip/votos') 
             : jugadoresRef.child(`${personaje}/votos`);
         
         const performVote = () => {
              // 1. Voto en el contador total
              votoRef.transaction(function (currentVotes) {
                 return (currentVotes || 0) + 1;
-         
             });
             
             // 2. Voto en el detalle (para los iconos y el voto único)
             votosDetalleRef.child(ANONYMOUS_USER_ID).set({
                 voto: personaje,
-                tiempo: Date.now()
+                tiempo: firebase.database.ServerValue.TIMESTAMP
             });
-   
             
-            if (botonesVoto) botonesVoto.forEach(btn => btn.disabled = true);
+            // Deshabilitar el botón SÓLO si el voto múltiple no está permitido
+            if (!isMultipleVoteAllowed && botonesVoto) {
+                 botonesVoto.forEach(btn => btn.disabled = true);
+            }
+            
             if (votoConfirmadoElement) votoConfirmadoElement.style.display = 'block';
             setTimeout(() => { if (votoConfirmadoElement) votoConfirmadoElement.style.display = 'none'; }, 3000);
         }
@@ -649,8 +661,7 @@ function performVoteChecks(personaje) {
             jugadoresRef.child(personaje).once('value').then(jugadorSnap => {
                 if (jugadorSnap.val() && jugadorSnap.val().eliminado) {
                     alert(`¡${personaje.toUpperCase()} ya ha sido eliminado! No puedes votar por él.`);
-       
-                     return;
+                    return;
                 }
                 performVote();
             });
@@ -664,38 +675,41 @@ function performVoteChecks(personaje) {
 // Listener principal de Configuración (control de acceso y temporizador)
 if (configRef && votosDetalleRef) {
     configRef.on('value', (snapshot) => {
-        const config = snapshot.val();
-        participantesCache.config = config; // Guardar config en la caché
-
-        updateAdminButtonsVisibility(config);
+        const config = snapshot.val() || {};
         
-        // Lógica del Temporizador y Votación Activa
-        if (config && config.votoActivo) {
-            // ... (Lógica existente de temporizador) ...
-
-            // Habilitar botones de voto si están deshabilitados
-            votosDetalleRef.child(ANONYMOUS_USER_ID).once('value').then(votoSnap => {
-                if (!votoSnap.exists() && botonesVoto) {
-                    botonesVoto.forEach(btn => btn.disabled = false);
-                }
+        participantesCache.config = config; 
+        
+        // Control de Voto Único
+        const isMultipleVoteAllowed = config.lastVoteClearSignal !== undefined;
+        
+        votosDetalleRef.child(ANONYMOUS_USER_ID).once('value').then(votoSnap => {
+            const haVotado = votoSnap.exists();
+            
+            // Si ha votado Y no se permite el voto múltiple, deshabilitar.
+            // Si NO ha votado, habilitar.
+            const debeEstarHabilitado = !haVotado || isMultipleVoteAllowed; 
+            
+            if (botonesVoto) botonesVoto.forEach(btn => {
+                // El botón solo debe estar habilitado si el jugador tiene color/rol asignado
+                const participante = participantesCache[ANONYMOUS_USER_ID];
+                const puedeVotarPorRol = participante && participante.color && participante.rol !== 'sin asignar' && participante.rol !== 'expulsado';
+                
+                btn.disabled = !debeEstarHabilitado || !puedeVotarPorRol;
             });
-
-        } else {
-             // ... (Lógica existente de temporizador inactivo) ...
-
-            // Deshabilitar todos los botones
-            if (botonesVoto) botonesVoto.forEach(btn => btn.disabled = true);
-        }
+        });
+        
+        updateAdminButtonsVisibility(config); 
     });
 }
 
-
-// Listener de Estado (Mensaje principal)
-if (estadoRef && mensajePrincipal) {
+if (estadoRef) {
     estadoRef.on('value', (snapshot) => {
         const estado = snapshot.val();
-        if (estado && estado.mensaje && expulsionPopup.style.display !== 'flex' && murderPopup.style.display !== 'flex' && victoryPopup.style.display !== 'flex') {
-            mensajePrincipal.textContent = estado.mensaje;
+        if (estado && estado.mensaje && mensajePrincipal) {
+            // Solo actualiza el mensaje principal si no hay un pop-up activo
+            if (expulsionPopup.style.display !== 'flex' && murderPopup.style.display !== 'flex' && victoryPopup.style.display !== 'flex') {
+                 mensajePrincipal.textContent = estado.mensaje;
+            }
         }
     });
 }
@@ -709,32 +723,40 @@ if (botonesVoto) {
     });
 }
 
+
 // =========================================================
 // LÓGICA DE ASIGNACIÓN DE NOMBRE INICIAL (JUGADOR)
 // =========================================================
+
 function handleNameSubmission(event) {
     if (!participantesRef || !newPlayerNameInput) return;
+    
     if (event.type === 'click' || (event.type === 'keyup' && event.key === 'Enter')) {
         const newName = newPlayerNameInput.value.trim();
+        
         if (newName.length > 0) {
             // *** MODIFICACIÓN CLAVE: Guardar en LocalStorage y Firebase ***
-            localStorage.setItem('amongus_username', newName);
+            localStorage.setItem('amongus_username', newName); 
+
             participantesRef.child(ANONYMOUS_USER_ID).update({ nombre: newName })
-                .then(() => {
-                    alert(`¡Nombre establecido como ${newName}!`);
-                })
-                .catch(error => {
-                    console.error("Error al asignar nombre:", error);
-                    alert("Error al asignar el nombre.");
-                });
+            .then(() => {
+                // Al actualizarse en Firebase, el listener de participante se encarga de ocultar el formulario.
+                alert(`¡Nombre establecido como ${newName}!`);
+            })
+            .catch(error => {
+                console.error("Error al asignar nombre:", error);
+                alert("Error al asignar el nombre.");
+            });
         } else {
             alert("Por favor, introduce un nombre válido.");
         }
     }
 }
+
 // Agregar listeners para el botón y la tecla Enter en el input
 if (submitNameButton) submitNameButton.addEventListener('click', handleNameSubmission);
 if (newPlayerNameInput) newPlayerNameInput.addEventListener('keyup', handleNameSubmission);
+
 
 // =========================================================
 // LÓGICA DE PARTICIPANTES Y ROLES (CONTROL DE ACCESO Y RENDERIZADO)
@@ -743,193 +765,279 @@ if (newPlayerNameInput) newPlayerNameInput.addEventListener('keyup', handleNameS
 // *** NUEVA FUNCIÓN: Actualiza el nombre de los botones de votación ***
 function updatePlayerNamesInVotingPanel() {
     coloresTripulantes.forEach(color => {
-        const botonElement = document.getElementById(`votar-${color}`);
-        if (botonElement) {
-            const participante = Object.values(participantesCache).find(p => p.color === color);
-            const nombreMostrar = participante && participante.nombre && participante.nombre !== 'SIN NOMBRE' ? participante.nombre : color.toUpperCase();
-            
-            const nameDisplay = botonElement.querySelector('.crewmate-name-display');
-            if (nameDisplay) {
-                 nameDisplay.textContent = nombreMostrar;
-            }
+        const nameSpan = document.querySelector(`#votar-${color} .nombre`);
+        if (!nameSpan) return;
+
+        let playerName = color.toUpperCase(); 
+
+        const participant = Object.values(participantesCache).find(p => p.color === color);
+
+        if (participant && participant.nombre) {
+             const customName = participant.nombre.trim();
+             // Solo si el nombre no está vacío y no es el valor de borrado por admin.
+             if (customName !== 'SIN NOMBRE' && customName.length > 0) {
+                 playerName = customName.toUpperCase();
+             }
         }
+
+        nameSpan.textContent = playerName;
     });
 }
+// ***************************************************************
 
-// 1. Conexión del usuario y onDisconnect (MODIFICACIÓN CLAVE DE PERSISTENCIA)
-if (database) {
-    const userRef = participantesRef.child(ANONYMOUS_USER_ID);
-    // userRef.onDisconnect().update({ conectado: false }); // <-- ELIMINADO para mantener la entrada en la lista
 
-    // *** MODIFICACIÓN CLAVE: Usar el nombre guardado, si existe. Si no, cadena vacía.
-    const initialName = SAVED_USERNAME || '';
+// Muestra el mensaje de restricción de acceso si hay 5 jugadores asignados
+function checkAndRestrictAccess(participantesData) {
+    const jugadoresConColor = Object.values(participantesData || {}).filter(p => coloresTripulantes.includes(p.color)).length;
+    const tieneColor = participantesData[ANONYMOUS_USER_ID] && coloresTripulantes.includes(participantesData[ANONYMOUS_USER_ID].color);
     
-    // Usamos update para no sobreescribir si ya existe un rol/color/nombre si el admin lo estableció
-    userRef.update({ 
-        conectado: true, 
-        ultimaConexion: Date.now(), 
+    if (jugadoresConColor >= 5 && !tieneColor && !isAdmin) {
+        if (accessRestrictionMessage) accessRestrictionMessage.style.display = 'flex';
+        if (votingModalContainer) votingModalContainer.style.display = 'none'; 
+        const centerIdDisplay = document.getElementById('user-id-display-center');
+        if(centerIdDisplay) centerIdDisplay.textContent = `Tu ID: ${ANONYMOUS_USER_ID}`;
+        return true;
+    } else {
+        if (accessRestrictionMessage) accessRestrictionMessage.style.display = 'none';
+        // Mostrar siempre el votingModalContainer a menos que la restricción de acceso esté activa
+        if (votingModalContainer) votingModalContainer.style.display = 'flex'; 
+        return false;
+    }
+}
+
+
+// Listener para el estado de conexión
+function setupParticipantTracking() {
+    if (!participantesRef) {
+         console.warn("No se pudo inicializar el rastreo de participantes. Firebase DB no está disponible.");
+         return;
+    }
+    
+    const userRef = participantesRef.child(ANONYMOUS_USER_ID);
+    
+    // Este `onDisconnect` asegura que si el usuario sale, su estado se marca como no conectado
+    userRef.onDisconnect().update({ conectado: false });
+    
+    // *** MODIFICACIÓN CLAVE: Usar el nombre guardado, si existe. Si no, cadena vacía. ***
+    const initialName = SAVED_USERNAME || ''; 
+    
+    // Al cargar la página, la cuenta del usuario se "registra" o se "actualiza"
+    userRef.update({ // Usamos update para mantener datos existentes (color, rol) si ya se había conectado
+        conectado: true,
+        ultimaConexion: firebase.database.ServerValue.TIMESTAMP,
         nombre: initialName, 
-        rol: firebase.database.ServerValue.exists() ? null : 'sin asignar', // Solo si no existe (primera vez)
-        color: firebase.database.ServerValue.exists() ? null : null
+        // Si no existen, estos se inicializan, si existen, se mantienen:
+        rol: userRef.rol || 'sin asignar', 
+        color: userRef.color || null 
+    });
+    
+    // ** FIX DE INICIALIZACIÓN: Establecer el nombre la primera vez si es la primera conexión **
+    userRef.once('value').then(snapshot => {
+         const participante = snapshot.val();
+         if (!participante || participante.nombre === undefined) {
+             userRef.update({ nombre: initialName });
+         }
+         if (!participante || participante.rol === undefined) {
+              userRef.update({ rol: 'sin asignar', color: null });
+         }
     });
 }
+
 
 // Escucha el rol asignado al usuario y actualiza el panel personal y el nombre
 if (participantesRef) {
     participantesRef.child(ANONYMOUS_USER_ID).on('value', (snapshot) => {
         const participante = snapshot.val();
+        
         if (!participante) {
-            if (personalRolePanel) personalRolePanel.style.display = 'none';
-            if (chatPanel) chatPanel.style.display = 'none'; // NUEVO: Ocultar chat si no hay participante
-            return;
+             if (personalRolePanel) personalRolePanel.style.display = 'none';
+             if (chatPanel) chatPanel.style.display = 'none'; // NUEVO: Ocultar chat si no hay participante
+             if (votingModalContainer) votingModalContainer.style.display = 'none'; // Ocultar voting si no hay participante
+             return;
         }
-
+        
         if (personalRolePanel) personalRolePanel.style.display = 'flex';
+        
         const tieneColor = participante.color && coloresTripulantes.includes(participante.color);
-        const nombreMostrado = participante.nombre || 'SIN NOMBRE';
-        
         // Si el nombre está vacío o es 'SIN NOMBRE' (borrado por admin)
-        const esNombreVacio = participante.nombre === '' || participante.nombre === 'SIN NOMBRE';
-        
+        const esNombreVacio = participante.nombre === '' || participante.nombre === 'SIN NOMBRE' || participante.nombre === undefined || participante.nombre === null; 
+
         // Lógica de formulario de nombre inicial
         if (tieneColor && esNombreVacio) {
-            if (nameSetupMessage) nameSetupMessage.textContent 
-            = `¡Eres el color ${participante.color.toUpperCase()}! Escribe tu nombre:`;
-            if (newPlayerNameInput) newPlayerNameInput.value = '';
+            if (nameSetupMessage) nameSetupMessage.textContent = `¡Eres el color ${participante.color.toUpperCase()}! Escribe tu nombre:`;
+            if (newPlayerNameInput) newPlayerNameInput.value = ''; 
             if (nameSetupForm) nameSetupForm.style.display = 'flex';
-            if (roleDisplayContent) roleDisplayContent.style.display = 'none';
+            if (roleDisplayContent) roleDisplayContent.style.display = 'none'; 
             if (newPlayerNameInput) newPlayerNameInput.focus();
+            
             // Ocultar Chat
-            if (chatPanel) chatPanel.style.display = 'none';
-            return;
+            if (chatPanel) chatPanel.style.display = 'none'; 
+            return; 
         } else {
             if (nameSetupForm) nameSetupForm.style.display = 'none';
             if (roleDisplayContent) roleDisplayContent.style.display = 'flex';
-            
-            // Actualizar display de nombre superior
-            if (userNameDisplay) userNameDisplay.textContent = `Tu Nombre: ${nombreMostrado}`;
-            
-            // Actualizar panel de rol
-            if (myCrewmateIcon) {
-                // Limpiar clases
-                myCrewmateIcon.classList.remove(...coloresTripulantes);
-                if (tieneColor) {
-                    myCrewmateIcon.classList.add(participante.color);
-                } else {
-                    // Si no tiene color asignado, mostrar color por defecto o un mensaje
-                     myCrewmateIcon.classList.add('sin-color'); // Asumiendo un estilo sin-color
-                }
-            }
+        }
+        
+        // Mostrar Nombre de usuario en la esquina superior
+        const nombreMostrado = participante.nombre || 'Incognito';
+        if (userNameDisplay) userNameDisplay.textContent = `Tu Nombre: ${nombreMostrado}`;
 
+
+        // Lógica de NOTIFICACIÓN DE ROL GIGANTE
+        if (participante.rol && participante.rol !== 'sin asignar' && participante.rol !== 'expulsado') {
+             // Solo mostrar si es la primera vez que se carga el rol
+             showRoleNotification(participante.rol);
+        }
+        
+        
+        // Lógica de PANEL PERSONAL (Contenido normal)
+        if (myCrewmateIcon) {
+            myCrewmateIcon.classList.remove(...coloresTripulantes);
+            myCrewmateIcon.classList.remove('skip');
+        }
+        
+        if (tieneColor) {
+            if (myCrewmateIcon) myCrewmateIcon.classList.add(participante.color);
+            
             if (myRoleDisplay) {
-                const rolTexto = participante.rol === 'impostor' ? 'IMPOSTOR' : 
-                                 participante.rol === 'tripulante' ? 'TRIPULANTE' : 
-                                 participante.rol === 'expulsado' ? 'EXPULSADO' : 'SIN ASIGNAR';
-                myRoleDisplay.textContent = `Rol: ${rolTexto}`;
-                
-                // Mostrar notificación de rol (solo la primera vez que se asigna)
-                if (participante.rol !== 'sin asignar' && !localStorage.getItem('role_notified')) {
-                    showRoleNotification(participante.rol);
-                    localStorage.setItem('role_notified', 'true');
+                myRoleDisplay.classList.remove('crewmate', 'impostor', 'sin-asignar');
+                if (participante.rol === 'impostor') {
+                    myRoleDisplay.classList.add('impostor');
+                    myRoleDisplay.textContent = 'IMPOSTOR';
+                } else if (participante.rol === 'tripulante') {
+                    myRoleDisplay.classList.add('crewmate');
+                    myRoleDisplay.textContent = 'TRIPULANTE';
+                } else if (participante.rol === 'expulsado') {
+                     myRoleDisplay.classList.add('sin-asignar');
+                     myRoleDisplay.textContent = 'ELIMINADO';
+                } else {
+                     myRoleDisplay.classList.add('sin-asignar');
+                     myRoleDisplay.textContent = 'SIN ASIGNAR';
                 }
             }
             
-            // Lógica de Chat
-            const puedeChatear = tieneColor && participante.rol !== 'expulsado' && participante.rol !== 'sin asignar';
+        } else {
+             if (myCrewmateIcon) myCrewmateIcon.classList.add('skip');
+             if (myRoleDisplay) {
+                 myRoleDisplay.classList.remove('crewmate', 'impostor');
+                 myRoleDisplay.classList.add('sin-asignar');
+                 myRoleDisplay.textContent = 'SIN COLOR';
+             }
+        }
+        
+        // =================================================
+        // ** NUEVO: LÓGICA DE CHAT **
+        // =================================================
+        if (chatPanel) {
+            // Un jugador puede chatear si tiene color, nombre, rol asignado y NO está expulsado.
+            const puedeChatear = tieneColor && !esNombreVacio && participante.rol !== 'expulsado' && participante.rol !== 'sin asignar';
+            
             chatPanel.style.display = 'flex'; // Mostrar el panel de chat si hay un participante registrado
+            
             if (chatInput) chatInput.disabled = !puedeChatear;
             if (chatSendButton) chatSendButton.disabled = !puedeChatear;
+            
             if (chatStatusMessage) {
                 if (participante.rol === 'expulsado') {
-                    chatStatusMessage.textContent = '¡Estás eliminado! No puedes chatear.';
+                     chatStatusMessage.textContent = '¡Estás eliminado! No puedes chatear.';
                 } else if (!tieneColor || esNombreVacio) {
-                    chatStatusMessage.textContent = 'Debes tener color y nombre asignado para chatear.';
+                     chatStatusMessage.textContent = 'Debes tener color y nombre asignado para chatear.';
                 } else if (participante.rol === 'sin asignar') {
-                    chatStatusMessage.textContent = 'Tu rol aún no ha sido asignado.';
+                     chatStatusMessage.textContent = 'Tu rol aún no ha sido asignado.';
                 } else {
-                    chatStatusMessage.textContent = `Chateando como: ${nombreMostrado} (${participante.color.toUpperCase()})`;
+                     chatStatusMessage.textContent = `Chateando como: ${nombreMostrado} (${participante.color.toUpperCase()})`;
                 }
             }
         }
-        
-    });
-}
-
-// 2. Escucha de lista completa de participantes (para Admin y Votación)
-if (participantesRef) {
-    participantesRef.on('value', (snapshot) => {
-        const participantesData = snapshot.val();
-        participantesCache = participantesData || {};
-        updateParticipantDisplay(participantesData); // (Admin UI)
-        updatePlayerNamesInVotingPanel(); // (Voting UI)
-        verificarFinDePartida(); // (Lógica de Victoria)
+        // =================================================
     });
 }
 
 
 // 3. Función para renderizar la lista (Admin)
 function updateParticipantDisplay(participantesData) {
-    checkAndRestrictAccess(participantesData);
+    checkAndRestrictAccess(participantesData); 
+    
     if (!isAdmin) {
         if (participantListContainer) participantListContainer.innerHTML = '<p class="admin-message">Inicia sesión como Admin para ver la lista.</p>';
         return;
     }
-    if (participantListContainer) participantListContainer.innerHTML = '';
+
+    if (participantListContainer) participantListContainer.innerHTML = ''; 
     let index = 1;
+    
     const participantesArray = Object.entries(participantesData || {})
         .map(([id, data]) => ({ id, ...data }))
-        .filter(p => p.conectado === true);
+        .filter(p => p.conectado === true); // Solo conectados
     
     if (participantesArray.length === 0) {
         if (participantListContainer) participantListContainer.innerHTML = '<p class="admin-message">No hay participantes conectados actualmente.</p>';
+        return;
     }
-    
-    let html = '';
-    
+
     participantesArray.forEach(p => {
-        const isEjected = currentJugadoresSnapshot && currentJugadoresSnapshot.val()[p.color] && currentJugadoresSnapshot.val()[p.color].eliminado;
-        const nombreMostrado = p.nombre || 'SIN NOMBRE';
+        const nombreMostrado = p.nombre || `Participante ${index}`;
         
-        html += `
-            <div class="participant-item ${isEjected ? 'ejected' : ''}">
-                <div class="participant-info">
-                    <span class="participant-number">${index++}.</span>
-                    <div class="participant-color-icon ${p.color || 'sin-color'}"></div>
-                    <div class="participant-text">
-                        <p class="participant-name">ID: ${p.id.substring(5)} (${nombreMostrado})</p>
-                        <p class="participant-role">Color: ${p.color || 'N/A'} | Rol: ${p.rol || 'N/A'}</p>
-                    </div>
+        const pElement = document.createElement('div');
+        pElement.classList.add('participant-item');
+        
+        let jugadorEliminado = false;
+        if (p.color && currentJugadoresSnapshot) {
+            const jugadorData = currentJugadoresSnapshot.val()[p.color];
+            if (jugadorData && jugadorData.eliminado) {
+                 jugadorEliminado = true;
+            }
+        }
+        
+        const statusText = jugadorEliminado ? ' (ELIMINADO)' : '';
+        const roleAndColorText = `${p.rol ? p.rol.toUpperCase() : 'SIN ASIGNAR'} (${p.color || 'N/A'})`;
+
+
+        pElement.innerHTML = `
+            <span class="user-index-name online ${jugadorEliminado ? 'ejected-player' : ''}">${index}. <strong>${nombreMostrado}</strong> ${statusText}</span>
+            <span class="user-role-admin">${roleAndColorText}</span>
+            <span class="user-id-text">(ID: ${p.id})</span>
+            
+            <div class="admin-actions">
+                <input type="text" class="name-input" data-id="${p.id}" placeholder="Nuevo Nombre" value="${p.nombre || ''}">
+                <button class="name-btn" data-id="${p.id}">Asignar Nombre</button>
+                <div class="color-assignment">
+                    ${coloresTripulantes.map(color => `
+                        <button class="color-btn ${color}" data-id="${p.id}" data-color="${color}" ${p.color === color ? 'disabled' : ''}>${color.charAt(0).toUpperCase()}</button>
+                    `).join('')}
+                    <button class="color-btn skip" data-id="${p.id}" data-color="null" ${p.color === undefined || p.color === null ? 'disabled' : ''}>X</button>
                 </div>
-                <div class="admin-actions">
-                    <input type="text" class="name-input" data-id="${p.id}" value="${nombreMostrado}" placeholder="Nuevo Nombre">
-                    <button class="name-btn" data-id="${p.id}">Asignar Nombre</button>
-                    <div class="color-assignment">
-                        <label class="admin-action-label">Color:</label>
-                        ${coloresTripulantes.map(c => `
-                            <button class="color-btn ${c}" data-id="${p.id}" data-color="${c}" ${p.color === c ? 'disabled' : ''}>${c.substring(0, 1).toUpperCase()}</button>
-                        `).join('')}
-                        <button class="color-btn skip" data-id="${p.id}" data-color="null" ${!p.color ? 'disabled' : ''}>X</button>
-                    </div>
-                    <button class="role-btn tripulante" data-id="${p.id}" data-rol="tripulante" ${p.rol === 'tripulante' ? 'disabled' : ''}>Tripulante</button>
-                    <button class="role-btn impostor" data-id="${p.id}" data-rol="impostor" ${p.rol === 'impostor' ? 'disabled' : ''}>Impostor</button>
-                    
-                    <button class="admin-action-btn kill-btn" data-id="${p.id}" data-color="${p.color || 'none'}" data-name="${nombreMostrado || 'SIN NOMBRE'}" ${isEjected ? 'disabled' : ''}>ELIMINAR (Kill)</button>
-                    
-                    <button class="admin-action-btn expel-list-btn" data-id="${p.id}" data-color="${p.color || 'none'}" data-name="${nombreMostrado || 'SIN NOMBRE'}">EXPULSAR (Lista)</button>
-                </div>
+                <button class="role-btn tripulante" data-id="${p.id}" data-rol="tripulante" ${jugadorEliminado ? 'disabled' : ''}>Tripulante</button>
+                <button class="role-btn impostor" data-id="${p.id}" data-rol="impostor" ${jugadorEliminado ? 'disabled' : ''}>Impostor</button>
+                
+                <!-- ** BOTÓN DE EXPULSAR/KICK INDIVIDUAL ** -->
+                 <button class="kick-btn admin-btn-kick" 
+                        data-id="${p.id}" 
+                        data-name="${nombreMostrado}">
+                        KICK
+                </button>
+                
+                <!-- ** BOTÓN DE ELIMINAR / MATAR ** -->
+                <button class="kill-btn admin-btn-reset" 
+                        data-id="${p.id}" 
+                        data-color="${p.color}" 
+                        data-name="${nombreMostrado}" 
+                        ${!p.color || jugadorEliminado ? 'disabled' : ''}>
+                        MATAR/ELIMINAR
+                </button>
             </div>
         `;
+        if (participantListContainer) participantListContainer.appendChild(pElement);
+        index++;
     });
     
-    if (participantListContainer) participantListContainer.innerHTML = html;
-    
-    // 4. Agregar listeners a los botones generados dinámicamente
+    // 4. Agregar listeners para roles, nombres y colores (Se debe re-agregar cada vez que se regenera la lista)
     document.querySelectorAll('.role-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             asignarRol(e.target.dataset.id, e.target.dataset.rol);
         });
     });
-
+    
     document.querySelectorAll('.name-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const userId = e.target.dataset.id;
@@ -937,7 +1045,7 @@ function updateParticipantDisplay(participantesData) {
             asignarNombre(userId, inputElement.value);
         });
     });
-
+    
     document.querySelectorAll('.color-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const userId = e.target.dataset.id;
@@ -946,20 +1054,83 @@ function updateParticipantDisplay(participantesData) {
         });
     });
     
-    // ** LISTENER PARA EL BOTÓN DE MATAR (EXISTENTE) **
+    // ** LISTENER PARA EL BOTÓN DE MATAR **
     document.querySelectorAll('.kill-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             adminKillPlayer(e.target.dataset.id, e.target.dataset.color, e.target.dataset.name);
         });
     });
     
-    // ** LISTENER PARA EL BOTÓN DE EXPULSAR PERMANENTE (NUEVO) **
-    document.querySelectorAll('.expel-list-btn').forEach(button => {
+    // ** LISTENER PARA EL BOTÓN DE KICK INDIVIDUAL **
+    document.querySelectorAll('.kick-btn').forEach(button => {
         button.addEventListener('click', (e) => {
-            adminExpelPlayerFromList(e.target.dataset.id, e.target.dataset.color, e.target.dataset.name);
+            const userId = e.target.dataset.id;
+            const name = e.target.dataset.name;
+            if (confirm(`¿Estás seguro de expulsar (KICK) a ${name} (${userId})? Será eliminado de la lista de juego y no podrá volver hasta que se reinicie.`)) {
+                kickPlayer(userId, name);
+            }
         });
     });
 }
+
+/**
+ * Elimina un participante de la base de datos (Expulsión/Kick).
+ * El usuario no podrá volver a unirse hasta que reinicie el juego.
+ */
+function kickPlayer(userId, name) {
+    if (!isAdmin || !participantesRef) return;
+    
+    // Si el administrador se patea a sí mismo, ¡no es buena idea!
+    if (userId === ANONYMOUS_USER_ID) {
+        alert("No puedes expulsarte a ti mismo como administrador.");
+        return;
+    }
+
+    participantesRef.child(userId).remove()
+        .then(() => {
+            // También borramos el nombre guardado en LocalStorage del Admin si es un usuario que tiene el mismo ID, aunque no debería ocurrir.
+            alert(`Jugador ${name} (${userId}) expulsado (KICK).`);
+        })
+        .catch(error => {
+            console.error("Error al expulsar jugador:", error);
+            alert("Error al expulsar jugador.");
+        });
+}
+
+/**
+ * Elimina a todos los participantes que NO tienen un rol o color asignado.
+ */
+function kickUnassignedPlayers() {
+    if (!isAdmin || !participantesRef) return;
+    
+    let kickedCount = 0;
+    const updates = {};
+    
+    for (const [id, p] of Object.entries(participantesCache)) {
+        // Criterio de expulsión: Sin color Y Rol 'sin asignar' (y no es el propio admin)
+        const isUnassigned = !p.color && p.rol === 'sin asignar';
+        const isNotAdmin = id !== ANONYMOUS_USER_ID;
+
+        if (isUnassigned && isNotAdmin) {
+            updates[id] = null; // Eliminar el nodo
+            kickedCount++;
+        }
+    }
+
+    if (kickedCount > 0) {
+        participantesRef.update(updates)
+            .then(() => {
+                alert(`Se expulsaron a ${kickedCount} participantes sin asignación.`);
+            })
+            .catch(error => {
+                console.error("Error al expulsar no asignados:", error);
+                alert("Error al expulsar no asignados.");
+            });
+    } else {
+        alert("No hay participantes sin color ni rol asignado para expulsar.");
+    }
+}
+
 
 // 4. Función de asignación de color (para el ADMIN)
 function asignarColor(userId, color) {
@@ -970,177 +1141,87 @@ function asignarColor(userId, color) {
             const participantesData = snapshot.val();
             const colorAlreadyTaken = Object.entries(participantesData || {})
                 .some(([id, p]) => p.color === color && id !== userId);
-
+            
             if (colorAlreadyTaken) {
                 alert(`El color ${color.toUpperCase()} ya está asignado a otro jugador.`);
                 return;
             }
             
-            participantesRef.child(userId).update({ color: color, rol: 'tripulante' }) // Por defecto a tripulante
-                .then(() => {
-                    // Inicializar el slot de votación para el color
-                    jugadoresRef.child(color).set({ votos: 0, eliminado: false }); 
-                    alert(`Color ${color.toUpperCase()} asignado.`);
-                })
-                .catch(error => {
-                    console.error("Error al asignar color:", error);
-                    alert("Error al asignar color.");
-                });
+            participantesRef.child(userId).update({ color: color });
         });
     } else {
-        // Remover color
-        participantesRef.child(userId).update({ color: null, rol: 'sin asignar' })
-             .then(() => {
-                 // No borramos el slot de jugador/votos, solo queda como "disponible" si no está eliminado.
-                 alert(`Color removido. Rol resetado a 'sin asignar'.`);
-            });
+        participantesRef.child(userId).update({ color: null });
     }
 }
 
-// 5. Función de asignación de rol (para el ADMIN)
-function asignarRol(userId, rol) {
-    if (!isAdmin || !participantesRef) return;
-    
-    participantesRef.child(userId).update({ rol: rol })
-         .then(() => {
-            alert(`Rol '${rol.toUpperCase()}' asignado.`);
-            // Si el rol es asignado, quitar la notificación local para que pueda aparecer de nuevo si cambia
-            localStorage.removeItem('role_notified');
-         })
-         .catch(error => {
-            console.error("Error al asignar rol:", error);
-            alert("Error al asignar rol.");
-        });
-}
-
-// 6. Función de asignación de nombre (para el ADMIN)
-function asignarNombre(userId, name) {
-    if (!isAdmin || !participantesRef) return;
-    
-    const newName = name.trim() || 'SIN NOMBRE';
-    
-    participantesRef.child(userId).update({ nombre: newName })
-         .then(() => {
-            alert(`Nombre de ${userId.substring(5)} actualizado a '${newName}'.`);
-         })
-         .catch(error => {
-            console.error("Error al asignar nombre:", error);
-            alert("Error al asignar nombre.");
-        });
-}
-
-// 7. Función de restricción de acceso (Mantiene la UI de votación visible o la esconde)
-function checkAndRestrictAccess(participantesData) {
-    const isPlayerRegistered = participantesData && participantesData[ANONYMOUS_USER_ID];
-    const playerHasColor = isPlayerRegistered && participantesData[ANONYMOUS_USER_ID].color;
-    const isVoteActive = participantesCache.config && participantesCache.config.votoActivo;
-    
-    if (isPlayerRegistered && isVoteActive && playerHasColor) {
-        if (accessRestrictionMessage) accessRestrictionMessage.style.display = 'none';
-        if (votingModalContainer) votingModalContainer.style.display = 'flex';
-    } else {
-        if (votingModalContainer) votingModalContainer.style.display = 'none';
-        if (accessRestrictionMessage) {
-            accessRestrictionMessage.style.display = 'flex';
-            if (!isPlayerRegistered) {
-                 accessRestrictionMessage.textContent = 'ERROR DE CONEXIÓN. Recarga la página.';
-            } else if (!playerHasColor) {
-                accessRestrictionMessage.textContent = 'Esperando a que el administrador asigne color.';
-            } else if (!isVoteActive) {
-                accessRestrictionMessage.textContent = 'La votación no está activa.';
-            } else {
-                 accessRestrictionMessage.textContent = 'Esperando a que el administrador asigne color.';
-            }
+// 3.1 Listener de participantes que llama a la función de renderizado
+if (participantesRef) {
+    participantesRef.on('value', (snapshot) => {
+        participantesCache = snapshot.val() || {}; 
+        updateParticipantDisplay(participantesCache);
+        
+        updatePlayerNamesInVotingPanel(); 
+        
+        if (currentJugadoresSnapshot && currentVotosDetalleSnapshot) {
+            updateVoteDisplay(currentJugadoresSnapshot, currentVotosDetalleSnapshot);
         }
-    }
-}
-
-// ** NUEVA FUNCIÓN: ELIMINAR JUGADORES SIN ASIGNAR (ROL Y COLOR NULL) **
-function adminExpelUnassigned() {
-    if (!isAdmin || !participantesRef) {
-        alert('Requiere privilegios de administrador.');
-        return;
-    }
-
-    if (!confirm('¿Estás seguro de que quieres EXPULSAR a todos los participantes sin ROL ni COLOR asignados (borrarlos de la lista)? Esta acción es irreversible.')) {
-        return;
-    }
-
-    participantesRef.once('value').then(snapshot => {
-        const participantesData = snapshot.val() || {};
-        let removedCount = 0;
-
-        for (const [id, p] of Object.entries(participantesData)) {
-            // Expulsar si no tiene color Y rol sin asignar
-            if ((!p.color || !coloresTripulantes.includes(p.color)) && p.rol === 'sin asignar') {
-                 // Remover completamente el nodo del participante
-                participantesRef.child(id).remove();
-                removedCount++;
-            }
-        }
-
-        alert(`Expulsión completa. Se eliminaron ${removedCount} participantes sin asignación.`);
-    }).catch(error => {
-        console.error("Error al expulsar no asignados:", error);
-        alert("Error al expulsar participantes no asignados.");
     });
 }
 
-// ** NUEVA FUNCIÓN: EXPULSIÓN INDIVIDUAL PERMANENTE **
-function adminExpelPlayerFromList(userId, color, name) {
-     if (!isAdmin || !participantesRef) return;
-    
-    if (!confirm(`¿Estás seguro de que quieres ELIMINAR PERMANENTEMENTE a ${name.toUpperCase()} de la lista de participantes? Esta acción no se puede deshacer.`)) {
-        return;
-    }
-    
-     // 1. Remover de participantes
-     participantesRef.child(userId).remove()
-        .then(() => {
-            // 2. Si tenía color asignado, asegurar que no esté eliminado, sino resetear el slot
-            if (color && coloresTripulantes.includes(color) && jugadoresRef) {
-                 // Liberar el color para que pueda ser reasignado
-                 jugadoresRef.child(color).set({ votos: 0, eliminado: false }); 
-            }
-            alert(`${name.toUpperCase()} ha sido eliminado permanentemente de la lista.`);
-        })
-        .catch(error => {
-            console.error("Error al eliminar participante:", error);
-            alert("Error al eliminar participante.");
-        });
+
+// 4. Función de asignación de rol (para el ADMIN)
+function asignarRol(userId, rol) {
+    if (!isAdmin || !participantesRef) return;
+    participantesRef.child(userId).update({ rol: rol });
 }
 
-// 8. Función de Kill Admin (Muerte)
-function adminKillPlayer(userId, color, name) {
-    if (!isAdmin || !jugadoresRef || !participantesRef || !estadoRef) return;
+// 5. Función de asignación de nombre (para el ADMIN)
+function asignarNombre(userId, nombre) {
+    if (!isAdmin || !participantesRef) return;
     
-    if (color === 'skip' || color === 'none') {
-        alert('Este jugador no tiene un color asignado para ser ELIMINADO (Kill).');
+    const newName = nombre.trim() || 'SIN NOMBRE';
+    
+    // *** MODIFICACIÓN CLAVE: Si el admin asigna un nombre, se guarda en LocalStorage de ese cliente ***
+    if (userId === ANONYMOUS_USER_ID) {
+         // Si el admin pone SIN NOMBRE o cadena vacía, se borra localmente para forzar el formulario al recargar.
+         localStorage.setItem('amongus_username', newName === 'SIN NOMBRE' ? '' : newName); 
+    }
+    
+    participantesRef.child(userId).update({ nombre: newName }); 
+}
+
+// ** NUEVA FUNCIÓN: Ejecutar una muerte / eliminación de admin **
+function adminKillPlayer(userId, color, name) {
+    if (!isAdmin || !jugadoresRef || !participantesRef || !estadoRef || !currentJugadoresSnapshot) { 
+        alert('Requiere privilegios de administrador y conexión a la base de datos.'); 
+        return; 
+    }
+    
+    if (!color || !coloresTripulantes.includes(color)) {
+        alert("El jugador no tiene un color asignado para ser eliminado.");
         return;
     }
     
-    // Chequear si ya está eliminado (redundancia)
-    jugadoresRef.child(`${color}/eliminado`).once('value').then(snap => {
-        if (snap.val()) {
-            alert(`El jugador ${name.toUpperCase()} ya está eliminado!`);
-            return;
-        }
+    if (currentJugadoresSnapshot.val()[color] && currentJugadoresSnapshot.val()[color].eliminado) {
+        alert(`¡${name} ya está eliminado!`);
+        return;
+    }
 
-        // 1. Mostrar el pop-up dramático de muerte
-        showMurderPopup(name);
-
-        // 2. Actualizar la base de datos (eliminado y rol)
-        jugadoresRef.child(`${color}/eliminado`).set(true).then(() => {
-            participantesRef.child(userId).update({ rol: 'expulsado' });
-            // 3. Forzar el mensaje de la muerte (se actualizará en el popup de murder)
-            estadoRef.update({ 
-                mensaje: `¡${name.toUpperCase()} ha muerto! ¡Reunión de emergencia!`, 
-                ultimoEliminado: color 
-            }).then(() => {
-                // 4. Verificar fin de partida después de la muerte
-                verificarFinDePartida();
-            });
-        });
+    // 1. Mostrar el pop-up dramático de muerte
+    showMurderPopup(name);
+    
+    // 2. Actualizar la base de datos (eliminado y rol)
+    jugadoresRef.child(`${color}/eliminado`).set(true).then(() => {
+         participantesRef.child(userId).update({ rol: 'expulsado' });
+         
+         // 3. Forzar el mensaje de la muerte (se actualizará en el popup de murder)
+         estadoRef.update({ 
+            mensaje: `¡${name.toUpperCase()} ha muerto! ¡Reunión de emergencia!`, 
+            ultimoEliminado: color 
+         }).then(() => {
+            // 4. Verificar fin de partida después de la muerte
+            verificarFinDePartida();
+         });
     });
 }
 
@@ -1152,14 +1233,14 @@ function adminKillPlayer(userId, color, name) {
 // ** NUEVO LISTENER: Botón para Abrir/Ocultar Panel Admin **
 if (toggleAdminPanelButton) {
     toggleAdminPanelButton.addEventListener('click', () => {
-        if (!isAdmin) {
-            return;
-        }
+        if (!isAdmin) { return; } 
+        
         const currentDisplay = adminPanelContainer.style.display;
         if (adminPanelContainer) adminPanelContainer.style.display = currentDisplay === 'flex' ? 'none' : 'flex';
         toggleAdminPanelButton.textContent = currentDisplay === 'flex' ? 'Mostrar Panel Admin' : 'Ocultar Panel Admin';
     });
 }
+
 
 // Manejar el botón de Login Admin (CLAVE: zxz)
 if (adminLoginButton) {
@@ -1167,56 +1248,86 @@ if (adminLoginButton) {
         const password = prompt("Introduce la clave de administrador:");
         if (password === 'zxz') { // La clave secreta
             isAdmin = true;
+            
             // Forzar actualización de UI de admin
             if (configRef) {
                 configRef.once('value').then(snapshot => {
-                    updateAdminButtonsVisibility(snapshot.val());
+                     updateAdminButtonsVisibility(snapshot.val());
                 });
             }
-            alert("¡Acceso de administrador concedido!");
-        } else {
-            alert("Clave incorrecta.");
+            if (participantesRef) {
+                participantesRef.once('value').then(snapshot => {
+                     updateParticipantDisplay(snapshot.val());
+                });
+            }
+            
+            // Mostrar el panel de admin por defecto al loguearse
+            if (adminPanelContainer) adminPanelContainer.style.display = 'flex';
+            if (toggleAdminPanelButton) toggleAdminPanelButton.textContent = 'Ocultar Panel Admin';
+            
+            if (votingModalContainer) votingModalContainer.style.display = 'flex'; 
+            
+            alert('¡Acceso de administrador concedido!');
+        } else if (password !== null) {
+            alert('Clave incorrecta.');
         }
     });
 }
 
-// 1. Limpiar VOTOS (Solo Admin)
+// *** MODIFICACIÓN: Listener para el botón de "RESOLVER VOTACIÓN" ***
+if (resolveVoteButton) {
+    resolveVoteButton.addEventListener('click', () => {
+        if (!isAdmin || !participantesRef || !jugadoresRef || !estadoRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
+        
+        // --- LÓGICA: ELIMINAR COLORES SIN JUGADOR ASIGNADO Y RESOLVER ---
+        participantesRef.once('value').then(snapshot => {
+            const participantesData = snapshot.val() || {};
+            const coloresAsignados = Object.values(participantesData)
+                .map(p => p.color)
+                .filter(color => coloresTripulantes.includes(color));
+
+            const coloresNoAsignados = coloresTripulantes.filter(color => !coloresAsignados.includes(color));
+
+            const eliminaciones = {};
+            coloresNoAsignados.forEach(color => {
+                 eliminaciones[`${color}/eliminado`] = true;
+            });
+
+            jugadoresRef.update(eliminaciones).then(() => {
+                estadoRef.update({ mensaje: "¡RESOLVIENDO VOTACIÓN! Analizando resultados..." });
+                resolveVoting(); 
+            });
+        });
+    });
+}
+
+
+// *** NUEVO LISTENER: Limpiar Votación Actual (Reemplaza a Continue) ***
 if (clearVotesButton) {
     clearVotesButton.addEventListener('click', () => {
-        if (!isAdmin || !jugadoresRef || !votosDetalleRef || !configRef || !estadoRef) {
-            alert('Requiere privilegios de administrador y conexión a la base de datos.');
-            return;
-        }
-        
-        if (!confirm('¿Estás seguro de que quieres reiniciar solo los contadores de voto?')) {
-            return;
-        }
+        if (!isAdmin || !jugadoresRef || !votosDetalleRef || !configRef || !estadoRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
 
         const updates = {};
         for (const color of coloresJugadores) {
             updates[`${color}/votos`] = 0;
         }
+        
         jugadoresRef.update(updates).then(() => {
             votosDetalleRef.set(null); 
-            configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP); 
+            configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
+            
             estadoRef.update({ mensaje: "Votación Actual Limpiada. ¡Vuelvan a votar!" });
             alert("Contadores de voto reiniciados. Roles, colores y estado de eliminación se mantienen.");
         });
     });
 }
 
-// 2. Reiniciar JUEGO TOTAL (Solo Admin - ROLES Y COLORES SE RESETEAN)
+
+// 3. Reiniciar JUEGO TOTAL (Solo Admin - ROLES Y COLORES SE RESETEAN)
 if (resetButton) {
     resetButton.addEventListener('click', () => {
-        if (!isAdmin || !jugadoresRef || !votosDetalleRef || !participantesRef || !configRef || !estadoRef) {
-            alert('Requiere privilegios de administrador y conexión a la base de datos.');
-            return;
-        }
+        if (!isAdmin || !jugadoresRef || !votosDetalleRef || !participantesRef || !configRef || !estadoRef || !tareasRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
         
-        if (!confirm('¿Estás seguro de que quieres reiniciar TODO? Se borrarán ROLES, COLORES, VOTOS y ESTADO DE ELIMINACIÓN.')) {
-            return;
-        }
-
         const jugadoresReset = {};
         for (const color of coloresJugadores) {
             if (color === 'skip') {
@@ -1227,272 +1338,358 @@ if (resetButton) {
         }
         
         jugadoresRef.set(jugadoresReset).then(() => {
-            votosDetalleRef.set(null);
+            votosDetalleRef.set(null); 
             
-            // Resetear roles y colores de participantes (manteniendo el nombre y la conexión)
             participantesRef.once('value').then(snapshot => {
                 const updates = {};
                 snapshot.forEach(childSnapshot => {
-                    updates[`${childSnapshot.key}/rol`] = 'sin asignar'; 
-                    updates[`${childSnapshot.key}/color`] = null;
+                    // Mantenemos al participante en la lista, pero borramos rol y color
+                    updates[`${childSnapshot.key}/rol`] = 'sin asignar';
+                    updates[`${childSnapshot.key}/color`] = null; 
+                    // No se toca el nombre para mantener la persistencia local/remota.
+                    // Aseguramos que el estado de conexión se mantenga activo si aún lo está
+                    if(childSnapshot.val().conectado) updates[`${childSnapshot.key}/conectado`] = true;
                 });
                 participantesRef.update(updates);
             });
-            
-            // Resetear configuración
-            configRef.set({
-                votoActivo: false,
-                tiempoFin: 0,
-                permitirVotoMultiple: false,
-                votoSecreto: false
-            });
-            
-            // Resetear estado
-            estadoRef.set({
-                 mensaje: "¡Juego Reiniciado! Asigna colores y roles para empezar.",
-                 ultimoEliminado: null
-            });
-            
-            // Forzar actualización de UI local de rol
-            localStorage.removeItem('role_notified');
 
-            alert("Juego reiniciado completamente.");
+             configRef.update({ 
+                 votoActivo: false, 
+                 tiempoFin: 0,
+                 lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP,
+                 impostorCount: 1 // Reiniciar a 1 impostor por defecto
+             });
+             
+             // También reiniciamos el chat en el reinicio total
+             if (chatRef) chatRef.set(null);
+             
+             // Reiniciar TAREAS
+             initializeTasks();
+
+             estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Asigna roles y color!" });
+             alert("Juego reiniciado. Todos los jugadores están de vuelta, sus roles y colores fueron borrados.");
         });
     });
 }
 
-
-// ** NUEVA FUNCIÓN: ASIGNAR ROLES Y COLORES (COMBINADO) **
-function assignRolesAndColors() {
-    if (!isAdmin || !participantesRef || !jugadoresRef || !configRef || !estadoRef) {
-        alert('Requiere privilegios de administrador y conexión a la base de datos.');
-        return;
-    }
-
-    if (!confirm(`¿Asignar roles y colores a jugadores sin asignación? Se asignarán ${selectedImpostorCount} impostor(es).`)) {
-        return;
-    }
-
-    participantesRef.once('value').then(snapshot => {
-        const participantesData = snapshot.val() || {};
-        let updates = {};
-        let playersToAssign = [];
-        let availableColors = [...coloresTripulantes]; // rojo, azul, etc.
-        let colorUpdates = {}; 
-
-        // 1. Asignar colores a jugadores sin color (y recolectar todos los jugadores activos)
-        for (const [id, p] of Object.entries(participantesData)) {
-            let playerColor = p.color;
-            
-            if (!p.color || !coloresTripulantes.includes(p.color)) {
-                // Asignar color si está disponible
-                if (availableColors.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * availableColors.length);
-                    const newColor = availableColors.splice(randomIndex, 1)[0]; 
-
-                    updates[`${id}/color`] = newColor;
-                    playerColor = newColor; // Usar el nuevo color para la asignación de rol
-                    colorUpdates[newColor] = { votos: 0, eliminado: false };
-                }
-            } else {
-                 // Si ya tiene color, quitarlo de los disponibles
-                 const colorIndex = availableColors.indexOf(p.color);
-                 if (colorIndex > -1) {
-                     availableColors.splice(colorIndex, 1);
-                 }
-            }
-            
-            // Solo considerar jugadores con color para la asignación de roles
-            if (playerColor && coloresTripulantes.includes(playerColor) && p.rol !== 'expulsado') { 
-                playersToAssign.push({ id, color: playerColor }); 
-            }
-        }
-        
-        // 2. Asignar Roles (usando la nueva lógica de impostorCount)
-        let numJugadores = playersToAssign.length;
-        let numImpostores = selectedImpostorCount; 
-        
-        if (numJugadores === 0) {
-             alert('No hay jugadores activos para asignar roles.');
-             return;
-        }
-
-        // Ajustar si hay pocos jugadores
-        if (numJugadores <= numImpostores) { // Si hay 1 o 2 jugadores y se piden 2 impostores, forzar 1
-            numImpostores = 1; 
-            alert(`Advertencia: Pocos jugadores (${numJugadores}). Se asignará solo ${numImpostores} impostor.`);
-        }
-
-        let impostorIndexes = [];
-        while (impostorIndexes.length < numImpostores) {
-            const randomIndex = Math.floor(Math.random() * numJugadores);
-            if (!impostorIndexes.includes(randomIndex)) {
-                impostorIndexes.push(randomIndex);
-            }
-        }
-
-        // Aplicar roles
-        for (let i = 0; i < numJugadores; i++) {
-            const id = playersToAssign[i].id;
-            const rol = impostorIndexes.includes(i) ? 'impostor' : 'tripulante';
-            updates[`${id}/rol`] = rol;
-            // Forzar que se muestre la notificación al asignar roles
-            localStorage.removeItem('role_notified');
-        }
-
-        // 3. Escribir todas las actualizaciones a Firebase
-        if (Object.keys(updates).length > 0) {
-            participantesRef.update(updates)
-                .then(() => {
-                    if (Object.keys(colorUpdates).length > 0) {
-                         jugadoresRef.update(colorUpdates);
-                    }
-                    
-                    configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
-                    alert(`Roles y Colores asignados. ${numImpostores} Impostor(es) y ${numJugadores - numImpostores} Tripulante(s).`);
-                    estadoRef.update({ mensaje: `¡Roles y Colores asignados! ${numImpostores} Impostor(es) a bordo.` });
-                })
-                .catch(error => {
-                    console.error("Error al asignar roles y colores:", error);
-                    alert("Error al asignar roles y colores.");
-                });
-        } else {
-             alert('No hay nuevos jugadores sin color para asignar o el proceso falló.');
+// ** FUNCIÓN para configurar el número de impostores **
+function setImpostorCount(count) {
+    if (!isAdmin || !configRef) return;
+    configRef.child('impostorCount').set(count);
+}
+// Listener para los botones de conteo de impostores
+if (impostorCountSelector) {
+    impostorCountSelector.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            const count = parseInt(e.target.dataset.count);
+            setImpostorCount(count);
         }
     });
 }
 
-if (assignRolesAndColorsButton) assignRolesAndColorsButton.addEventListener('click', assignRolesAndColors);
-// El botón original de 'assign-roles-button' se debe ocultar en la UI para usar el combinado.
 
+/**
+ * Asigna roles de Impostor/Tripulante y el color, si no lo tiene.
+ * (MODIFICADO para usar el contador de impostores de la configuración)
+ */
+if (assignRolesButton) {
+    assignRolesButton.addEventListener('click', () => {
+        if (!isAdmin || !participantesRef || !configRef || !estadoRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
+
+        // 1. Obtener la configuración del número de impostores
+        const currentConfig = participantesCache.config || {};
+        const numImpostores = currentConfig.impostorCount || 1; 
+
+        // 2. Jugadores a los que se asignará el rol
+        const jugadoresActivos = Object.entries(participantesCache)
+            .filter(([id, p]) => p.color && coloresTripulantes.includes(p.color) && p.rol !== 'expulsado'); // Solo con color asignado y no eliminados
+
+        if (jugadoresActivos.length < 2) {
+            alert("Se necesitan al menos 2 jugadores con color asignado y no eliminados para la asignación de roles.");
+            return;
+        }
+        
+        if (numImpostores >= jugadoresActivos.length) {
+             alert(`¡Error! Hay ${jugadoresActivos.length} jugadores activos, pero el número de impostores (${numImpostores}) es demasiado alto.`);
+             return;
+        }
+        
+        const numJugadores = jugadoresActivos.length;
+
+        // 3. Asignación aleatoria de roles
+        const shuffledPlayers = jugadoresActivos.map(p => p[0]).sort(() => 0.5 - Math.random());
+        const impostorIds = shuffledPlayers.slice(0, numImpostores);
+
+        const updates = {};
+        for (const [id] of jugadoresActivos) {
+            const rol = impostorIds.includes(id) ? 'impostor' : 'tripulante';
+            updates[`${id}/rol`] = rol;
+        }
+        
+        participantesRef.update(updates)
+            .then(() => {
+                configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
+                alert(`Roles asignados: ${numImpostores} Impostor(es) y ${numJugadores - numImpostores} Tripulante(s).`);
+                estadoRef.update({ mensaje: `¡Roles asignados! ${numImpostores} Impostor(es) a bordo.` });
+            })
+            .catch(error => {
+                console.error("Error al asignar roles:", error);
+                alert("Error al asignar roles.");
+            });
+    });
+}
 
 // 4. PERMITIR VOTO MÚLTIPLE (Solo Admin)
 if (allowMultipleVoteButton) {
     allowMultipleVoteButton.addEventListener('click', () => {
-        if (!isAdmin || !configRef) {
-            alert('Requiere privilegios de administrador.');
-            return;
-        }
+        if (!isAdmin || !configRef) { alert('Requiere privilegios de administrador.'); return; }
         
-        configRef.child('permitirVotoMultiple').once('value').then(snap => {
-            const currentValue = snap.val() || false;
-            configRef.child('permitirVotoMultiple').set(!currentValue)
-                .then(() => {
-                    alert(`Voto Múltiple: ${!currentValue ? 'PERMITIDO' : 'DENEGADO'}.`);
-                });
+        // El simple hecho de escribir un TIMESTAMP aquí actúa como una "señal" de que se permite el voto múltiple.
+        configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP).then(() => {
+            alert("Señal enviada: ¡Se permite un nuevo voto a todos los participantes!");
         });
     });
 }
 
-// 5. VOTO SECRETO (Solo Admin)
+// ** NUEVO: Toggle Voto Secreto **
 if (toggleSecretVoteButton) {
-     toggleSecretVoteButton.addEventListener('click', () => {
-         if (!isAdmin || !configRef) {
-            alert('Requiere privilegios de administrador.');
-            return;
-        }
+    toggleSecretVoteButton.addEventListener('click', () => {
+        if (!isAdmin || !configRef) { alert('Requiere privilegios de administrador.'); return; }
         
         configRef.child('votoSecreto').once('value').then(snap => {
-            const currentValue = snap.val() || false;
-            configRef.child('votoSecreto').set(!currentValue)
-                .then(() => {
-                    alert(`Voto Secreto: ${!currentValue ? 'ACTIVADO' : 'DESACTIVADO'}.`);
-                });
+            const currentStatus = snap.val() || false;
+            configRef.child('votoSecreto').set(!currentStatus);
+            alert(`Voto Secreto ha sido ${!currentStatus ? 'ACTIVADO' : 'DESACTIVADO'}.`);
         });
-     });
+    });
 }
 
-// NUEVOS LISTENERS (IMPOSTORES Y EXPULSIÓN)
-if (setImpostor1Button) setImpostor1Button.addEventListener('click', () => {
-    selectedImpostorCount = 1;
-    if (impostorCountDisplay) impostorCountDisplay.textContent = 'Impostores: 1';
-    alert('Número de Impostores establecido en 1.');
-});
-
-if (setImpostor2Button) setImpostor2Button.addEventListener('click', () => {
-    selectedImpostorCount = 2;
-    if (impostorCountDisplay) impostorCountDisplay.textContent = 'Impostores: 2';
-    alert('Número de Impostores establecido en 2.');
-});
-
-if (expelUnassignedButton) expelUnassignedButton.addEventListener('click', adminExpelUnassigned);
-
-
-// 6. Limpiar Chat (Solo Admin)
+// *** NUEVO LISTENER: Botón para Limpiar Chat (ADMIN) ***
 if (clearChatButton) {
-     clearChatButton.addEventListener('click', () => {
-         if (!isAdmin || !chatRef) {
-            alert('Requiere privilegios de administrador.');
-            return;
-        }
-        
-        if (!confirm('¿Estás seguro de que quieres borrar todos los mensajes del chat?')) {
-            return;
-        }
-        
+    clearChatButton.addEventListener('click', () => {
+        if (!isAdmin || !chatRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
+
         chatRef.set(null).then(() => {
-            alert('Chat limpiado.');
-            if (chatStatusMessage) chatStatusMessage.textContent = 'Chat limpiado por el administrador.';
+            alert("¡Chat limpiado!");
         }).catch(error => {
-             console.error("Error al limpiar chat:", error);
-             alert("Error al limpiar chat.");
+            console.error("Error al limpiar el chat:", error);
+            alert("Error al limpiar el chat.");
         });
-     });
+    });
 }
 
-// Lógica de CHAT (Existente)
-if (chatSendButton && chatInput && chatRef) {
-    const sendMessage = () => {
-        if (!chatInput.value.trim() || chatInput.disabled) return;
-
-        participantesRef.child(ANONYMOUS_USER_ID).once('value').then(snapshot => {
-            const p = snapshot.val();
-            if (!p || !p.color || p.rol === 'expulsado' || p.rol === 'sin asignar') return;
-
-            const chatMessage = {
-                senderId: ANONYMOUS_USER_ID,
-                senderName: p.nombre || p.color.toUpperCase(),
-                senderColor: p.color,
-                text: chatInput.value.trim(),
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            };
-
-            chatRef.push(chatMessage);
-            chatInput.value = '';
-        });
-    };
-
-    chatSendButton.addEventListener('click', sendMessage);
-    chatInput.addEventListener('keyup', (e) => {
-        if (e.key === 'Enter') {
-            sendMessage();
+// *** NUEVO LISTENER: Botón para Expulsar No Asignados (ADMIN) ***
+if (kickUnassignedButton) {
+    kickUnassignedButton.addEventListener('click', () => {
+        if (!isAdmin) { alert('Requiere privilegios de administrador.'); return; }
+        if (confirm("¿Estás seguro de expulsar a TODOS los jugadores que NO tienen color ni rol asignado?")) {
+            kickUnassignedPlayers();
         }
     });
 }
 
-// Listener para el chat (Existente)
-if (chatMessages && chatRef) {
-    chatRef.limitToLast(50).on('child_added', (snapshot) => {
-        const message = snapshot.val();
+
+// =========================================================
+// ** NUEVA SECCIÓN: LÓGICA DE CHAT **
+// =========================================================
+
+/**
+ * Envía un mensaje al nodo 'chat' en Firebase.
+ */
+function sendMessage() {
+    if (!chatRef || !chatInput || chatInput.disabled) return;
+    
+    const message = chatInput.value.trim();
+    if (message.length === 0) return;
+    
+    const miParticipante = participantesCache[ANONYMOUS_USER_ID];
+    
+    // Doble chequeo de seguridad (ya hecho en el listener, pero por si acaso)
+    if (!miParticipante || !miParticipante.color || miParticipante.rol === 'expulsado' || miParticipante.rol === 'sin asignar') {
+         alert('No puedes enviar mensajes: rol no válido o eliminado.');
+         chatInput.value = '';
+         return;
+    }
+    
+    const senderName = miParticipante.nombre || miParticipante.color.toUpperCase();
+    const senderColor = miParticipante.color;
+
+    // 1. Enviar a Firebase
+    chatRef.push({
+        senderId: ANONYMOUS_USER_ID,
+        senderName: senderName,
+        senderColor: senderColor,
+        message: message,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+        chatInput.value = ''; // Limpiar el input
+    }).catch(error => {
+        console.error("Error al enviar mensaje:", error);
+    });
+}
+
+/**
+ * Renderiza los mensajes de chat en la UI.
+ */
+function updateChatDisplay(chatSnapshot) {
+    if (!chatMessages) return;
+
+    const messages = chatSnapshot.val();
+    chatMessages.innerHTML = '';
+    
+    // Obtener los últimos 50 mensajes para mantener el rendimiento
+    const messagesArray = messages ? Object.values(messages) : [];
+    const lastMessages = messagesArray.slice(-50); 
+    
+    lastMessages.forEach(msg => {
+        const messageItem = document.createElement('p');
+        messageItem.classList.add('chat-message-item');
+
+        // 1. Icono del Crewmate (Chibi)
+        const iconDiv = document.createElement('div');
+        iconDiv.classList.add('chat-crewmate-icon', msg.senderColor);
+        messageItem.appendChild(iconDiv); 
         
-        if (message.text) {
-             const messageElement = document.createElement('div');
-             messageElement.classList.add('chat-message');
-             
-             const nameElement = document.createElement('span');
-             nameElement.classList.add('chat-sender-name', message.senderColor || 'skip');
-             nameElement.textContent = `${message.senderName}:`;
-             
-             const textElement = document.createElement('span');
-             textElement.classList.add('chat-text');
-             textElement.textContent = message.text;
-             
-             messageElement.appendChild(nameElement);
-             messageElement.appendChild(textElement);
-             chatMessages.appendChild(messageElement);
-             
-             // Scroll al final
-             chatMessages.scrollTop = chatMessages.scrollHeight;
+        // 2. Nombre del Remitente
+        const nameSpan = document.createElement('span');
+        nameSpan.classList.add('chat-sender-name', msg.senderColor);
+        nameSpan.textContent = `${msg.senderName}:`;
+        
+        messageItem.appendChild(nameSpan); 
+        
+        // 3. Mensaje
+        const messageTextNode = document.createElement('span'); // Usamos span para el texto del mensaje
+        messageTextNode.textContent = ` ${msg.message}`;
+        messageTextNode.classList.add('chat-message-text');
+        messageItem.appendChild(messageTextNode);
+
+        chatMessages.appendChild(messageItem);
+    });
+    
+    // Hacer scroll al final para ver el mensaje más reciente
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Listener de Chat (Si la referencia existe)
+if (chatRef) {
+    // Limitar a los 50 mensajes más recientes
+    chatRef.limitToLast(50).on('value', updateChatDisplay);
+}
+
+// Event Listeners para el chat
+if (chatSendButton) chatSendButton.addEventListener('click', sendMessage);
+if (chatInput) chatInput.addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
+});
+
+
+// =========================================================
+// ** NUEVA SECCIÓN: LÓGICA DE TAREAS **
+// =========================================================
+
+const TASK_LIST = {
+    'task1': { description: 'Encestar 3 veces el balon, 1 por jugador' },
+    'task2': { description: 'Llamar al perro y llevarlo a la cafetería' },
+    'task3': { description: 'Encontrar los 4 osos de peluches y notificar al host' },
+    'task4': { description: '2 jugadores tendrán que pasar la carrera de obstáculos' },
+    'task5': { description: 'Girar el dado hasta que dé el número que indique el marcador' }
+};
+
+/**
+ * Inicializa las tareas en Firebase si no existen.
+ */
+function initializeTasks() {
+    if (!tareasRef) return;
+
+    tareasRef.once('value').then(snapshot => {
+        if (!snapshot.exists() || Object.keys(snapshot.val() || {}).length === 0) {
+            const initialTasks = {};
+            for (const [key, task] of Object.entries(TASK_LIST)) {
+                initialTasks[key] = {
+                    description: task.description,
+                    completed: false
+                };
+            }
+            tareasRef.set(initialTasks);
         }
     });
 }
+
+/**
+ * Función de Admin para alternar el estado de completado de una tarea.
+ */
+function toggleTaskCompletion(taskKey, isCompleted) {
+    if (!isAdmin || !tareasRef) return;
+
+    tareasRef.child(taskKey).update({ completed: isCompleted })
+        .catch(error => console.error("Error al actualizar tarea:", error));
+}
+
+/**
+ * Renderiza el panel de tareas (visible para todos los participantes).
+ */
+function updateTaskDisplay(snapshot) {
+    if (!taskListContainer) return;
+
+    const tasks = snapshot.val() || {};
+    taskListContainer.innerHTML = '';
+
+    for (const [key, task] of Object.entries(tasks)) {
+        const taskItem = document.createElement('div');
+        taskItem.classList.add('task-item');
+
+        const statusIcon = document.createElement('div');
+        statusIcon.classList.add('task-status-icon', task.completed ? 'completed' : 'pending');
+        
+        const textSpan = document.createElement('span');
+        textSpan.textContent = task.description;
+        
+        taskItem.appendChild(statusIcon);
+        taskItem.appendChild(textSpan);
+        taskListContainer.appendChild(taskItem);
+    }
+    
+    // ** Lógica de renderizado del panel de control de Admin **
+    if (isAdmin && adminTaskPanelContainer) {
+        adminTaskPanelContainer.innerHTML = '<h3 class="panel-header-small">Control de Tareas</h3>';
+        
+        const controlList = document.createElement('div');
+        controlList.classList.add('admin-task-control-list');
+        
+        for (const [key, task] of Object.entries(tasks)) {
+             const controlItem = document.createElement('div');
+             controlItem.classList.add('admin-task-control-item');
+             
+             const taskText = document.createElement('span');
+             taskText.textContent = task.description;
+             
+             const toggleButton = document.createElement('button');
+             toggleButton.classList.add('task-toggle-button', task.completed ? 'completed-btn' : 'pending-btn');
+             toggleButton.textContent = task.completed ? 'Completada' : 'Marcar';
+             toggleButton.dataset.key = key;
+             toggleButton.dataset.completed = task.completed;
+             
+             toggleButton.addEventListener('click', (e) => {
+                 const newStatus = e.target.dataset.completed === 'false';
+                 toggleTaskCompletion(e.target.dataset.key, newStatus);
+             });
+             
+             controlItem.appendChild(taskText);
+             controlItem.appendChild(toggleButton);
+             controlList.appendChild(controlItem);
+        }
+        adminTaskPanelContainer.appendChild(controlList);
+    }
+}
+
+// Listener para las tareas
+if (tareasRef) {
+    tareasRef.on('value', updateTaskDisplay);
+    initializeTasks(); // Asegura que las tareas existan al inicio
+}
+
+
+// Inicializar el rastreo de participantes al cargar (DEBE ESTAR AL FINAL)
+setupParticipantTracking();
