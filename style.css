@@ -824,3 +824,96 @@ body.emergency-meeting {
     color: #f1c40f;
     text-align: center;
 }
+
+/* ** ESTILOS NUEVOS: PANEL DE TAREAS (Arriba del Chat) ** */
+.task-panel {
+    position: fixed;
+    bottom: 390px; /* Colocado arriba del chat (350px de altura + 20px de espacio + 20px de bottom) */
+    left: 20px; 
+    background: rgba(44, 62, 80, 0.9);
+    border: 3px solid var(--color-borde-panel);
+    border-radius: 15px;
+    padding: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    z-index: 101; 
+    width: 300px;
+    font-family: 'Roboto', sans-serif;
+    display: flex; 
+    flex-direction: column;
+}
+
+.task-header {
+    color: #ecf0f1;
+    font-size: 1.2em;
+    margin: 0 0 10px 0;
+    text-align: center;
+    border-bottom: 1px solid #7f8c8d;
+    padding-bottom: 5px;
+    font-weight: 900;
+}
+
+.task-completion-status {
+    margin: 0 0 10px 0;
+    font-size: 0.9em;
+    color: #f1c40f;
+    text-align: center;
+    font-weight: 700;
+}
+.task-completion-status.all-completed {
+    color: var(--color-neón-cian);
+    text-shadow: 0 0 5px var(--color-neón-cian);
+}
+
+.task-list {
+    background-color: #2c3e50;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #4a637d;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    color: #ecf0f1;
+    font-size: 0.9em;
+    line-height: 1.2;
+}
+.task-item label {
+    margin-left: 8px;
+    cursor: pointer;
+    font-weight: 400;
+}
+.task-item input[type="checkbox"] {
+    /* Estilo de casilla de Among Us (paloma verde) */
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #7f8c8d;
+    border-radius: 4px;
+    background-color: #34495e; /* Gris oscuro */
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.task-item input[type="checkbox"]:checked {
+    border-color: var(--color-neón-cian);
+    background-color: var(--color-crewmate); /* Verde */
+}
+
+/* El checkmark (paloma) */
+.task-item input[type="checkbox"]:checked::after {
+    content: '✔'; 
+    font-size: 16px;
+    color: #fff;
+    position: absolute;
+    top: -2px; 
+    left: 2px;
+    font-family: Arial, sans-serif;
+}
+.task-item input[type="checkbox"]:disabled {
+    opacity: 0.7; 
+    cursor: not-allowed;
+}
