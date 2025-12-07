@@ -139,6 +139,8 @@ const taskListContainer = document.getElementById('task-list-container');
 const assignedPlayersDisplay = document.getElementById('assigned-players-display');
 // *** NUEVA REFERENCIA: BOTÓN DE LIMPIEZA MASIVA ***
 const clearAllParticipantsButton = document.getElementById('clear-all-participants-button');
+// *** NUEVA REFERENCIA: BOTÓN DE CONTROL DE TAREAS ***
+const toggleTaskControlButton = document.getElementById('toggle-task-control-button');
 
 
 let isAdmin = false;
@@ -552,6 +554,15 @@ function updateAdminButtonsVisibility(config) {
         if (clearChatButton) clearChatButton.style.display = 'block'; // Limpiar Chat
         if (clearAllParticipantsButton) clearAllParticipantsButton.style.display = 'block'; // NUEVO BOTÓN
         
+        // Control de Tareas
+        if (toggleTaskControlButton) {
+             toggleTaskControlButton.style.display = 'block';
+             const isLocked = !config.taskControl; // Asumir desbloqueado si no está en config
+             toggleTaskControlButton.textContent = isLocked ? "Desbloquear Casillas" : "Bloquear Casillas";
+             toggleTaskControlButton.classList.toggle('admin-btn-reset', isLocked);
+             toggleTaskControlButton.classList.toggle('admin-btn-assign-all', !isLocked);
+        }
+        
         // NUEVO: Botones de Conteo de Impostores
         const currentImpostors = config.numImpostors || 1;
         const imp1Btn = document.getElementById('set-impostor-1');
@@ -578,6 +589,7 @@ function updateAdminButtonsVisibility(config) {
          if (adminLoginButton) adminLoginButton.style.display = 'block';
          if (clearChatButton) clearChatButton.style.display = 'none';
          if (clearAllParticipantsButton) clearAllParticipantsButton.style.display = 'none';
+         if (toggleTaskControlButton) toggleTaskControlButton.style.display = 'none'; // Ocultar para no-admin
          
          // Ocultar botones de conteo
          if (document.getElementById('set-impostor-1')) document.getElementById('set-impostor-1').style.display = 'none';
@@ -1582,6 +1594,254 @@ if (clearChatButton) {
     });
 }
 
+// *** NUEVO LISTENER: ELIMINAR/OCULTAR TODOS LOS PARTICIPANTES ***
+if (clearAllParticipantsButton) {
+    clearAllParticipantsButton.addEventListener('click', () => {
+        if (!isAdmin || !participantesRef || !jugadoresRef || !estadoRef || !configRef) {
+             alert('Requiere privilegios de administrador y conexión a la base de datos.'); 
+             return;
+        }
+
+        if (!confirm("¿ESTÁS SEGURO? Esto eliminará roles y colores de TODOS los jugadores y los ocultará de la lista de Admin. Solo los jugadores que recarguen/entren de nuevo reaparecerán.")) {
+            return;
+        }
+        
+        // 1. Marcar a TODOS como adminHidden y resetear color/rol/conectado
+        participantesRef.once('value').then(snapshot => {
+            const updates = {};
+            snapshot.forEach(childSnapshot => {
+                updates[`${childSnapshot.key}/rol`] = 'sin asignar';
+                updates[`${childSnapshot.key}/color`] = null; 
+                updates[`${childSnapshot.key}/conectado`] = false; 
+                updates[`${childSnapshot.key}/adminHidden`] = true; // Ocultar de la lista de admin
+            });
+            participantesRef.update(updates).then(() => {
+                
+                // 2. Resetear los estados de la partida (Jugadores, Votos, Config, Estado)
+                const jugadoresReset = {};
+                for (const color of coloresJugadores) {
+                    if (color === 'skip') {
+                        jugadoresReset[color] = { votos: 0 };
+                    } else {
+                        jugadoresReset[color] = { votos: 0, eliminado: false };
+                    }
+                }
+                
+                jugadoresRef.set(jugadoresReset);
+                votosDetalleRef.set(null); 
+                chatRef.set(null);
+                setupInitialTasks(); 
+                
+                configRef.update({ 
+                    votoActivo: false, 
+                    tiempoFin: 0,
+                    votoSecreto: false, 
+                    numImpostors: 1,
+                    taskControl: false, // Bloquear tareas por defecto al limpiar
+                    lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
+                });
+
+                estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Limpiado! ¡Asigna Roles y Color a los nuevos participantes!" });
+                alert("Limpieza masiva completada. Recarga la página y solo los jugadores que recarguen o entren de nuevo aparecerán.");
+            });
+        });
+    });
+}
+
+
+// 3. Reiniciar JUEGO TOTAL (Solo Admin - ROLES Y COLORES SE RESETEAN)
+if (resetButton) {
+    resetButton.addEventListener('click', () => {
+        if (!isAdmin || !jugadoresRef || !votosDetalleRef || !participantesRef || !configRef || !estadoRef || !tareasRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
+        
+        const jugadoresReset = {};
+        for (const color of coloresJugadores) {
+            if (color === 'skip') {
+                jugadoresReset[color] = { votos: 0 };
+            } else {
+                jugadoresReset[color] = { votos: 0, eliminado: false };
+            }
+        }
+        
+        jugadoresRef.set(jugadoresReset).then(() => {
+            votosDetalleRef.set(null); 
+            
+            participantesRef.once('value').then(snapshot => {
+                const updates = {};
+                snapshot.forEach(childSnapshot => {
+                    updates[`${childSnapshot.key}/rol`] = 'sin asignar';
+                    updates[`${childSnapshot.key}/color`] = null; 
+                    updates[`${childSnapshot.key}/conectado`] = false; // Resetear conectado para limpiar la lista de admin hasta que vuelvan a cargar
+                    updates[`${childSnapshot.key}/adminHidden`] = null; // Quitar la marca de oculto
+                });
+                participantesRef.update(updates);
+            });
+
+             configRef.update({ 
+                 votoActivo: false, 
+                 tiempoFin: 0,
+                 votoSecreto: false, 
+                 numImpostors: 1, // Resetear el conteo de impostores
+                 taskControl: false, // Bloquear tareas por defecto al resetear
+                 lastVoteClearSignal: firebase.database.ServerValue.TIMESTAMP 
+             });
+             
+             // También reiniciamos el chat y las tareas en el reinicio total
+             if (chatRef) chatRef.set(null);
+             if (tareasRef) setupInitialTasks(); 
+
+             estadoRef.update({ ultimoEliminado: null, mensaje: "¡Juego Reiniciado! ¡Asigna roles y color!" });
+             alert("Juego reiniciado. Todos los jugadores están de vuelta, sus roles y colores fueron borrados.");
+        });
+    });
+}
+
+// ** NUEVA FUNCIÓN Y LISTENER: ASIGNAR ROLES Y COLORES (COMBINADO) **
+function assignRolesAndColors() {
+    if (!isAdmin || !participantesRef || !configRef || !estadoRef || !jugadoresRef) { 
+         alert('Requiere privilegios de administrador y conexión a la base de datos.'); 
+         return; 
+    }
+    
+    // Jugadores conectados (no ocultos) que NO tienen color asignado
+    const jugadoresSinColor = Object.entries(participantesCache)
+        .filter(([id, p]) => 
+             p.conectado === true && 
+            !p.adminHidden && // *** FILTRO: Solo jugadores NO ocultos ***
+            (!p.color || !coloresTripulantes.includes(p.color))
+        );
+
+    // 1. Asignar Colores a jugadores SIN color (al azar)
+    const coloresUsados = Object.values(participantesCache).map(p => p.color).filter(c => coloresTripulantes.includes(c));
+    const coloresDisponibles = coloresTripulantes.filter(c => !coloresUsados.includes(c));
+    
+    const updatesParticipantes = {};
+    const updatesJugadores = {};
+    
+    jugadoresSinColor.forEach(([id, p]) => {
+        if (coloresDisponibles.length > 0) {
+            const colorIndex = Math.floor(Math.random() * coloresDisponibles.length);
+            const newColor = coloresDisponibles.splice(colorIndex, 1)[0];
+            
+            updatesParticipantes[`${id}/color`] = newColor;
+            updatesParticipantes[`${id}/rol`] = 'sin asignar'; // Resetear rol
+            updatesParticipantes[`${id}/conectado`] = true;
+            updatesParticipantes[`${id}/adminHidden`] = null; // Asegurar que sea visible
+            
+            updatesJugadores[`${newColor}/eliminado`] = false; 
+            updatesJugadores[`${newColor}/votos`] = 0;
+        }
+    });
+
+    if (Object.keys(updatesParticipantes).length > 0) {
+        participantesRef.update(updatesParticipantes);
+    }
+    if (Object.keys(updatesJugadores).length > 0) {
+         jugadoresRef.update(updatesJugadores);
+    }
+    
+    // 2. Asignar Roles a TODOS con color
+    const jugadoresConColor = Object.entries(participantesCache)
+         .filter(([id, p]) => 
+            p.color && 
+            coloresTripulantes.includes(p.color) && 
+            !p.adminHidden // *** FILTRO: Solo jugadores NO ocultos ***
+        );
+
+    const numJugadores = jugadoresConColor.length;
+    if (numJugadores === 0) {
+        estadoRef.update({ mensaje: "Colores asignados. Se necesitan jugadores activos para asignar roles." });
+        return;
+    }
+
+    // --- Lógica de Impostores ---
+    const desiredImpostors = participantesCache.config.numImpostors || 1; 
+    let numImpostores = 1;
+
+    if (desiredImpostors === 'auto') {
+        if (numJugadores >= 9) numImpostores = 3;
+        else if (numJugadores >= 5) numImpostores = 2;
+        else numImpostores = 1;
+    } else {
+        numImpostores = parseInt(desiredImpostors); 
+    }
+    
+    if (numImpostores >= numJugadores) numImpostores = 1; 
+    
+    // Asignación de rol
+    const shuffledPlayers = jugadoresConColor.map(p => p[0]).sort(() => 0.5 - Math.random());
+    const impostorIds = shuffledPlayers.slice(0, numImpostores);
+
+    const roleUpdates = {};
+    for (const [id] of jugadoresConColor) {
+        const rol = impostorIds.includes(id) ? 'impostor' : 'tripulante';
+        roleUpdates[`${id}/rol`] = rol;
+    }
+    
+    participantesRef.update(roleUpdates)
+        .then(() => {
+            configRef.child('lastVoteClearSignal').set(firebase.database.ServerValue.TIMESTAMP);
+            alert(`Colores asignados y Roles repartidos: ${numImpostores} Impostor(es) y ${numJugadores - numImpostores} Tripulante(s).`);
+            estadoRef.update({ mensaje: `¡Roles asignados! ${numImpostores} Impostor(es) a bordo.` });
+        })
+        .catch(error => {
+            console.error("Error al asignar roles y colores:", error);
+            alert("Error al asignar roles y colores.");
+        });
+}
+
+if (assignAllButton) {
+    assignAllButton.addEventListener('click', assignRolesAndColors);
+}
+
+// ** NUEVA FUNCIÓN: Establecer el conteo de impostores **
+function setImpostorCount(count) {
+    if (!isAdmin || !configRef) { alert('Requiere privilegios de administrador.'); return; }
+    
+    const newCount = (count === 1 || count === 2) ? count : 'auto';
+    
+    configRef.child('numImpostors').set(newCount).then(() => {
+       alert(`Número de impostores establecido en: ${newCount === 'auto' ? 'AUTOMÁTICO' : newCount}.`);
+    });
+}
+
+
+// ELIMINADO: PERMITIR VOTO MÚLTIPLE
+
+// ELIMINADO: Toggle Voto Secreto
+
+// *** NUEVA FUNCIÓN: Toggle de Control de Tareas ***
+function toggleTaskControl() {
+    if (!isAdmin || !configRef) { alert('Requiere privilegios de administrador.'); return; }
+    
+    configRef.child('taskControl').once('value').then(snap => {
+        const currentStatus = snap.val() || false;
+        const newState = !currentStatus;
+        
+        configRef.child('taskControl').set(newState).then(() => {
+             alert(`Control de Casillas ha sido ${newState ? 'DESBLOQUEADO (Abierto)' : 'BLOQUEADO (Cerrado)'}.`);
+        });
+    });
+}
+if (toggleTaskControlButton) {
+    toggleTaskControlButton.addEventListener('click', toggleTaskControl);
+}
+
+
+// *** NUEVO LISTENER: Botón para Limpiar Chat (ADMIN) ***
+if (clearChatButton) {
+    clearChatButton.addEventListener('click', () => {
+        if (!isAdmin || !chatRef) { alert('Requiere privilegios de administrador y conexión a la base de datos.'); return; }
+
+        chatRef.set(null).then(() => {
+            alert("¡Chat limpiado!");
+        }).catch(error => {
+            console.error("Error al limpiar el chat:", error);
+            alert("Error al limpiar el chat.");
+        });
+    });
+}
+
 
 // =========================================================
 // ** NUEVA SECCIÓN: LÓGICA DE CHAT **
@@ -1712,6 +1972,8 @@ function updateTaskDisplay(taskSnapshot) {
     if (!taskListContainer) return;
     
     const tareas = taskSnapshot.val();
+    const isLocked = participantesCache.config ? !participantesCache.config.taskControl : true; // Asumir bloqueado si no hay config
+    
     taskListContainer.innerHTML = ''; 
     let todasCompletadas = true;
 
@@ -1722,6 +1984,9 @@ function updateTaskDisplay(taskSnapshot) {
 
     Object.entries(tareas).forEach(([id, tarea]) => {
         if (!tarea.completada) todasCompletadas = false;
+        
+        // Solo el Admin puede habilitar/deshabilitar la casilla si está 'desbloqueada'
+        const isDisabled = isLocked || !isAdmin; 
 
         const taskItem = document.createElement('div');
         taskItem.classList.add('task-item');
@@ -1729,14 +1994,14 @@ function updateTaskDisplay(taskSnapshot) {
 
         // *** LÓGICA CLAVE PARA LA CASILLA (Admin vs. Jugador) ***
         taskItem.innerHTML = `
-            <input type="checkbox" id="task-${id}" data-id="${id}" ${tarea.completada ? 'checked' : ''} ${!isAdmin ? 'disabled' : ''}>
+            <input type="checkbox" id="task-${id}" data-id="${id}" ${tarea.completada ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
             <label for="task-${id}">${tarea.texto}</label>
         `;
         taskListContainer.appendChild(taskItem);
     });
 
-    // Agregar listeners de cambio (solo el admin los puede activar)
-    if (isAdmin) {
+    // Agregar listeners de cambio (solo si el admin la tiene desbloqueada)
+    if (isAdmin && !isLocked) {
         taskListContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 // El cambio de estado se propaga inmediatamente a Firebase
