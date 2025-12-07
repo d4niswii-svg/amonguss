@@ -921,7 +921,7 @@ body.emergency-meeting {
 
 .task-item {
     display: flex;
-    align-items: flex-start; /* Alineación al inicio por si el texto es largo */
+    align-items: center;
     margin-bottom: 8px;
     color: #ecf0f1;
     font-size: 0.9em;
@@ -932,31 +932,19 @@ body.emergency-meeting {
     cursor: pointer;
     font-weight: 400;
 }
-/* Cambiado para que el cursor no-allowed solo se aplique si está deshabilitado */
-.task-item input[type="checkbox"]:disabled + label { 
-    cursor: not-allowed; 
-    opacity: 0.7; /* Texto atenuado si la casilla está deshabilitada */
-}
-
 .task-item input[type="checkbox"] {
-    /* Estilo de casilla de Among Us (paloma gris/verde) */
+    /* Estilo de casilla de Among Us (paloma verde) */
     appearance: none;
     -webkit-appearance: none;
     width: 20px;
     height: 20px;
     border: 2px solid #7f8c8d;
     border-radius: 4px;
-    background-color: #5d6d7e; /* Gris para la casilla inactiva */
-    cursor: pointer; /* Cursor de puntero para indicar que es clickeable */
+    background-color: #34495e; /* Gris oscuro */
+    cursor: pointer;
     position: relative;
     flex-shrink: 0;
 }
-/* El cursor de puntero solo se aplica si no está deshabilitado */
-.task-item input[type="checkbox"]:disabled {
-    cursor: not-allowed;
-    opacity: 0.7; /* Atenúa la casilla si está deshabilitada */
-}
-
 
 .task-item input[type="checkbox"]:checked {
     border-color: var(--color-neón-cian);
@@ -965,7 +953,7 @@ body.emergency-meeting {
 
 /* El checkmark (paloma) */
 .task-item input[type="checkbox"]:checked::after {
-    content: '✓'; /* Cambiado a un checkmark */
+    content: '✔'; 
     font-size: 16px;
     color: #fff;
     position: absolute;
@@ -973,10 +961,11 @@ body.emergency-meeting {
     left: 2px;
     font-family: Arial, sans-serif;
 }
-.task-item input[type="checkbox"]:disabled:checked::after {
-    /* Mantiene el checkmark visible aunque esté deshabilitado si está checked */
-    opacity: 1;
+.task-item input[type="checkbox"]:disabled {
+    opacity: 0.7; 
+    cursor: not-allowed;
 }
+
 
 /* --- Botón de matar/eliminar --- */
 .kill-btn {
