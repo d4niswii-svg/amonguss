@@ -1,8 +1,8 @@
 /* PALETA Y FUENTES HD / Among Us Style */
 :root {
     --color-fondo-blanco: #f4f6f7; /* Fondo principal blanco - NO SE USA AHORA */
-    --color-panel-amongus: #d5dadf; /* Gris claro/plata para los paneles */
-    --color-panel-glass: rgba(213, 218, 223, 0.85); /* 85% opacidad del gris claro para efecto Glass */
+    --color-panel-amongus: #d5dadf; /* Gris claro/plata para los paneles (OPACO) */
+    --color-panel-glass: rgba(213, 218, 223, 0.85); /* Semitransparente (variable ya no usada para el panel principal) */
     --color-borde-panel: #2c3e50; /* Gris oscuro para el borde */
     --color-neón-cian: #39fffc; 
     --color-neón-rojo: #ff4545; 
@@ -27,7 +27,7 @@ html, body {
 body {
     display: flex;
     justify-content: center;
-    align-items: flex-start; 
+    align-items: flex-start; /* *** CORRECCIÓN: Contenido empieza desde arriba *** */
     min-height: 100vh;
     padding-top: 0; 
     font-family: 'Bungee Outline', 'Roboto', sans-serif;
@@ -35,6 +35,13 @@ body {
     overflow-x: hidden;
     transition: background-color 0.5s; 
     
+    /* *** ZOOM A 67% (Si lo soporta el navegador) *** */
+    zoom: 67%; 
+    -moz-transform: scale(0.67);
+    -moz-transform-origin: top center;
+    transform: scale(0.67);
+    transform-origin: top center;
+
     /* ** FONDO: IMAGEN DE GALAXIA (ACTUALIZADO) ** */
     background-image: url('https://www.skyweaver.net/images/media/wallpapers/wallpaper1.jpg');
     background-size: cover;
@@ -73,8 +80,8 @@ body {
     opacity: 0;
     animation: modal-fadein 0.5s forwards;
     
-    /* *** APLICACIÓN DEL EFECTO GLASS *** */
-    background: var(--color-panel-glass); /* Fondo semitransparente */
+    /* *** CAMBIO CLAVE: PANEL DE VOTACIÓN OPCACO *** */
+    background: var(--color-panel-amongus); 
     /* margin-top: 20px; - Eliminado ya que el container lo centra */
     margin-bottom: 20px;
 }
