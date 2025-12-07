@@ -933,7 +933,7 @@ body.emergency-meeting {
     font-weight: 400;
 }
 .task-item input[type="checkbox"] {
-    /* Estilo de casilla de Among Us (paloma verde) */
+    /* Estilo base de casilla (sin paloma) */
     appearance: none;
     -webkit-appearance: none;
     width: 20px;
@@ -944,14 +944,32 @@ body.emergency-meeting {
     cursor: pointer;
     position: relative;
     flex-shrink: 0;
+    
+    /* *** MODIFICACIÓN CLAVE 1: ANULAR OPACIDAD para que se vea igual que el no-disabled *** */
+    opacity: 1 !important; 
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
+/* Estado al pasar el ratón (solo para el admin) */
+.task-item input[type="checkbox"]:not(:disabled):hover {
+     border-color: #ecf0f1;
+}
+
+/* Estado de COMPROBADO (aplica a todos, independientemente de 'disabled') */
 .task-item input[type="checkbox"]:checked {
     border-color: var(--color-neón-cian);
     background-color: var(--color-crewmate); /* Verde */
 }
 
-/* El checkmark (paloma) */
+/* *** MODIFICACIÓN CLAVE 2: Asegurar que el estilo CHECKED prevalezca en el DISABLED *** */
+.task-item input[type="checkbox"]:checked:disabled {
+    /* Mantener el color verde y el borde cian aunque esté deshabilitado */
+    background-color: var(--color-crewmate); 
+    border-color: var(--color-neón-cian);
+}
+
+
+/* El checkmark (paloma) - Aplica a todos los checked */
 .task-item input[type="checkbox"]:checked::after {
     content: '✔'; 
     font-size: 16px;
@@ -961,9 +979,10 @@ body.emergency-meeting {
     left: 2px;
     font-family: Arial, sans-serif;
 }
+
+/* Estado Deshabilitado (para no-Admin) */
 .task-item input[type="checkbox"]:disabled {
-    opacity: 0.7; 
-    cursor: not-allowed;
+    cursor: default; /* No hay cursor de puntero */
 }
 
 
