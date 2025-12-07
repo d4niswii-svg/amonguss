@@ -742,10 +742,9 @@ body.emergency-meeting {
 .color-assignment button:disabled { opacity: 0.5; }
 .color-assignment .rojo { background-color: var(--color-rojo-amongus); }
 .color-assignment .azul { background-color: var(--color-azul-amongus); }
-.color-assignment .blanco { background-color: var(--color-blanco-amongus); color: #000; }
+.color-assignment .blanco { background-color: var(--color-blanco-amongus); }
 .color-assignment .verde { background-color: var(--color-verde-amongus); }
-.color-assignment .amarillo { background-color: var(--color-amarillo-amongus); color: #000; }
-.color-assignment .skip { background-color: var(--color-skip); }
+.color-assignment .amarillo { background-color: var(--color-amarillo-amongus); }
 
 /* --- RESTRICCIÓN DE ACCESO (PANTALLA COMPLETA) --- */
 .access-restriction-message {
