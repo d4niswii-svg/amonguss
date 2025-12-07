@@ -603,10 +603,13 @@ function updateAdminButtonsVisibility(config) {
          if (document.getElementById('set-impostor-auto')) document.getElementById('set-impostor-auto').style.display = 'none';
     }
     
-    // NUEVO: Mostrar panel de tareas para todos
+    // NUEVO: Mostrar panel de tareas para todos, pero deshabilitar interacción si no es admin
     if (taskPanel) {
         taskPanel.style.display = 'flex';
-        // La lógica de deshabilitar ya no usa taskControl, sino solo isAdmin en updateTaskDisplay
+        // Deshabilitar checkboxes si no es admin
+        taskListContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.disabled = !isAdmin;
+        });
     }
 }
 
@@ -1696,23 +1699,20 @@ const TAREAS_INICIALES = [
     { id: 't1', texto: 'Encestar el balón en el basurero 3 veces (1 por cada jugador designado).', completada: false },
     { id: 't2', texto: 'Llamar al perro espacial "Werw" y guiarlo hasta la cafetería de la nave.', completada: false },
     { id: 't3', texto: 'Localizar los 4 peluches de la mascota dispersos en las salas y notificar su ubicación al Host.', completada: false },
-    { id: 't4', texto: 'Dos jugadores deben completar la carrera de obstáculos en menos de 10 segundos cada uno.', completada: false },
-    { id: 't5', texto: 'Girar los dados hasta que la suma de los resultados coincida con el número indicado en el marcador de la misión.', completada: false },
+    { id: 't4', texto: 'Girar los dados hasta que la suma de los resultados coincida con el número indicado en el marcador de la misión.', completada: false },
+    { id: 't5', texto: 'Dos jugadores deben completar la carrera de obstáculos en menos de 10 segundos cada uno.', completada: false },
 ];
 
 /**
  * Inicializa la lista de tareas en Firebase (llamado al inicio y al reset).
  */
 function setupInitialTasks() {
-    if (tareasRef && configRef) {
+    if (tareasRef) {
         const initialTasksObject = {};
         TAREAS_INICIALES.forEach(t => {
             initialTasksObject[t.id] = { texto: t.texto, completada: t.completada };
         });
-        tareasRef.set(initialTasksObject).then(() => {
-             // Asegura que taskControl esté en TRUE (casillas abiertas) al inicializar tareas.
-             configRef.child('taskControl').set(true); 
-        }).catch(error => {
+        tareasRef.set(initialTasksObject).catch(error => {
             console.error("Error al inicializar tareas:", error);
         });
     }
@@ -1722,74 +1722,55 @@ function setupInitialTasks() {
  * Renderiza la lista de tareas y sus casillas de verificación.
  */
 function updateTaskDisplay(taskSnapshot) {
-    if (!taskListContainer || !taskCompletionStatus || !estadoRef) return;
+    if (!taskListContainer) return;
     
     const tareas = taskSnapshot.val();
-    
     taskListContainer.innerHTML = ''; 
-    let completadasCount = 0;
-    let totalTareas = 0;
     let todasCompletadas = true;
 
     if (!tareas) {
          taskListContainer.innerHTML = '<p class="task-message">No hay tareas activas.</p>';
-         taskCompletionStatus.textContent = 'No hay tareas activas.';
-         taskCompletionStatus.classList.remove('all-completed');
-         taskCompletionStatus.dataset.completed = 'false';
          return;
     }
-    
-    totalTareas = Object.keys(tareas).length;
 
     Object.entries(tareas).forEach(([id, tarea]) => {
-        if (tarea.completada) {
-            completadasCount++;
-        } else {
-             todasCompletadas = false;
-        }
-        
-        // ** MODIFICACIÓN CLAVE: Casilla es editable si isAdmin es TRUE **
-        const isDisabled = !isAdmin; 
+        if (!tarea.completada) todasCompletadas = false;
 
         const taskItem = document.createElement('div');
         taskItem.classList.add('task-item');
         taskItem.classList.add(tarea.completada ? 'completed' : 'pending');
 
         taskItem.innerHTML = `
-            <input type="checkbox" id="task-${id}" data-id="${id}" ${tarea.completada ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
+            <input type="checkbox" id="task-${id}" data-id="${id}" ${tarea.completada ? 'checked' : ''} ${!isAdmin ? 'disabled' : ''}>
             <label for="task-${id}">${tarea.texto}</label>
         `;
         taskListContainer.appendChild(taskItem);
     });
 
-    // Agregar listeners de cambio (solo si es admin)
+    // Agregar listeners de cambio (solo el admin los puede activar)
     if (isAdmin) {
         taskListContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
-                // El cambio de estado se propaga inmediatamente a Firebase
                 tareasRef.child(`${e.target.dataset.id}/completada`).set(e.target.checked);
             });
         });
     }
     
-    // Mensaje de estado
-    taskCompletionStatus.textContent = `${completadasCount} de ${totalTareas} Tareas Completadas.`;
-    taskCompletionStatus.dataset.completed = todasCompletadas.toString();
-
-    if (todasCompletadas && totalTareas > 0) {
-        taskCompletionStatus.classList.add('all-completed');
-        
-        // ** LÓGICA DE VICTORIA DE TRIPULANTES POR TAREAS **
-        // Se llama a la verificación con origen 'tarea' para forzar la comprobación.
-        // Se usa setTimeout para asegurar que la UI se actualice primero.
-        setTimeout(() => verificarFinDePartida('tarea'), 500); 
-
-    } else {
-         taskCompletionStatus.classList.remove('all-completed');
+    // Mensaje de victoria/estado
+    const statusMessage = document.getElementById('task-completion-status');
+    if (statusMessage) {
+        if (todasCompletadas && Object.keys(tareas).length > 0) {
+            statusMessage.textContent = '¡TODAS LAS TAREAS COMPLETADAS! Los Tripulantes ganan.';
+            statusMessage.classList.add('all-completed');
+             // Si las tareas son la condición de victoria, se dispararía aquí la verificación
+        } else {
+             statusMessage.textContent = `${Object.values(tareas).filter(t => t.completada).length} de ${Object.keys(tareas).length} Tareas Completadas.`;
+             statusMessage.classList.remove('all-completed');
+        }
     }
 }
 
-// Listener de Tareas (Se actualiza en tiempo real para todos)
+// Listener de Tareas
 if (tareasRef) {
     tareasRef.on('value', updateTaskDisplay, error => {
          console.error("Error al leer tareas:", error);
