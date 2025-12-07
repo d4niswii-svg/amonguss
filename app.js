@@ -1696,11 +1696,11 @@ if (chatInput) chatInput.addEventListener('keyup', (e) => {
 // =========================================================
 
 const TAREAS_INICIALES = [
-    { id: 't1', texto: 'Encestar el balón en el basurero 3 veces (1 por cada jugador designado).', completada: false },
-    { id: 't2', texto: 'Llamar al perro espacial "Werw" y guiarlo hasta la cafetería de la nave.', completada: false },
-    { id: 't3', texto: 'Localizar los 4 peluches de la mascota dispersos en las salas y notificar su ubicación al Host.', completada: false },
-    { id: 't4', texto: 'Girar los dados hasta que la suma de los resultados coincida con el número indicado en el marcador de la misión.', completada: false },
-    { id: 't5', texto: 'Dos jugadores deben completar la carrera de obstáculos en menos de 10 segundos cada uno.', completada: false },
+    { id: 't1', texto: 'Encestar el balón en la canasta 3 veces (1 por cada jugador).', completada: false },
+    { id: 't2', texto: 'Llamar al perro "Werw" y guiarlo hasta la cafetería.', completada: false },
+    { id: 't3', texto: 'Localizar los 4 peluches de la mascota dispersos en la sala y notificar su ubicación al Host.', completada: false },
+    { id: 't4', texto: 'Girar los dados hasta que el resultado coincida con el número indicado en el marcador.', completada: false },
+    { id: 't5', texto: 'Dos jugadores deben completar la carrera de obstáculos y llegar al trono.', completada: false },
 ];
 
 /**
