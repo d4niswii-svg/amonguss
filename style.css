@@ -35,12 +35,6 @@ body {
     overflow-x: hidden;
     transition: background-color 0.5s; 
     
-    /* *** ZOOM A 67% (Si lo soporta el navegador) *** */
-    zoom: 67%; 
-    -moz-transform: scale(0.67);
-    -moz-transform-origin: top center;
-    transform: scale(0.67);
-    transform-origin: top center;
 
     /* ** FONDO: IMAGEN DE GALAXIA (ACTUALIZADO) ** */
     background-image: url('https://www.skyweaver.net/images/media/wallpapers/wallpaper1.jpg');
@@ -62,7 +56,6 @@ body {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.7); /* Fondo oscuro transparente */
     z-index: 100; /* Delante del fondo */
     display: flex;
     flex-direction: column; /* Cambiado para contener la barra superior */
@@ -632,7 +625,7 @@ body.emergency-meeting {
 .admin-btn-reset-all { background-color: #e74c3c; flex-basis: 100%; box-shadow: 0 4px 0 #c0392b;} /* Limpiar todos */
 .admin-btn-permit-vote { background-color: #9b59b6; flex-basis: 100%; }
 .admin-btn-secret-vote { background-color: #008080; flex-basis: 100%; } /* Voto Secreto */
-.admin-btn-chat-reset { background-color: #6c5ce7; } /* Limpiar Chat */
+.admin-btn-chat-reset { background-color: #6c5ce7; } /* Limpiar Chat - ELIMINADO */
 
 /* --- Control de Impostores --- */
 .impostor-count-control {
@@ -939,6 +932,12 @@ body.emergency-meeting {
     cursor: pointer;
     font-weight: 400;
 }
+/* Cambiado para que el cursor no-allowed solo se aplique si está deshabilitado */
+.task-item input[type="checkbox"]:disabled + label { 
+    cursor: not-allowed; 
+    opacity: 0.7; /* Texto atenuado si la casilla está deshabilitada */
+}
+
 .task-item input[type="checkbox"] {
     /* Estilo de casilla de Among Us (paloma gris/verde) */
     appearance: none;
@@ -948,10 +947,16 @@ body.emergency-meeting {
     border: 2px solid #7f8c8d;
     border-radius: 4px;
     background-color: #5d6d7e; /* Gris para la casilla inactiva */
-    cursor: pointer;
+    cursor: pointer; /* Cursor de puntero para indicar que es clickeable */
     position: relative;
     flex-shrink: 0;
 }
+/* El cursor de puntero solo se aplica si no está deshabilitado */
+.task-item input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.7; /* Atenúa la casilla si está deshabilitada */
+}
+
 
 .task-item input[type="checkbox"]:checked {
     border-color: var(--color-neón-cian);
@@ -960,7 +965,7 @@ body.emergency-meeting {
 
 /* El checkmark (paloma) */
 .task-item input[type="checkbox"]:checked::after {
-    content: '✔'; 
+    content: '✓'; /* Cambiado a un checkmark */
     font-size: 16px;
     color: #fff;
     position: absolute;
@@ -968,9 +973,9 @@ body.emergency-meeting {
     left: 2px;
     font-family: Arial, sans-serif;
 }
-.task-item input[type="checkbox"]:disabled {
-    opacity: 0.7; 
-    cursor: not-allowed;
+.task-item input[type="checkbox"]:disabled:checked::after {
+    /* Mantiene el checkmark visible aunque esté deshabilitado si está checked */
+    opacity: 1;
 }
 
 /* --- Botón de matar/eliminar --- */
