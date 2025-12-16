@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>¡Lo Siento Mucho, Mi Amor!</title>
     <!-- Incluir una fuente tierna -->
-    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght=400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Incluir el SDK de Firebase (Necesario para que el JS funcione) -->
+    <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-database.js"></script>
+    
     <style>
         /* Definición de la animación de pulsación sutil */
         @keyframes pulse {
@@ -39,7 +44,6 @@
             text-align: center;
             padding: 20px;
             /* QUITAR OVERFLOW HIDDEN para permitir SCROLL */
-            /* overflow: hidden; */ 
             position: relative; 
         }
 
@@ -53,22 +57,27 @@
             overflow: hidden;
             pointer-events: none;
             z-index: 1; 
-            /* Ocultar inicialmente y mostrar solo en las páginas de tristeza */
-            opacity: 0; 
+            /* AJUSTE: AUMENTAR OPACIDAD BASE */
+            opacity: 0.3; 
             transition: opacity 1s ease-in-out;
         }
 
         .rain-container.active {
+            /* AJUSTE: MÁXIMA OPACIDAD PARA EL DRAMA */
             opacity: 1;
         }
 
         .raindrop {
             position: absolute;
-            width: 2px;
-            height: 15px;
-            background: linear-gradient(transparent, rgba(173, 216, 230, 0.5)); 
+            /* AJUSTE: MÁS GRUESAS Y LARGAS */
+            width: 3px; 
+            height: 20px; 
+            /* AJUSTE: COLOR MÁS VISIBLE */
+            background: linear-gradient(transparent, rgba(70, 130, 180, 0.8)); 
             border-radius: 50%;
-            animation: fall 1s linear infinite;
+            /* AJUSTE: MÁS RÁPIDAS */
+            animation: fall 0.5s linear infinite;
+            filter: drop-shadow(0 0 2px rgba(70, 130, 180, 0.5));
         }
 
 
@@ -106,7 +115,6 @@
         }
         
         /* HACk para que el card-wrapper tome la altura del elemento activo */
-        /* HACK: Se maneja primariamente en JS para mayor control y fluidez */
         .container:not(.active) {
              position: absolute;
         }
@@ -330,7 +338,7 @@
                     <a 
                         href="#" 
                         class="perdon-link"
-                        onclick="showPage('page2')"
+                        onclick="trackDecision('Si_Perdonar', 'page2')"
                     >
                         Me perdonas shii??
                     </a>
@@ -338,7 +346,7 @@
                     <a 
                         href="#" 
                         class="perdon-link no-perdon-link"
-                        onclick="showPage('page3')"
+                        onclick="trackDecision('No_Perdonar_3', 'page3')"
                     >
                         No, no te perdono 
                     </a>
@@ -418,7 +426,7 @@
                 <a 
                     href="#" 
                     class="perdon-link"
-                    onclick="showPage('page1')"
+                    onclick="trackDecision('Si_Cambio_3', 'page1')"
                 >
                     Dame otra oportunidad 
                 </a>
@@ -426,7 +434,7 @@
                 <a 
                     href="#" 
                     class="perdon-link no-perdon-link"
-                    onclick="showPage('page4')"
+                    onclick="trackDecision('No_Perdonar_4', 'page4')"
                 >
                     No, no te perdono 
                 </a>
@@ -459,14 +467,14 @@
                 <a 
                     href="#" 
                     class="perdon-link"
-                    onclick="showPage('page1')"
+                    onclick="trackDecision('Si_Cambio_4', 'page1')"
                 >
                     Dame otra oportunidad 
                 </a>
                 <a 
                     href="#" 
                     class="perdon-link no-perdon-link"
-                    onclick="showPage('page5')"
+                    onclick="trackDecision('No_Perdonar_5', 'page5')"
                 >
                     No, no te perdono 
                 </a>
@@ -502,14 +510,14 @@
                 <a 
                     href="#" 
                     class="perdon-link"
-                    onclick="showPage('page1')"
+                    onclick="trackDecision('Si_Cambio_5', 'page1')"
                 >
                     Dame otra oportunidad 
                 </a>
                 <a 
                     href="#" 
                     class="perdon-link no-perdon-link"
-                    onclick="showPage('page6')"
+                    onclick="trackDecision('No_Perdonar_6', 'page6')"
                 >
                     No, no te perdono 
                 </a>
@@ -542,14 +550,14 @@
                 <a 
                     href="#" 
                     class="perdon-link"
-                    onclick="showPage('page1')"
+                    onclick="trackDecision('Si_Cambio_6', 'page1')"
                 >
                     Dame otra oportunidad 
                 </a>
                 <a 
                     href="#" 
                     class="perdon-link no-perdon-link"
-                    onclick="showPage('page7')"
+                    onclick="trackDecision('No_Perdonar_7', 'page7')"
                 >
                     No, no te perdono 
                 </a>
@@ -581,14 +589,14 @@
                 <a 
                     href="#" 
                     class="perdon-link"
-                    onclick="showPage('page1')"
+                    onclick="trackDecision('Si_Cambio_7', 'page1')"
                 >
                     Dame otra oportunidad 
                 </a>
                 <a 
                     href="#" 
                     class="perdon-link no-perdon-link"
-                    onclick="showPage('page8')"
+                    onclick="trackDecision('No_Perdonar_8', 'page8')"
                 >
                     No, no te perdono 
                 </a>
@@ -620,7 +628,7 @@
                 <a 
                     href="#" 
                     class="perdon-link"
-                    onclick="showPage('page1')"
+                    onclick="trackDecision('Si_Final_8', 'page1')"
                 >
                     Darle otra oportunidad? 
                 </a>
@@ -632,9 +640,89 @@
 
 
     <!-- ============================================== -->
-    <!-- JAVASCRIPT: app.js (Control de Navegación, Corazones y Lluvia) -->
+    <!-- JAVASCRIPT: app.js (Control de Navegación, Corazones, Lluvia y FIREBASE) -->
     <!-- ============================================== -->
     <script>
+        // =========================================================
+        // 1. CONFIGURACIÓN DE FIREBASE (¡CLAVES INSERTADAS!)
+        // =========================================================
+        const firebaseConfig = {
+          apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
+          authDomain: "ango-592a4.firebaseapp.com",
+          databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
+          projectId: "ango-592a4",
+          storageBucket: "ango-592a4.firebasestorage.app",
+          messagingSenderId: "234305709468",
+          appId: "1:234305709468:web:18e64d68b5b8f9e89dd459",
+          measurementId: "G-0N3PESVFHR"
+        };
+
+        let database = null; // Inicialmente null
+        let decisionesRef = null; // Nueva referencia para este proyecto
+
+        // IDs del navegador (Debe estar al inicio para ser usado inmediatamente)
+        function getAnonymousUserId() {
+            let userId = localStorage.getItem('amongus_user_id');
+            if (!userId) {
+                userId = 'user_' + Math.random().toString(36).substring(2, 9);
+                localStorage.setItem('amongus_user_id', userId);
+            }
+            return userId;
+        }
+
+        const ANONYMOUS_USER_ID = getAnonymousUserId();
+        const SAVED_USERNAME = localStorage.getItem('amongus_username') || 'Novia'; // Usar un nombre por defecto
+
+        try {
+            if (typeof firebase !== 'undefined' && typeof firebase.initializeApp === 'function') {
+                firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+            } else {
+                 throw new Error("El SDK de Firebase no está disponible.");
+            }
+        } catch (error) {
+            console.error("Error al inicializar Firebase. Asegúrate de que los scripts de Firebase estén cargados.", error);
+            // No mostrar alert para no interrumpir el flujo, solo un mensaje sutil en consola
+        }
+
+        // Inicializar referencia de decisiones solo si database existe
+        if (database) {
+            decisionesRef = database.ref('decisiones_perdon'); 
+        }
+
+        // =========================================================
+        // 2. FUNCIÓN DE RASTREO EN FIREBASE
+        // =========================================================
+        function trackDecision(action, nextPageId) {
+            if (decisionesRef) {
+                const decisionData = {
+                    userId: ANONYMOUS_USER_ID,
+                    action: action, // Ejemplo: 'Si_Perdonar', 'No_Perdonar_3', 'Si_Cambio_4'
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                    page: nextPageId // Indica a qué página va después del clic
+                };
+                
+                // Usar el ID anónimo como clave para mantener un historial secuencial
+                // Opcional: usar .push() para un log de eventos
+                decisionesRef.child(ANONYMOUS_USER_ID).push(decisionData)
+                    .then(() => {
+                        console.log(`[Firebase] Decisión rastreada: ${action} -> ${nextPageId}`);
+                    })
+                    .catch((error) => {
+                        console.error("[Firebase] Error al guardar la decisión:", error);
+                    });
+            } else {
+                 console.warn("[Firebase] No se pudo rastrear la decisión. Base de datos no inicializada.");
+            }
+
+            // Llamar a la función de navegación (esencial)
+            showPage(nextPageId);
+        }
+        
+        // =========================================================
+        // 3. CONTROL DE NAVEGACIÓN, CORAZONES Y LLUVIA
+        // (Funciones modificadas con los ajustes de lluvia)
+        // =========================================================
         const cardWrapper = document.getElementById('cardWrapper');
         const rainContainer = document.getElementById('rainContainer');
         const pages = document.querySelectorAll('.container');
@@ -653,10 +741,9 @@
             activePage.classList.add('active');
             
             // 3. Ajustar la posición y altura del wrapper
-            // HACK: Solo la página ACTIVA debe ser 'relative' para que el card-wrapper tome su altura.
             activePage.style.position = 'relative';
             
-            // Forzamos un reajuste de la altura del wrapper después de un pequeño retraso para asegurar el renderizado
+            // Forzamos un reajuste de la altura del wrapper después de un pequeño retraso
             setTimeout(() => {
                 cardWrapper.style.height = activePage.offsetHeight + 'px';
             }, 50); 
@@ -671,9 +758,7 @@
             }
         }
 
-        // ==============================================
-        // CÓDIGO PARA LOS CORAZONES FLOTANTES
-        // ==============================================
+        // CÓDIGO PARA LOS CORAZONES FLOTANTES (Se mantiene sutil)
         const numHearts = 30; 
         
         function createHeart() {
@@ -692,43 +777,36 @@
             
             heart.style.animationDelay = `${Math.random() * 5}s`;
 
-            heart.style.opacity = `${Math.random() * 5.3 + 5.2}`; 
+            heart.style.opacity = `${Math.random() * 0.3 + 0.2}`; // Se vuelve a la opacidad sutil
 
             document.body.appendChild(heart);
         }
 
-        // Crear todos los corazones al cargar la página
         for (let i = 0; i < numHearts; i++) {
             createHeart();
         }
 
 
-        // ==============================================
-        // CÓDIGO PARA LA LLUVIA DRAMÁTICA
-        // ==============================================
-        const numRaindrops = 50; 
+        // CÓDIGO PARA LA LLUVIA DRAMÁTICA (Implementa los ajustes solicitados)
+        const numRaindrops = 150; // AUMENTADO PARA MÁS LLUVIA
 
         function createRaindrop() {
             const drop = document.createElement('div');
             drop.classList.add('raindrop');
             
-            // Posición X aleatoria
             drop.style.left = `${Math.random() * 100}%`; 
-            // Posición Y aleatoria (para que empiecen a diferentes alturas)
             drop.style.top = `-${Math.random() * 100}px`; 
 
-            // Duración y retraso para que caigan a diferentes velocidades y momentos
-            const duration = Math.random() * 0.8 + 0.6; // Entre 0.6s y 1.4s
+            // AJUSTE: VELOCIDAD MÁS RÁPIDA
+            const duration = Math.random() * 0.4 + 0.3; 
             drop.style.animationDuration = `${duration}s`;
             
-            // Repetir el ciclo después de un tiempo aleatorio
             const delay = Math.random() * 1; 
             drop.style.animationDelay = `${delay}s`;
 
             rainContainer.appendChild(drop);
         }
 
-        // Crear todas las gotas de lluvia al cargar la página
         for (let i = 0; i < numRaindrops; i++) {
             createRaindrop();
         }
