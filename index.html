@@ -1,233 +1,744 @@
-<!-- index.html -->
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emergencia - Votación de Impostor HD</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bungee+Outline&family=Roboto:wght@900;400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <title>¡Lo Siento Mucho, Mi Amor!</title>
+    <!-- Incluir una fuente tierna -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght=400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Definición de la animación de pulsación sutil */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        /* Animación para los corazones flotantes */
+        @keyframes floatHeart {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.4; }
+            50% { transform: translateY(-30px) rotate(5deg); opacity: 0.2; }
+            100% { transform: translateY(0) rotate(0deg); opacity: 0.4; }
+        }
+
+        /* Lluvia: animación para que los copos caigan */
+        @keyframes fall {
+            to { transform: translateY(100vh); }
+        }
+
+        /* CSS general (LINDO Y BONITO) */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Quicksand', sans-serif; 
+            background: linear-gradient(135deg, #f0f8ff 0%, #ffe4e1 100%); 
+            color: #4a4a4a;
+            text-align: center;
+            padding: 20px;
+            /* QUITAR OVERFLOW HIDDEN para permitir SCROLL */
+            /* overflow: hidden; */ 
+            position: relative; 
+        }
+
+        /* Contenedor de la Lluvia */
+        .rain-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1; 
+            /* Ocultar inicialmente y mostrar solo en las páginas de tristeza */
+            opacity: 0; 
+            transition: opacity 1s ease-in-out;
+        }
+
+        .rain-container.active {
+            opacity: 1;
+        }
+
+        .raindrop {
+            position: absolute;
+            width: 2px;
+            height: 15px;
+            background: linear-gradient(transparent, rgba(173, 216, 230, 0.5)); 
+            border-radius: 50%;
+            animation: fall 1s linear infinite;
+        }
+
+
+        /* Contenedor que mantiene el tamaño y posición para los cuadros */
+        .card-wrapper {
+            position: relative; 
+            max-width: 600px; 
+            width: 90%;
+            min-height: 450px; /* Altura mínima para evitar saltos bruscos */
+            z-index: 10; /* Asegurar que esté por encima de la lluvia */
+        }
+
+        .container {
+            background-color: #ffffff;
+            border-radius: 25px; 
+            box-shadow: 0 15px 40px rgba(255, 105, 180, 0.4); 
+            padding: 40px;
+            width: 100%; 
+            border: 3px solid #ffb6c1; 
+            box-sizing: border-box; 
+            
+            /* Claves para la transición de "pasar página" */
+            position: absolute; 
+            top: 0;
+            left: 0;
+            transition: opacity 0.5s ease-out; 
+            opacity: 0;
+            visibility: hidden; 
+        }
+
+        .container.active {
+            opacity: 1;
+            visibility: visible;
+            position: relative; /* Ajusta el wrapper a su altura */
+        }
+        
+        /* HACk para que el card-wrapper tome la altura del elemento activo */
+        /* HACK: Se maneja primariamente en JS para mayor control y fluidez */
+        .container:not(.active) {
+             position: absolute;
+        }
+        /* Fin HACK */
+
+
+        h1 {
+            color: #ff69b4; 
+            font-family: 'Pacifico', cursive; 
+            font-size: 3.2em;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px; 
+        }
+
+        /* Estilos del Emoji de Súplica */
+        .emoji-suplica {
+            width: 50px; 
+            height: 50px;
+            vertical-align: middle; 
+        }
+        
+        p {
+            font-size: 1.2em;
+            line-height: 1.7;
+            margin-bottom: 25px;
+            color: #555;
+        }
+
+        /* --- Estilos de la Novia (Solo para Page1 y Page2) --- */
+        .novia-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%; 
+            object-fit: cover;
+            border: 6px solid #ff69b4; 
+            margin: 20px auto 30px;
+            display: block;
+            box-shadow: 0 8px 20px rgba(255, 105, 180, 0.6); 
+            transition: transform 0.3s ease-in-out;
+        }
+        .novia-image:hover {
+            transform: scale(1.05) rotate(-2deg);
+        }
+        
+        /* --- Estilo para Dudus de las páginas de NO PERDÓN (3 al 8) y Dudu Feliz (2) --- */
+        .dudu-special {
+            width: 180px; /* Más grande para que destaque */
+            height: 180px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            margin: 20px auto;
+            display: block;
+            filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.2)); 
+            transition: transform 0.3s ease;
+        }
+        .dudu-special:hover {
+            transform: scale(1.03);
+        }
+
+
+        /* Contenedor de los Botones y Dudu 5 (En Page 1) */
+        .boton-dudu-container {
+            display: flex;
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            margin-top: 15px;
+        }
+
+        /* Contenedor para alinear los dos botones */
+        .botones-decision {
+            display: flex;
+            gap: 20px; 
+            margin-bottom: 20px; 
+        }
+
+        /* Estilo de los botones */
+        .perdon-link {
+            display: inline-block;
+            color: #6a5acd; 
+            font-weight: 700;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid #6a5acd;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            white-space: nowrap; 
+            cursor: pointer;
+        }
+
+        .perdon-link:hover {
+            background-color: #6a5acd;
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(106, 90, 205, 0.5);
+        }
+
+        /* Estilo específico para el botón de "No Perdonar" */
+        .no-perdon-link {
+            color: #dc143c; 
+            border-color: #dc143c;
+        }
+        .no-perdon-link:hover {
+            background-color: #dc143c;
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(220, 20, 60, 0.5);
+        }
+
+
+        /* --- Estilo para Dudu 5 (el de al lado del botón en page 1) --- */
+        .dudu-boton {
+            width: 80px; 
+            height: 80px;
+            background-image: url('Dudu5.gif'); 
+            background-size: contain;
+            background-repeat: no-repeat;
+            animation: pulse 1.5s infinite alternate; 
+        }
+
+
+        /* --- Estilos de los 4 Dudus de Decoración (Se mantienen) --- */
+        .dudu-decoracion {
+            position: fixed; 
+            width: 100px;
+            height: 100px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 1; 
+            animation: pulse 2s infinite alternate;
+            opacity: 0.8;
+        }
+        /* Posiciones de los 4 Dudus */
+        #dudu1 { top: 5%; left: 5%; background-image: url('Dudu1.gif'); transform: rotate(-10deg); animation-delay: 0s; }
+        #dudu2 { top: 10%; right: 5%; background-image: url('Dudu2.gif'); transform: rotate(15deg); animation-delay: 0.5s; }
+        #dudu3 { bottom: 5%; left: 5%; background-image: url('Dudu3.gif'); transform: rotate(-5deg); animation-delay: 1.0s; }
+        #dudu4 { bottom: 10%; right: 10%; background-image: url('Dudu4.gif'); width: 80px; height: 80px; animation-delay: 1.5s; }
+        
+        /* --- Corazones Flotantes (Se mantienen) --- */
+        .heart {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            color: #ffc0cb; 
+            font-size: 20px;
+            opacity: 0.4; 
+            pointer-events: none; 
+            animation: floatHeart 6s ease-in-out infinite;
+            z-index: 5;
+            text-shadow: 0 0 5px rgba(255, 192, 203, 0.5); 
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            h1 { font-size: 2.5em; }
+            .emoji-suplica { width: 40px; height: 40px; }
+            .container { padding: 30px 20px; }
+            .dudu-decoracion { width: 50px; height: 50px; }
+            .dudu-boton { width: 50px; height: 50px; }
+            .dudu-special { width: 120px; height: 120px; }
+            .botones-decision {
+                flex-direction: column; 
+                gap: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-    <!-- MENSAJE DE RESTRICCIÓN DE ACCESO (FULLSCREEN) -->
-    <div id="access-restriction-message" class="access-restriction-message" style="display:none;">
-        <h1>ACCESO DENEGADO</h1>
-        <p>Ya hay 5 jugadores activos. Espera a que el administrador inicie una nueva partida.</p>
-        <div id="user-id-display-center" class="my-id-label-center">Tu ID: ...</div>
+    <!-- Contenedor de la Lluvia Dramática (Inicialmente oculto) -->
+    <div class="rain-container" id="rainContainer">
+        <!-- Las gotas de lluvia se crean con JS -->
     </div>
 
+    <!-- Los 4 Dudus de Decoración -->
+    <div id="dudu1" class="dudu-decoracion"></div>
+    <div id="dudu2" class="dudu-decoracion"></div>
+    <div id="dudu3" class="dudu-decoracion"></div>
+    <div id="dudu4" class="dudu-decoracion"></div>
 
-    <!-- NOTIFICACIÓN DE ROL GIGANTE (FULLSCREEN) -->
-    <div id="role-notification" class="role-notification-popup" style="display: none;"></div>
-    
-    <!-- POPUP DE EXPULSIÓN (VOTACIÓN) (FULLSCREEN) -->
-    <div id="expulsion-result-popup" class="expulsion-popup" style="display:none;">
-        <div class="expulsion-content">
-            <div id="ejected-crewmate-icon" class="ejected-crewmate"></div>
-            <p id="expulsion-message" class="expulsion-message"></p>
-        </div>
-    </div>
-    
-    <!-- ** POPUP DE MUERTE DRAMÁTICA (KILL) (FULLSCREEN) ** -->
-    <div id="murder-popup" class="murder-popup" style="display:none;">
-        <div class="murder-content">
-            <h1 id="murder-victim-name"></h1>
-            <p class="murder-message">HA MUERTO</p>
-        </div>
-    </div>
-    
-    <!-- ** POPUP DE VICTORIA DRAMÁTICA (FULLSCREEN) ** -->
-    <div id="victory-popup" class="victory-popup" style="display:none;">
-        <h1 id="victory-message" class="victory-message"></h1>
-        <div class="impostor-reveal">
-            <h2>IMPOSTOR(ES)</h2>
-            <div id="impostor-list-container" class="final-player-list"></div>
-        </div>
-        <div class="crewmate-reveal">
-            <h2>TRIPULANTE(S)</h2>
-            <div id="crewmate-list-container" class="final-player-list"></div>
-        </div>
-        <p class="victory-footer">¡JUEGO TERMINADO! Presiona REINICIAR para empezar de nuevo.</p>
-    </div>
+    <!-- Nuevo Wrapper para mantener la altura y posición de los cuadros -->
+    <div class="card-wrapper" id="cardWrapper">
 
-    <!-- PANEL DE ROL PERSONAL (ESQUINA INFERIOR DERECHA) -->
-    <div id="personal-role-panel" class="personal-role-panel" style="display:none;">
-        
-        <!-- Contenido Normal de Rol/Color -->
-        <div id="role-display-content">
-            <p class="panel-label">TÚ ERES:</p>
-            <div id="my-crewmate-icon" class="my-crewmate-icon"></div>
-            <div id="my-role-display" class="my-role-display"></div>
-        </div>
-
-        <!-- Formulario para Asignar Nombre Inicial -->
-        <div id="name-setup-form" class="name-setup-form" style="display:none;">
-            <p id="name-setup-message" class="name-setup-message"></p>
-            <input type="text" id="new-player-name-input" placeholder="Escribe tu nombre aquí" maxlength="20">
-            <button id="submit-name-button" class="submit-name-button">Confirmar</button>
-        </div>
-
-    </div>
-    
-    <!-- ** NUEVO: PANEL DE TAREAS ** (Arriba del Chat) -->
-    <div id="task-panel" class="task-panel" style="display:none;">
-        <h3 class="task-header">TAREAS DE LA NAVE</h3>
-        <p id="task-completion-status" class="task-completion-status">0 de 5 Tareas Completadas.</p>
-        <div id="task-list-container" class="task-list">
-            <!-- La lista de tareas se inserta aquí -->
-        </div>
-    </div>
-
-    <!-- ** NUEVO: PANEL DE CHAT ** (Esquina inferior izquierda) -->
-    <div id="chat-panel" class="chat-panel" style="display:none;">
-        <h3 class="chat-header">CHAT DE PARTIDA</h3>
-        <div id="chat-messages" class="chat-messages">
-            <!-- Los mensajes se insertan aquí -->
-        </div>
-        <div class="chat-input-container">
-            <input type="text" id="chat-input" placeholder="Escribe un mensaje..." maxlength="100" disabled>
-            <button id="chat-send-button" disabled>Enviar</button>
-        </div>
-        <p id="chat-status-message" class="chat-status-message">Conectando...</p>
-    </div>
-
-
-    <!-- INFORMACIÓN PERSONAL (ID/NOMBRE) - Ubicación fija superior izquierda -->
-    <div class="personal-info-box">
-        <div id="user-name-display-top" class="my-id-label-top">Tu Nombre: ...</div>
-        <div id="user-id-display" class="my-id-label-top">Tu ID: ...</div>
-    </div>
-    
-    <!-- ** CONTENEDOR MODAL DE VOTACIÓN (Centro de la Pantalla) ** -->
-    <div id="voting-modal-container" class="voting-modal-container" style="display: none;">
-        
-        <!-- *** FILA DE JUGADORES ASIGNADOS (SUPERIOR) *** -->
-        <div id="assigned-players-display" class="assigned-players-display" style="display:none;">
-            <!-- Los iconos y nombres se insertan aquí -->
-        </div>
-
-        <!-- Contenido principal de votación -->
-        <div class="panel votacion-container">
-            <h1 class="panel-header">¡REUNIÓN DE EMERGENCIA!</h1>
-            <p id="mensaje-principal" class="status-message">¡Vota por el Impostor!</p>
+        <!-- ============================================== -->
+        <!-- CUADRO 1: CARTA DE PERDÓN (INICIAL) -->
+        <!-- ============================================== -->
+        <div class="container active" id="page1">
             
-            <!-- TEMPORIZADOR (Ahora estático) -->
-            <div class="info-bar">
-                <div class="timer-display">VOTACIÓN <span id="temporizador">ABIERTA</span></div>
-            </div>
-
-            <div class="opciones">
-                <!-- Botones de Voto -->
-                <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
-                    <div class="crewmate-icon rojo"></div> 
-                    <span class="nombre">ROJO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-rojo"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-rojo"></div></div>
-                </button>
-                
-                <button id="votar-azul" class="boton-voto player-row azul-bg" data-color="azul">
-                    <div class="crewmate-icon azul"></div>
-                    <span class="nombre">AZUL</span>
-                    <div class="voto-iconos-container" id="voto-iconos-azul"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-azul"></div></div>
-                </button>
-                
-                <button id="votar-blanco" class="boton-voto player-row blanco-bg" data-color="blanco">
-                    <div class="crewmate-icon blanco"></div>
-                    <span class="nombre">BLANCO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-blanco"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-blanco"></div></div>
-                </button>
-
-                <button id="votar-verde" class="boton-voto player-row verde-bg" data-color="verde">
-                    <div class="crewmate-icon verde"></div> 
-                    <span class="nombre">VERDE</span>
-                    <div class="voto-iconos-container" id="voto-iconos-verde"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-verde"></div></div>
-                </button>
-
-                <button id="votar-amarillo" class="boton-voto player-row amarillo-bg" data-color="amarillo">
-                    <div class="crewmate-icon amarillo"></div> 
-                    <span class="nombre">AMARILLO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-amarillo"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-amarillo"></div></div>
-                </button>
-
-                <button id="votar-skip" class="boton-voto player-row skip-bg" data-color="skip">
-                    <div class="crewmate-icon skip"></div> 
-                    <span class="nombre">SALTAR VOTO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-skip"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-skip"></div></div>
-                </button>
-            </div>
-
-            <div id="voto-confirmado" class="confirmation-box">¡Voto Registrado!</div>
-            <div id="resultado-final" class="summary-box"></div>
+            <h1>
+                Perdóname mi niña..
+                <img 
+                    src="https://images.emojiterra.com/google/noto-emoji/unicode-16.0/color/svg/1f97a.svg" 
+                    alt="Emoji de súplica" 
+                    class="emoji-suplica"
+                > 
+            </h1>
             
-        </div>
-        
-    </div>
+            <img 
+                src="novia_foto.jpg" 
+                alt="Mi Novia Hermosa" 
+                class="novia-image"
+                onerror="this.onerror=null; this.src='novia_foto_generica.png'" 
+            >
 
-    
-    <!-- ** PANEL DE ADMINISTRADOR FLOTANTE FIJO (ESQUINA SUPERIOR DERECHA) ** -->
-    <div class="admin-fixed-panel">
-        
-        <!-- Botón de Login Admin -->
-        <button id="admin-login-button" class="admin-login-button">Login Admin</button>
-        
-        <!-- Botón: Ocultar/Mostrar Panel Admin -->
-        <button id="toggle-admin-panel-button" class="admin-login-button" style="display:none; margin-bottom: 10px;">Mostrar Panel Admin</button>
-
-        <!-- Contenedor del Panel (Se oculta/muestra con el botón) -->
-        <div id="admin-panel-container" style="display:none;">
-            <div id="participant-panel" class="panel participant-panel">
-                <h2 class="panel-header-small">PARTICIPANTES REGISTRADOS</h2>
-                <div id="participant-list-container" class="participant-list">
-                    <!-- La lista se genera aquí (Admin) -->
+            <p>
+                No hay nadie en el mundo tan importante para mí como tú.
+                Te amo con todo mi corazón y lamento mucho lo que hice.			
+            </p>
+            <p>
+                Dame una oportunidad para demostrarte que puedo hacerlo mejor.
+                Sé que mis acciones te causaron mucho dolor y decepción, y entiendo
+                tu dolor y tristeza. Me duele en el alma haberte lastimado...
+            </p>
+            
+            <!-- CONTENEDOR DE BOTONES DE DECISIÓN Y DUDU 5 -->
+            <div class="boton-dudu-container">
+                <div class="botones-decision">
+                    <!-- Botón de Perdón: Va a la página feliz (page2) -->
+                    <a 
+                        href="#" 
+                        class="perdon-link"
+                        onclick="showPage('page2')"
+                    >
+                        Me perdonas shii??
+                    </a>
+                    <!-- Botón de No Perdonar: Va a la primera página de tristeza (page3) -->
+                    <a 
+                        href="#" 
+                        class="perdon-link no-perdon-link"
+                        onclick="showPage('page3')"
+                    >
+                        No, no te perdono 
+                    </a>
                 </div>
-                
-                <!-- Panel de Administración -->
-                <div class="admin-panel">
-                    
-                    <!-- BOTÓN DE ELIMINACIÓN/OCULTACIÓN MASIVA -->
-                    <button id="clear-all-participants-button" class="admin-btn-reset-all" style="display:none;">ELIMINAR/OCULTAR TODOS</button>
-                    
-                    <!-- NUEVOS BOTONES DE CONTROL DE IMPOSTORES -->
-                    <div class="impostor-count-control">
-                         <span class="control-label">Impostores:</span>
-                         <!-- Funciones onclick añadidas al HTML -->
-                         <button id="set-impostor-1" class="admin-btn-small" onclick="setImpostorCount(1)" style="display:none;">1</button>
-                         <button id="set-impostor-2" class="admin-btn-small" onclick="setImpostorCount(2)" style="display:none;">2</button>
-                         <button id="set-impostor-auto" class="admin-btn-small" onclick="setImpostorCount('auto')" style="display:none;">AUTO</button>
-                    </div>
-                    
-                    <!-- BOTONES DE ASIGNACIÓN -->
-                    <button id="assign-all-button" class="admin-btn-assign-all" style="display:none;">Asignar Roles Y Color</button>
-                    
-                    <!-- BOTONES DE CONTROL DE PARTIDA -->
-                    <button id="resolve-vote-button" class="admin-btn-resolve-vote" style="display:none;">Resolver Votación</button> 
-                    <button id="clear-votes-button" class="admin-btn-clear-vote" style="display:none;">Limpiar Votación Actual</button> 
-                    
-                    <!-- BOTÓN DE LIMPIAR CHAT (ADMIN) - ELIMINADO -->
-                    <!-- <button id="clear-chat-button" class="admin-btn-chat-reset" style="display:none;">Limpiar Chat</button> --> 
-
-                    <!-- Botones de Control de Partida (¡ESTE ES EL BOTÓN DE REINICIAR!) -->
-                    <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
-                </div>
-                
+                <div class="dudu-boton"> </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Contenedor anterior (vacío, se mantiene para compatibilidad con CSS) -->
-    <div id="app-container" style="display: none;"></div>
+        </div> 
 
-    <!-- Carga del SDK de Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
-    <script src="app.js"></script>
+        <!-- ============================================== -->
+        <!-- CUADRO 2: MENSAJE POS-PERDÓN (FELIZ) -->
+        <!-- ============================================== -->
+        <div class="container" id="page2">
+            
+            <h1>
+                ¡De verdad?!
+                <span style="font-size: 0.8em;">💖</span>
+            </h1>
+            
+            <img 
+                src="novia_foto2.jpg" 
+                alt="Mi Niña Preciosa" 
+                class="novia-image"
+                onerror="this.onerror=null; this.src='novia_foto_generica.png'" 
+            >
+
+            <p>
+                Mi amoorrr, no sabes la alegría que me da que me hayas perdonado.
+                Significa el mundo para mí. Eres la única persona que le da sentido a mi vida.
+            </p>
+            <p style="font-weight: 700; color: #ff69b4;">
+                Tal ves no me creas, pero TE AMOOOO, ERES MI NOVIA, me encanta que lo seas. Quiero que estemos juntos toda la vida, para poder cuidar ese corazoncito tuyo como sí fuera el mío.
+				Eres la mujer más bella del mundo, te lo han dicho? quiero amarte y abrazarte, a mi mujerrr porque ES MIAA, eres mi princesa y mi niña chiquita y ME ENCANTASSS<3
+            </p>
+
+            <!-- Dudu Feliz -->
+            <div 
+                class="dudu-special" 
+                style="background-image: url('dudufeliz.gif');"
+            > </div>
+
+
+        </div> 
+
+
+        <!-- ============================================== -->
+        <!-- CUADRO 3 (TRISTEZA 1): NO PERDONA (INICIAL) -->
+        <!-- ============================================== -->
+        <div class="container" id="page3" data-next-page="page4" data-is-sad="true">
+            
+            <h1>
+                  ... 💔
+                <img 
+                    src="https://images.emojiterra.com/google/noto-emoji/unicode-16.0/color/svg/1f622.svg" 
+                    alt="Emoji de tristeza" 
+                    class="emoji-suplica"
+                >
+            </h1>
+            
+            <!-- Dudu Llorando 1 -->
+            <div 
+                class="dudu-special" 
+                style="background-image: url('dudullorando1.gif');"
+            > </div>
+
+            <p style="font-size: 1.5em; font-weight: 700; color: #8b0000;">
+                ¿Por qué? ):
+            </p>
+            <p>
+                Entiendo tu decisión amor y me duele mucho que estés mal por mi culpa.
+                Sé que tengo que trabajar mucho para recuperar tu confianza y tu amor..
+            </p>
+            
+            <div class="botones-decision">
+                <!-- Botón de Perdón: Vuelve al inicio (page1) -->
+                <a 
+                    href="#" 
+                    class="perdon-link"
+                    onclick="showPage('page1')"
+                >
+                    Dame otra oportunidad 
+                </a>
+                <!-- Botón de No Perdonar: Va a la siguiente (page4) -->
+                <a 
+                    href="#" 
+                    class="perdon-link no-perdon-link"
+                    onclick="showPage('page4')"
+                >
+                    No, no te perdono 
+                </a>
+            </div>
+            
+
+        </div> 
+
+        <!-- ============================================== -->
+        <!-- CUADRO 4 (TRISTEZA 2): SECUENCIA -->
+        <!-- ============================================== -->
+        <div class="container" id="page4" data-next-page="page5" data-is-sad="true">
+            <h1>
+                Por favor, escúchame...
+            </h1>
+            
+            <div 
+                class="dudu-special" 
+                style="background-image: url('dudullorando2.gif');"
+            > </div>
+
+            <p>
+                No puedo soportar verte triste por mi culpa. Te juro que lo digo en serio, voy a cambiar):
+            </p>
+            <p style="font-weight: 700; color: #4b0082;">
+                ¿Aún no me quieres perdonar? ¿Qué más tengo que hacer?
+            </p>
+            
+            <div class="botones-decision">
+                <a 
+                    href="#" 
+                    class="perdon-link"
+                    onclick="showPage('page1')"
+                >
+                    Dame otra oportunidad 
+                </a>
+                <a 
+                    href="#" 
+                    class="perdon-link no-perdon-link"
+                    onclick="showPage('page5')"
+                >
+                    No, no te perdono 
+                </a>
+            </div>
+        </div> 
+
+        <!-- ============================================== -->
+        <!-- CUADRO 5 (TRISTEZA 3): SECUENCIA -->
+        <!-- ============================================== -->
+        <div class="container" id="page5" data-next-page="page6" data-is-sad="true">
+            <h1>
+                Jani.. porfavorr!
+                <img 
+                    src="https://images.emojiterra.com/google/noto-emoji/unicode-16.0/color/svg/1f97a.svg" 
+                    alt="Emoji de súplica" 
+                    class="emoji-suplica"
+                > 
+            </h1>
+            
+            <div 
+                class="dudu-special" 
+                style="background-image: url('dudullorando3.gif');"
+            > </div>
+
+            <p>
+                No puedo imaginarme una vida sin ti amor, eres lo único que me queda..
+            </p>
+            <p style="font-weight: 700; color: #800000;">
+                               Te necesito a mi lado.
+            </p>
+            
+            <div class="botones-decision">
+                <a 
+                    href="#" 
+                    class="perdon-link"
+                    onclick="showPage('page1')"
+                >
+                    Dame otra oportunidad 
+                </a>
+                <a 
+                    href="#" 
+                    class="perdon-link no-perdon-link"
+                    onclick="showPage('page6')"
+                >
+                    No, no te perdono 
+                </a>
+            </div>
+        </div> 
+        
+        <!-- ============================================== -->
+        <!-- CUADRO 6 (TRISTEZA 4): SECUENCIA -->
+        <!-- ============================================== -->
+        <div class="container" id="page6" data-next-page="page7" data-is-sad="true">
+            <h1>
+                Puke janii
+
+            </h1>
+            
+            <div 
+                class="dudu-special" 
+                style="background-image: url('dudullorando4.gif');"
+            > </div>
+
+            <p>
+                No puedo dejar de pensar en lo mucho que te he fallado. Perdóname por ser un tonto.
+				No quiero que ninguno de los dos estemos mal, prometí que te haría feliz y te fallé.
+            </p>
+            <p style="font-weight: 700; color: #00008b;">
+                Quiero que me dejes intentarlo de nuevo.. Por favor...
+            </p>
+            
+            <div class="botones-decision">
+                <a 
+                    href="#" 
+                    class="perdon-link"
+                    onclick="showPage('page1')"
+                >
+                    Dame otra oportunidad 
+                </a>
+                <a 
+                    href="#" 
+                    class="perdon-link no-perdon-link"
+                    onclick="showPage('page7')"
+                >
+                    No, no te perdono 
+                </a>
+            </div>
+        </div> 
+        
+        <!-- ============================================== -->
+        <!-- CUADRO 7 (TRISTEZA 5): SECUENCIA -->
+        <!-- ============================================== -->
+        <div class="container" id="page7" data-next-page="page8" data-is-sad="true">
+            <h1>
+                Ya no sé qué hacer..
+            </h1>
+            
+            <div 
+                class="dudu-special" 
+                style="background-image: url('dudullorando5.gif');"
+            > </div>
+
+            <p>
+                He intentado todo para que sonrías de nuevo, pero mis esfuerzos no son suficientes...
+            </p>
+            <p style="font-weight: 700; color: #800080;">
+                Te amo más que a nada. Por favor.. solo tú me has enseñado lo que es el amar de verdad
+			 
+            </p>
+            
+            <div class="botones-decision">
+                <a 
+                    href="#" 
+                    class="perdon-link"
+                    onclick="showPage('page1')"
+                >
+                    Dame otra oportunidad 
+                </a>
+                <a 
+                    href="#" 
+                    class="perdon-link no-perdon-link"
+                    onclick="showPage('page8')"
+                >
+                    No, no te perdono 
+                </a>
+            </div>
+        </div> 
+        
+        <!-- ============================================== -->
+        <!-- CUADRO 8 (TRISTEZA 6): FINAL DE SECUENCIA -->
+        <!-- El último de la secuencia de llanto, el "No Perdono" vuelve a este mismo cuadro -->
+        <!-- ============================================== -->
+        <div class="container" id="page8" data-next-page="page8" data-is-sad="true">
+            <h1>
+                Esta bien mi niña... 
+            </h1>
+            
+            <div 
+                class="dudu-special" 
+                style="background-image: url('dudullorando6.gif');"
+            > </div>
+
+            <p>
+                Entiendo tu desición, no quiero obligarte a que me perdones, pero que sepas que nunca dejaré de amarte.
+            </p>
+            <p style="font-weight: 700; color: #800080;">
+                Te esperaré, aunque me tome una eternidad. Mi amor es solo tuyo.
+            </p>
+            
+            <div class="botones-decision">
+                <a 
+                    href="#" 
+                    class="perdon-link"
+                    onclick="showPage('page1')"
+                >
+                    Darle otra oportunidad? 
+                </a>
+            </div>
+        </div> 
+
+
+    </div> <!-- Fin del Card Wrapper -->
+
+
+    <!-- ============================================== -->
+    <!-- JAVASCRIPT: app.js (Control de Navegación, Corazones y Lluvia) -->
+    <!-- ============================================== -->
+    <script>
+        const cardWrapper = document.getElementById('cardWrapper');
+        const rainContainer = document.getElementById('rainContainer');
+        const pages = document.querySelectorAll('.container');
+
+        // Función para mostrar una página específica y ocultar las demás
+        function showPage(pageId) {
+            
+            // 1. Ocultar todas las páginas y hacerlas 'absolute'
+            pages.forEach(page => {
+                page.classList.remove('active');
+                page.style.position = 'absolute';
+            });
+
+            // 2. Mostrar la página objetivo
+            const activePage = document.getElementById(pageId);
+            activePage.classList.add('active');
+            
+            // 3. Ajustar la posición y altura del wrapper
+            // HACK: Solo la página ACTIVA debe ser 'relative' para que el card-wrapper tome su altura.
+            activePage.style.position = 'relative';
+            
+            // Forzamos un reajuste de la altura del wrapper después de un pequeño retraso para asegurar el renderizado
+            setTimeout(() => {
+                cardWrapper.style.height = activePage.offsetHeight + 'px';
+            }, 50); 
+            
+            // 4. Controlar la Lluvia
+            const isSadPage = activePage.hasAttribute('data-is-sad') && activePage.getAttribute('data-is-sad') === 'true';
+            
+            if (isSadPage) {
+                rainContainer.classList.add('active');
+            } else {
+                rainContainer.classList.remove('active');
+            }
+        }
+
+        // ==============================================
+        // CÓDIGO PARA LOS CORAZONES FLOTANTES
+        // ==============================================
+        const numHearts = 30; 
+        
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.classList.add('heart');
+            heart.innerHTML = '&#10084;'; 
+            
+            heart.style.left = `${Math.random() * 100}vw`;
+            heart.style.top = `${Math.random() * 100}vh`;
+            
+            const size = Math.random() * 15 + 10; 
+            heart.style.fontSize = `${size}px`;
+            
+            const duration = Math.random() * 4 + 4; 
+            heart.style.animationDuration = `${duration}s`;
+            
+            heart.style.animationDelay = `${Math.random() * 5}s`;
+
+            heart.style.opacity = `${Math.random() * 5.3 + 5.2}`; 
+
+            document.body.appendChild(heart);
+        }
+
+        // Crear todos los corazones al cargar la página
+        for (let i = 0; i < numHearts; i++) {
+            createHeart();
+        }
+
+
+        // ==============================================
+        // CÓDIGO PARA LA LLUVIA DRAMÁTICA
+        // ==============================================
+        const numRaindrops = 50; 
+
+        function createRaindrop() {
+            const drop = document.createElement('div');
+            drop.classList.add('raindrop');
+            
+            // Posición X aleatoria
+            drop.style.left = `${Math.random() * 100}%`; 
+            // Posición Y aleatoria (para que empiecen a diferentes alturas)
+            drop.style.top = `-${Math.random() * 100}px`; 
+
+            // Duración y retraso para que caigan a diferentes velocidades y momentos
+            const duration = Math.random() * 0.8 + 0.6; // Entre 0.6s y 1.4s
+            drop.style.animationDuration = `${duration}s`;
+            
+            // Repetir el ciclo después de un tiempo aleatorio
+            const delay = Math.random() * 1; 
+            drop.style.animationDelay = `${delay}s`;
+
+            rainContainer.appendChild(drop);
+        }
+
+        // Crear todas las gotas de lluvia al cargar la página
+        for (let i = 0; i < numRaindrops; i++) {
+            createRaindrop();
+        }
+
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            showPage('page1'); // Llama a showPage para inicializar la altura correctamente
+        });
+
+    </script>
 </body>
 </html>

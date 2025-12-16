@@ -1,0 +1,259 @@
+/* --- Animaciones --- */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+}
+
+@keyframes heart-float {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.6; /* Aparece */
+    }
+    100% {
+        transform: translateY(-100vh) rotate(360deg);
+        opacity: 0; /* Desaparece al llegar arriba */
+    }
+}
+
+/* --- CSS general (LINDO Y BONITO) --- */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Quicksand', sans-serif; 
+    background: linear-gradient(135deg, #f0f8ff 0%, #ffe4e1 100%); 
+    color: #4a4a4a;
+    text-align: center;
+    padding: 20px;
+    overflow: hidden; /* Muy importante para el carrusel y los Dudus */
+    position: relative; 
+}
+
+/* --- Contenedores del Carrusel --- */
+.carousel-wrapper {
+    position: relative;
+    max-width: 600px;
+    width: 90%;
+    overflow: hidden; /* Esto es clave para ocultar la segunda tarjeta */
+    z-index: 10; 
+}
+
+.carousel-container {
+    display: flex; /* Pone las tarjetas una al lado de la otra */
+    width: 200%; /* El doble del ancho para que quepan las 2 tarjetas */
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Animación de deslizamiento suave */
+    transform: translateX(0); /* Posición inicial (Tarjeta 1 visible) */
+}
+
+/* El JavaScript moverá la tarjeta:
+.carousel-container.shifted {
+    transform: translateX(-50%); 
+}
+*/
+
+/* --- Estilo de las Tarjetas (Cartas) --- */
+.card {
+    min-width: 50%; /* Cada tarjeta ocupa exactamente la mitad del contenedor (50% de 200% = 100%) */
+    box-sizing: border-box; 
+    background-color: #ffffff;
+    border-radius: 25px; 
+    box-shadow: 0 15px 40px rgba(255, 105, 180, 0.4); 
+    padding: 40px;
+    border: 3px solid #ffb6c1; 
+}
+
+/* --- Estilo de la Flecha de Navegación (Nueva) --- */
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    right: -10px; /* La colocamos a un lado del contenedor principal */
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(255, 105, 180, 0.5);
+    transition: all 0.3s ease;
+    z-index: 20; /* Aseguramos que esté por encima de la tarjeta */
+}
+
+.carousel-arrow:hover {
+    background-color: #ff69b4;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-arrow svg {
+    width: 30px;
+    height: 30px;
+    color: #ff69b4; 
+    transition: color 0.3s ease;
+}
+
+.carousel-arrow:hover svg {
+    color: #ffffff;
+}
+
+/* Flecha de regreso (por si se añade en el futuro) */
+#arrow-prev {
+    left: -10px;
+    transform: translateY(-50%) rotate(180deg);
+}
+
+/* Ocultar flecha cuando ya se avanzó (manejado por JS) */
+.arrow-hidden {
+    display: none;
+}
+
+
+/* --- Estilos Generales de Contenido --- */
+h1 {
+    color: #ff69b4; 
+    font-family: 'Pacifico', cursive; 
+    font-size: 3.2em;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px; 
+}
+
+.emoji-suplica {
+    width: 50px; 
+    height: 50px;
+    vertical-align: middle; 
+}
+
+p {
+    font-size: 1.2em;
+    line-height: 1.7;
+    margin-bottom: 25px;
+    color: #555;
+}
+
+.novia-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%; 
+    object-fit: cover;
+    border: 6px solid #ff69b4; 
+    margin: 20px auto 30px;
+    display: block;
+    box-shadow: 0 8px 20px rgba(255, 105, 180, 0.6); 
+    transition: transform 0.3s ease-in-out;
+}
+.novia-image:hover {
+    transform: scale(1.05) rotate(-2deg);
+}
+
+.boton-dudu-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 15px;
+}
+
+/* Estilo del botón de perdón */
+.perdon-link {
+    display: inline-block;
+    color: #6a5acd; 
+    font-weight: 700;
+    text-decoration: none;
+    padding: 10px 20px;
+    border: 2px solid #6a5acd;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    background-color: #ffffff; /* Para que parezca un enlace realzado */
+    cursor: pointer;
+    font-family: 'Quicksand', sans-serif; 
+    font-size: 1.1em;
+}
+
+.perdon-link:hover {
+    background-color: #6a5acd;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(106, 90, 205, 0.5);
+}
+
+.mensaje-final {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #ff69b4;
+    margin: 0;
+    animation: pulse 1.5s infinite alternate;
+}
+
+/* --- Estilo para Dudu 5 (al lado del botón) --- */
+.dudu-boton {
+    width: 80px; 
+    height: 80px;
+    background-image: url('Dudu5.gif'); 
+    background-size: contain;
+    background-repeat: no-repeat;
+    margin-left: 20px; 
+    animation: pulse 1.5s infinite alternate; 
+}
+
+
+/* --- Estilos de los 4 Dudus de Decoración --- */
+.dudu-decoracion {
+    position: fixed; 
+    width: 100px;
+    height: 100px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 1; 
+    animation: pulse 2s infinite alternate;
+    opacity: 0.8;
+}
+/* Posiciones de los 4 Dudus */
+#dudu1 { top: 5%; left: 5%; background-image: url('Dudu1.gif'); transform: rotate(-10deg); animation-delay: 0s; }
+#dudu2 { top: 10%; right: 5%; background-image: url('Dudu2.gif'); transform: rotate(15deg); animation-delay: 0.5s; }
+#dudu3 { bottom: 5%; left: 5%; background-image: url('Dudu3.gif'); transform: rotate(-5deg); animation-delay: 1.0s; }
+#dudu4 { bottom: 10%; right: 10%; background-image: url('Dudu4.gif'); width: 80px; height: 80px; animation-delay: 1.5s; }
+
+/* --- Estilo de Corazones Flotantes (Nuevo) --- */
+.heart-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Permite hacer clic a través de ellos */
+    overflow: hidden; /* Importante para la animación */
+    z-index: 5; /* Por debajo de las tarjetas */
+}
+
+.heart {
+    position: absolute;
+    width: 25px; /* Tamaño del corazón */
+    height: 25px;
+    font-size: 1.5em; 
+    color: #ffb6c1; /* Rosa claro/transparente */
+    opacity: 0; 
+    animation: heart-float linear infinite;
+    user-select: none;
+    pointer-events: none;
+}
+
+
+/* Responsive */
+@media (max-width: 600px) {
+    h1 { font-size: 2.5em; }
+    .emoji-suplica { width: 40px; height: 40px; }
+    .card { padding: 30px 20px; }
+    .dudu-decoracion { width: 50px; height: 50px; }
+    .dudu-boton { width: 30px; height: 30px; }
+    .carousel-arrow { width: 40px; height: 40px; right: 5px; }
+    .carousel-arrow svg { width: 25px; height: 25px; }
+}
