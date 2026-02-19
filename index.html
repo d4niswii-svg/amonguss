@@ -1,233 +1,161 @@
-<!-- index.html -->
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emergencia - Votación de Impostor HD</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bungee+Outline&family=Roboto:wght@900;400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Domino AI Pro - Firebase</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+
+    <style>
+        :root { --cyan: #00f2ff; --felt: #153a1f; --gold: #ffcc00; }
+        body { background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; margin: 0; overflow: hidden; }
+        header { background: #111; padding: 15px; border-bottom: 2px solid var(--cyan); text-align: center; font-weight: bold; }
+        #board { flex: 1; background: radial-gradient(circle, var(--felt), #000); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .extremos { display: flex; gap: 20px; margin-top: 10px; }
+        .nodo { width: 65px; height: 65px; background: rgba(0,0,0,0.7); border: 2px solid var(--gold); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--gold); font-weight: bold; }
+        #panel { background: #111; padding: 20px; border-top: 1px solid #333; border-radius: 25px 25px 0 0; }
+        #hand-display { display: flex; gap: 12px; overflow-x: auto; padding: 15px 0; min-height: 110px; align-items: center; }
+        .tile { width: 48px; height: 90px; background: #fff; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; color: #000; font-weight: 900; font-size: 1.8rem; flex-shrink: 0; }
+        .tile.sug { border: 4px solid var(--cyan); box-shadow: 0 0 20px var(--cyan); transform: translateY(-10px); }
+        .btn-scan { width: 100%; height: 60px; background: var(--cyan); border: none; border-radius: 15px; font-weight: bold; font-size: 1.2rem; color: #000; }
+        #status { font-size: 0.75rem; color: #aaa; text-align: center; margin-top: 10px; text-transform: uppercase; }
+        .loading { animation: pulse 1s infinite; color: var(--cyan); }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    </style>
 </head>
 <body>
 
-    <!-- MENSAJE DE RESTRICCIÓN DE ACCESO (FULLSCREEN) -->
-    <div id="access-restriction-message" class="access-restriction-message" style="display:none;">
-        <h1>ACCESO DENEGADO</h1>
-        <p>Ya hay 5 jugadores activos. Esera a que el administrador inicie una nueva partida.</p>
-        <div id="user-id-display-center" class="my-id-label-center">Tu ID: ...</div>
-    </div>
-
+<header>DOMINO AI <span style="color:var(--cyan)">VISION PRO</span></header>
 
-    <!-- NOTIFICACIÓN DE ROL GIGANTE (FULLSCREEN) -->
-    <div id="role-notification" class="role-notification-popup" style="display: none;"></div>
+<div id="board">
+    <div style="font-size: 0.8rem; color: var(--gold); letter-spacing: 1px;">MESA</div>
+    <div class="extremos">
+        <div class="nodo" id="ext-L">-</div>
+        <div class="nodo" id="ext-R">-</div>
+    </div>
+    <div id="status">LISTO</div>
+</div>
+
+<div id="panel">
+    <div id="hand-display"></div>
+    <button class="btn-scan" id="btn-main" onclick="document.getElementById('file-input').click()">📷 ESCANEAR JUEGO</button>
+    <input type="file" id="file-input" accept="image/*" style="display:none" onchange="iniciarAnalisis(this)">
+</div>
+
+<script>
+    // =========================================================
+    // 1. TU CONFIGURACIÓN DE FIREBASE (¡ACTUALIZADA!)
+    // =========================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
+        authDomain: "ango-592a4.firebaseapp.com",
+        databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
+        projectId: "ango-592a4",
+        storageBucket: "ango-592a4.firebasestorage.app",
+        messagingSenderId: "234305709468",
+        appId: "1:234305709468:web:18e64d68b5b8f9e89dd459",
+        measurementId: "G-0N3PESVFHR"
+    };
     
-    <!-- POPUP DE EXPULSIÓN (VOTACIÓN) (FULLSCREEN) -->
-    <div id="expulsion-result-popup" class="expulsion-popup" style="display:none;">
-        <div class="expulsion-content">
-            <div id="ejected-crewmate-icon" class="ejected-crewmate"></div>
-            <p id="expulsion-message" class="expulsion-message"></p>
-        </div>
-    </div>
-    
-    <!-- ** POPUP DE MUERTE DRAMÁTICA (KILL) (FULLSCREEN) ** -->
-    <div id="murder-popup" class="murder-popup" style="display:none;">
-        <div class="murder-content">
-            <h1 id="murder-victim-name"></h1>
-            <p class="murder-message">HA MUERTO</p>
-        </div>
-    </div>
-    
-    <!-- ** POPUP DE VICTORIA DRAMÁTICA (FULLSCREEN) ** -->
-    <div id="victory-popup" class="victory-popup" style="display:none;">
-        <h1 id="victory-message" class="victory-message"></h1>
-        <div class="impostor-reveal">
-            <h2>IMPOSTOR(ES)</h2>
-            <div id="impostor-list-container" class="final-player-list"></div>
-        </div>
-        <div class="crewmate-reveal">
-            <h2>TRIPULANTE(S)</h2>
-            <div id="crewmate-list-container" class="final-player-list"></div>
-        </div>
-        <p class="victory-footer">¡JUEGO TERMINADO! Presiona REINICIAR para empezar de nuevo.</p>
-    </div>
+    // Inicializar Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const analytics = firebase.analytics();
 
-    <!-- PANEL DE ROL PERSONAL (ESQUINA INFERIOR DERECHA) -->
-    <div id="personal-role-panel" class="personal-role-panel" style="display:none;">
-        
-        <!-- Contenido Normal de Rol/Color -->
-        <div id="role-display-content">
-            <p class="panel-label">TÚ ERES:</p>
-            <div id="my-crewmate-icon" class="my-crewmate-icon"></div>
-            <div id="my-role-display" class="my-role-display"></div>
-        </div>
+    // =========================================================
+    // 2. CONFIGURACIÓN DE IA (CON TU LLAVE GEMINI)
+    // =========================================================
+    const GEMINI_KEY = "AIzaSyA0oeyaijHRBmX5OBI13hPTRo_dO7x5HHY";
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
 
-        <!-- Formulario para Asignar Nombre Inicial -->
-        <div id="name-setup-form" class="name-setup-form" style="display:none;">
-            <p id="name-setup-message" class="name-setup-message"></p>
-            <input type="text" id="new-player-name-input" placeholder="Escribe tu nombre aquí" maxlength="20">
-            <button id="submit-name-button" class="submit-name-button">Confirmar</button>
-        </div>
+    let appState = { hand: [], ends: [null, null], best: -1 };
 
-    </div>
-    
-    <!-- ** NUEVO: PANEL DE TAREAS ** (Arriba del Chat) -->
-    <div id="task-panel" class="task-panel" style="display:none;">
-        <h3 class="task-header">TAREAS DE LA NAVE</h3>
-        <p id="task-completion-status" class="task-completion-status">0 de 5 Tareas Completadas.</p>
-        <div id="task-list-container" class="task-list">
-            <!-- La lista de tareas se inserta aquí -->
-        </div>
-    </div>
+    async function iniciarAnalisis(input) {
+        if (!input.files[0]) return;
+        const status = document.getElementById('status');
+        status.innerText = "IA ANALIZANDO...";
+        status.className = "loading";
 
-    <!-- ** NUEVO: PANEL DE CHAT ** (Esquina inferior izquierda) -->
-    <div id="chat-panel" class="chat-panel" style="display:none;">
-        <h3 class="chat-header">CHAT DE PARTIDA</h3>
-        <div id="chat-messages" class="chat-messages">
-            <!-- Los mensajes se insertan aquí -->
-        </div>
-        <div class="chat-input-container">
-            <input type="text" id="chat-input" placeholder="Escribe un mensaje..." maxlength="100" disabled>
-            <button id="chat-send-button" disabled>Enviar</button>
-        </div>
-        <p id="chat-status-message" class="chat-status-message">Conectando...</p>
-    </div>
+        try {
+            const base64Data = await resizeAndBase64(input.files[0]);
 
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { text: "Detecta las fichas de domino. 1. Mi mano (abajo). 2. Extremos de la mesa. Responde SOLO JSON: {\"mano\": [[6,6], [1,2]], \"extremos\": [6, 4]}" },
+                            { inline_data: { mime_type: "image/jpeg", data: base64Data } }
+                        ]
+                    }]
+                })
+            });
 
-    <!-- INFORMACIÓN PERSONAL (ID/NOMBRE) - Ubicación fija superior izquierda -->
-    <div class="personal-info-box">
-        <div id="user-name-display-top" class="my-id-label-top">Tu Nombre: ...</div>
-        <div id="user-id-display" class="my-id-label-top">Tu ID: ...</div>
-    </div>
-    
-    <!-- ** CONTENEDOR MODAL DE VOTACIÓN (Centro de la Pantalla) ** -->
-    <div id="voting-modal-container" class="voting-modal-container" style="display: none;">
-        
-        <!-- *** FILA DE JUGADORES ASIGNADOS (SUPERIOR) *** -->
-        <div id="assigned-players-display" class="assigned-players-display" style="display:none;">
-            <!-- Los iconos y nombres se insertan aquí -->
-        </div>
+            const data = await response.json();
+            const textResponse = data.candidates[0].content.parts[0].text;
+            const result = JSON.parse(textResponse.match(/\{[\s\S]*\}/)[0]);
 
-        <!-- Contenido principal de votación -->
-        <div class="panel votacion-container">
-            <h1 class="panel-header">¡REUNIÓN DE EMERGENCIA!</h1>
-            <p id="mensaje-principal" class="status-message">¡Vota por el Impostor!</p>
+            appState.hand = result.mano || [];
+            appState.ends = result.extremos || [null, null];
             
-            <!-- TEMPORIZADOR (Ahora estático) -->
-            <div class="info-bar">
-                <div class="timer-display">VOTACIÓN <span id="temporizador">ABIERTA</span></div>
-            </div>
+            calcularMejorJugada();
+            renderizar();
+            status.innerText = "SINCRO OK";
+        } catch (e) {
+            status.innerText = "ERROR: REVISA VPN";
+            console.error(e);
+        } finally {
+            status.className = "";
+        }
+    }
 
-            <div class="opciones">
-                <!-- Botones de Voto -->
-                <button id="votar-rojo" class="boton-voto player-row rojo-bg" data-color="rojo">
-                    <div class="crewmate-icon rojo"></div> 
-                    <span class="nombre">ROJO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-rojo"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-rojo"></div></div>
-                </button>
-                
-                <button id="votar-azul" class="boton-voto player-row azul-bg" data-color="azul">
-                    <div class="crewmate-icon azul"></div>
-                    <span class="nombre">AZUL</span>
-                    <div class="voto-iconos-container" id="voto-iconos-azul"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-azul"></div></div>
-                </button>
-                
-                <button id="votar-blanco" class="boton-voto player-row blanco-bg" data-color="blanco">
-                    <div class="crewmate-icon blanco"></div>
-                    <span class="nombre">BLANCO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-blanco"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-blanco"></div></div>
-                </button>
+    function calcularMejorJugada() {
+        appState.best = -1;
+        let maxWeight = -1;
+        appState.hand.forEach((f, i) => {
+            const puede = appState.ends[0] === null || appState.ends.includes(f[0]) || appState.ends.includes(f[1]);
+            if (puede) {
+                let peso = f[0] + f[1] + (f[0] === f[1] ? 20 : 0);
+                if (peso > maxWeight) { maxWeight = peso; appState.best = i; }
+            }
+        });
+    }
 
-                <button id="votar-verde" class="boton-voto player-row verde-bg" data-color="verde">
-                    <div class="crewmate-icon verde"></div> 
-                    <span class="nombre">VERDE</span>
-                    <div class="voto-iconos-container" id="voto-iconos-verde"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-verde"></div></div>
-                </button>
+    function renderizar() {
+        const handDiv = document.getElementById('hand-display');
+        handDiv.innerHTML = '';
+        appState.hand.forEach((f, i) => {
+            const div = document.createElement('div');
+            div.className = `tile ${i === appState.best ? 'sug' : ''}`;
+            div.innerHTML = `<span>${f[0]}</span><hr style="width:70%"><span>${f[1]}</span>`;
+            handDiv.appendChild(div);
+        });
+        document.getElementById('ext-L').innerText = appState.ends[0] ?? '-';
+        document.getElementById('ext-R').innerText = appState.ends[1] ?? '-';
+    }
 
-                <button id="votar-amarillo" class="boton-voto player-row amarillo-bg" data-color="amarillo">
-                    <div class="crewmate-icon amarillo"></div> 
-                    <span class="nombre">AMARILLO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-amarillo"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-amarillo"></div></div>
-                </button>
-
-                <button id="votar-skip" class="boton-voto player-row skip-bg" data-color="skip">
-                    <div class="crewmate-icon skip"></div> 
-                    <span class="nombre">SALTAR VOTO</span>
-                    <div class="voto-iconos-container" id="voto-iconos-skip"></div>
-                    <div class="vote-bar-container"><div class="vote-bar" id="barra-skip"></div></div>
-                </button>
-            </div>
-
-            <div id="voto-confirmado" class="confirmation-box">¡Voto Registrado!</div>
-            <div id="resultado-final" class="summary-box"></div>
-            
-        </div>
-        
-    </div>
-
-    
-    <!-- ** PANEL DE ADMINISTRADOR FLOTANTE FIJO (ESQUINA SUPERIOR DERECHA) ** -->
-    <div class="admin-fixed-panel">
-        
-        <!-- Botón de Login Admin -->
-        <button id="admin-login-button" class="admin-login-button">Login Admin</button>
-        
-        <!-- Botón: Ocultar/Mostrar Panel Admin -->
-        <button id="toggle-admin-panel-button" class="admin-login-button" style="display:none; margin-bottom: 10px;">Mostrar Panel Admin</button>
-
-        <!-- Contenedor del Panel (Se oculta/muestra con el botón) -->
-        <div id="admin-panel-container" style="display:none;">
-            <div id="participant-panel" class="panel participant-panel">
-                <h2 class="panel-header-small">PARTICIPANTES REGISTRADOS</h2>
-                <div id="participant-list-container" class="participant-list">
-                    <!-- La lista se genera aquí (Admin) -->
-                </div>
-                
-                <!-- Panel de Administración -->
-                <div class="admin-panel">
-                    
-                    <!-- BOTÓN DE ELIMINACIÓN/OCULTACIÓN MASIVA -->
-                    <button id="clear-all-participants-button" class="admin-btn-reset-all" style="display:none;">ELIMINAR/OCULTAR TODOS</button>
-                    
-                    <!-- NUEVOS BOTONES DE CONTROL DE IMPOSTORES -->
-                    <div class="impostor-count-control">
-                         <span class="control-label">Impostores:</span>
-                         <!-- Funciones onclick añadidas al HTML -->
-                         <button id="set-impostor-1" class="admin-btn-small" onclick="setImpostorCount(1)" style="display:none;">1</button>
-                         <button id="set-impostor-2" class="admin-btn-small" onclick="setImpostorCount(2)" style="display:none;">2</button>
-                         <button id="set-impostor-auto" class="admin-btn-small" onclick="setImpostorCount('auto')" style="display:none;">AUTO</button>
-                    </div>
-                    
-                    <!-- BOTONES DE ASIGNACIÓN -->
-                    <button id="assign-all-button" class="admin-btn-assign-all" style="display:none;">Asignar Roles Y Color</button>
-                    
-                    <!-- BOTONES DE CONTROL DE PARTIDA -->
-                    <button id="resolve-vote-button" class="admin-btn-resolve-vote" style="display:none;">Resolver Votación</button> 
-                    <button id="clear-votes-button" class="admin-btn-clear-vote" style="display:none;">Limpiar Votación Actual</button> 
-                    
-                    <!-- BOTÓN DE LIMPIAR CHAT (ADMIN) - ELIMINADO -->
-                    <!-- <button id="clear-chat-button" class="admin-btn-chat-reset" style="display:none;">Limpiar Chat</button> --> 
-
-                    <!-- Botones de Control de Partida (¡ESTE ES EL BOTÓN DE REINICIAR!) -->
-                    <button id="reset-button" class="admin-btn-reset" style="display:none;">Reiniciar Juego Total</button>
-                </div>
-                
-            </div>
-        </div>
-    </div>
-
-    <!-- Contenedor anterior (vacío, se mantiene para compatibilidad con CSS) -->
-    <div id="app-container" style="display: none;"></div>
-
-    <!-- Carga del SDK de Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-
-    <script src="app.js"></script>
+    function resizeAndBase64(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX = 600;
+                    let w = img.width, h = img.height;
+                    if (w > MAX) { h *= MAX / w; w = MAX; }
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', 0.6).split(',')[1]);
+                };
+            };
+        });
+    }
+</script>
 </body>
 </html>
