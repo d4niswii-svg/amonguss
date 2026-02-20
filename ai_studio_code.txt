@@ -1,4 +1,3 @@
-```javascript
 // functions/index.js
 
 const functions = require('firebase-functions');
