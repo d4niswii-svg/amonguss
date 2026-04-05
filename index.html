@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ango 3D - Live Fix</title>
+    <title>Ango 3D - Ultra Fix</title>
     
     <script type="importmap">
         {
@@ -17,22 +17,25 @@
     </script>
 
     <style>
-        body { margin: 0; background: #010409; color: white; font-family: sans-serif; overflow: hidden; }
-        #ui { position: absolute; top: 10px; left: 10px; z-index: 100; background: #0d1117; padding: 20px; border-radius: 10px; width: 260px; border: 1px solid #30363d; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 6px; border: 1px solid #30363d; background: #010409; color: #58a6ff; box-sizing: border-box; outline: none; }
-        button { width: 100%; padding: 12px; background: #238636; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; color: white; }
-        button:disabled { background: #21262d; color: #484f58; }
-        #status { font-size: 11px; margin-top: 10px; color: #8b949e; text-align: center; font-family: monospace; }
-        #viewer { width: 100vw; height: 100vh; }
+        body { margin: 0; background: #010409; color: #e6edf3; font-family: -apple-system, sans-serif; overflow: hidden; }
+        #ui { position: absolute; top: 15px; left: 15px; z-index: 100; background: #0d1117; padding: 20px; border-radius: 12px; width: 280px; border: 1px solid #30363d; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        input { width: 100%; padding: 12px; margin: 12px 0; border-radius: 6px; border: 1px solid #30363d; background: #010409; color: #58a6ff; box-sizing: border-box; font-size: 14px; }
+        button { width: 100%; padding: 12px; background: #238636; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; color: white; transition: 0.2s; }
+        button:disabled { background: #21262d; color: #484f58; cursor: wait; }
+        #status { font-size: 12px; margin-top: 15px; color: #8b949e; text-align: center; font-family: 'Courier New', monospace; font-weight: bold; }
+        #viewer { width: 100vw; height: 100vh; touch-action: none; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <b style="color:#58a6ff">ANGO 3D - FIXED</b>
-    <input type="text" id="promptInput" placeholder="A chair, a tree, a sword...">
-    <button id="generateBtn">GENERAR 3D</button>
-    <div id="status">Esperando entrada...</div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+        <div style="width:10px; height:10px; background:#238636; border-radius:50%;"></div>
+        <b style="color:#58a6ff; letter-spacing:1px;">ANGO 3D ENGINE</b>
+    </div>
+    <input type="text" id="promptInput" placeholder="Ejemplo: A red dragon, a sword...">
+    <button id="generateBtn">GENERAR MODELO</button>
+    <div id="status">ESTADO: LISTO</div>
 </div>
 
 <div id="viewer"></div>
@@ -44,6 +47,7 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
 
+    // Tu configuración de Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
         authDomain: "ango-592a4.firebaseapp.com",
@@ -58,20 +62,24 @@
     const db = getDatabase(app);
 
     const HF_TOKEN = "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";
-    // RUTA ACTUALIZADA PARA SHAP-E (Abril 2026)
-    const API_URL = "https://api-inference.huggingface.co/models/openai/shap-e";
+    // USAMOS EL ROUTER PARA EVITAR EL ERROR 410
+    const API_URL = "https://router.huggingface.co/openai/shap-e";
 
     let scene, camera, renderer, controls, points;
 
     function init() {
         scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x010409);
         camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         camera.position.set(0, 1.5, 3);
+
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.getElementById('viewer').appendChild(renderer.domElement);
+
         controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
         animate();
     }
 
@@ -83,59 +91,69 @@
         const btn = document.getElementById('generateBtn');
 
         if(!prompt) return;
+
         btn.disabled = true;
-        status.innerText = ">> Conectando...";
+        status.innerText = ">> SOLICITANDO IA...";
+        status.style.color = "#58a6ff";
 
         try {
-            push(ref(db, 'github_attempts'), { prompt, timestamp: Date.now() });
+            // Guardar intento en Firebase para debuggear desde tu consola
+            push(ref(db, 'production_logs'), { prompt, device: "GitHub_Live", time: new Date().toISOString() });
 
             const response = await fetch(API_URL, {
                 headers: { 
                     "Authorization": `Bearer ${HF_TOKEN}`,
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "x-use-cache": "false"
                 },
                 method: "POST",
                 body: JSON.stringify({ inputs: prompt })
             });
 
-            // Si el servidor responde con error
+            // ANALISIS DE ERRORES CRITICOS
             if (!response.ok) {
-                const text = await response.text();
-                if (text.includes("loading")) {
-                    status.innerText = ">> IA Despertando... Reintenta en 10s.";
+                const errorBody = await response.text();
+                console.error("Detalle del servidor:", errorBody);
+                
+                if (errorBody.includes("loading")) {
+                    status.innerText = ">> IA CARGANDO (ESPERA 15s)";
+                    status.style.color = "#d29922";
                 } else {
-                    status.innerText = ">> Error del servidor (404/500)";
+                    status.innerText = ">> ERROR 404: RUTA INVALIDA";
+                    status.style.color = "#f85149";
                 }
                 btn.disabled = false;
                 return;
             }
 
-            // Verificar si la respuesta es JSON (Error de carga) o Blob (Archivo 3D)
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                const data = await response.json();
-                status.innerText = ">> Procesando... Reintenta.";
-            } else {
-                const blob = await response.blob();
-                const buffer = await blob.arrayBuffer();
-                const loader = new PLYLoader();
-                const geometry = loader.parse(buffer);
-                const material = new THREE.PointsMaterial({ size: 0.035, vertexColors: true });
-
-                if(points) scene.remove(points);
-                points = new THREE.Points(geometry, material);
-                
-                geometry.computeBoundingBox();
-                const center = new THREE.Vector3();
-                geometry.boundingBox.getCenter(center);
-                points.position.sub(center);
-                
-                scene.add(points);
-                status.innerText = ">> ¡Modelo Generado!";
+            // SEGURIDAD: Solo procesar si es un binario (archivo 3D)
+            const blob = await response.blob();
+            if (blob.type.includes("json") || blob.size < 500) {
+                status.innerText = ">> REINTENTANDO CONEXIÓN...";
+                setTimeout(generate, 3000);
+                return;
             }
 
+            const buffer = await blob.arrayBuffer();
+            const loader = new PLYLoader();
+            const geometry = loader.parse(buffer);
+            const material = new THREE.PointsMaterial({ size: 0.03, vertexColors: true });
+
+            if(points) scene.remove(points);
+            points = new THREE.Points(geometry, material);
+            
+            geometry.computeBoundingBox();
+            const center = new THREE.Vector3();
+            geometry.boundingBox.getCenter(center);
+            points.position.sub(center);
+            
+            scene.add(points);
+            status.innerText = ">> ¡MODELO LISTO!";
+            status.style.color = "#3fb950";
+
         } catch (e) {
-            status.innerText = ">> Error de red.";
+            status.innerText = ">> ERROR DE RED (GUACARA/ISP)";
+            status.style.color = "#f85149";
             console.error(e);
         } finally {
             btn.disabled = false;
@@ -143,6 +161,12 @@
     }
 
     document.getElementById('generateBtn').onclick = generate;
+    window.onresize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+
     init();
 </script>
 </body>
