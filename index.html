@@ -3,34 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ango 3D - Conectado a Firebase</title>
+    <title>Ango 3D - Firebase & AI</title>
     
     <script type="importmap">
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "@huggingface/inference": "https://cdn.jsdelivr.net/npm/@huggingface/inference@2.6.4/+esm"
             }
         }
     </script>
 
     <style>
-        body { margin: 0; background: #010409; color: #e6edf3; font-family: sans-serif; overflow: hidden; }
-        #ui { position: absolute; top: 15px; left: 15px; z-index: 100; background: #0d1117; padding: 20px; border-radius: 12px; width: 260px; border: 1px solid #30363d; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #30363d; background: #010409; color: #58a6ff; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #238636; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; color: white; width: 100%; }
-        button:disabled { background: #21262d; color: #484f58; }
-        #status { font-size: 11px; margin-top: 15px; color: #8b949e; text-align: center; font-family: monospace; }
+        body { margin: 0; background: #010409; color: #e6edf3; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        #ui { position: absolute; top: 15px; left: 15px; z-index: 100; background: rgba(13, 17, 23, 0.9); padding: 20px; border-radius: 12px; width: 280px; border: 1px solid #30363d; backdrop-filter: blur(10px); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #30363d; background: #010409; color: #58a6ff; box-sizing: border-box; outline: none; }
+        input:focus { border-color: #58a6ff; }
+        button { width: 100%; padding: 12px; background: #238636; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; color: white; transition: 0.3s; }
+        button:hover { background: #2ea043; }
+        button:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
+        #status { font-size: 11px; margin-top: 15px; color: #8b949e; text-align: center; font-family: monospace; text-transform: uppercase; }
         #viewer { width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <b style="color:#58a6ff">ANGO 3D - FIREBASE READY</b>
-    <input type="text" id="promptInput" placeholder="Ej: A futuristic car...">
-    <button id="generateBtn">GENERAR 3D</button>
-    <div id="status">ESTADO: LISTO</div>
+    <b style="color:#58a6ff; font-size: 1.2em;">ANGO 3D ENGINE</b>
+    <input type="text" id="promptInput" placeholder="Ej: A blue dragon...">
+    <button id="generateBtn">GENERAR MODELO</button>
+    <div id="status">SISTEMA LISTO</div>
 </div>
 
 <div id="viewer"></div>
@@ -39,12 +42,11 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
-    
-    // --- IMPORTAR FIREBASE ---
+    import { HfInference } from '@huggingface/inference';
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // Tu configuración
+    // 1. CONFIGURACIÓN FIREBASE
     const firebaseConfig = {
         apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
         authDomain: "ango-592a4.firebaseapp.com",
@@ -56,62 +58,75 @@
         measurementId: "G-4YVSD60SP6"
     };
 
-    // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // TOKEN HF (Mantenlo por ahora para que funcione la IA)
-    const HF_TOKEN = "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";
-    const API_URL = "https://api-inference.huggingface.co/models/openai/point-e";
+    // 2. CONFIGURACIÓN IA
+    const hf = new HfInference("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");
 
+    // 3. VARIABLES THREE.JS
     let scene, camera, renderer, controls, points;
 
     function init() {
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 1.5, 3);
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 5);
+
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.getElementById('viewer').appendChild(renderer.domElement);
+
         controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        const light = new THREE.AmbientLight(0xffffff, 1);
+        scene.add(light);
+
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+
         animate();
     }
 
-    function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    }
 
     async function generate() {
         const prompt = document.getElementById('promptInput').value.trim();
         const status = document.getElementById('status');
         const btn = document.getElementById('generateBtn');
 
-        if(!prompt) return;
+        if (!prompt) return;
+        
         btn.disabled = true;
-        status.innerText = "CONECTANDO CON IA...";
+        status.innerText = "PROCESANDO CON IA...";
 
         try {
-            const response = await fetch(API_URL, {
-                headers: { "Authorization": `Bearer ${HF_TOKEN}`, "Content-Type": "application/json" },
-                method: "POST",
-                body: JSON.stringify({ inputs: prompt })
+            // Llamada a Hugging Face usando la librería oficial (maneja mejor CORS)
+            const response = await hf.request({
+                model: 'openai/point-e',
+                inputs: prompt,
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                status.innerText = "ERROR: " + (errorData.error || "Servidor saturado");
-                btn.disabled = false;
-                return;
-            }
-
-            const blob = await response.blob();
+            status.innerText = "DESCARGANDO MALLA...";
+            
+            const blob = await response;
             const buffer = await blob.arrayBuffer();
             const loader = new PLYLoader();
-            
             const geometry = loader.parse(buffer);
-            const material = new THREE.PointsMaterial({ size: 0.03, vertexColors: true });
-
-            if(points) scene.remove(points);
-            points = new THREE.Points(geometry, material);
             
+            const material = new THREE.PointsMaterial({ size: 0.04, vertexColors: true });
+
+            if (points) scene.remove(points);
+            points = new THREE.Points(geometry, material);
+
             geometry.computeBoundingBox();
             const center = new THREE.Vector3();
             geometry.boundingBox.getCenter(center);
@@ -120,21 +135,22 @@
             scene.add(points);
             status.innerText = "¡MODELO GENERADO!";
 
-            // --- GUARDAR EN FIREBASE ---
+            // GUARDAR LOG EN FIREBASE
             try {
                 const logRef = ref(db, 'generaciones');
-                const nuevaGeneracion = push(logRef);
-                set(nuevaGeneracion, {
+                push(logRef, {
                     prompt: prompt,
-                    timestamp: Date.now()
+                    date: new Date().toISOString(),
+                    success: true
                 });
-                console.log("Datos guardados en Firebase");
-            } catch (fbErr) {
-                console.error("Error al guardar en Firebase:", fbErr);
+            } catch (fbError) {
+                console.error("Error Firebase:", fbError);
             }
 
-        } catch (e) {
-            status.innerText = "ERROR DE RED";
+        } catch (error) {
+            console.error(error);
+            status.innerText = "ERROR: REINTENTA EN 30 SEG.";
+            if (error.message.includes("loading")) status.innerText = "MODELO CARGANDO... ESPERA.";
         } finally {
             btn.disabled = false;
         }
