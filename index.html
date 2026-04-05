@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ango 3D - Point-E Stable</title>
+    <title>Ango 3D - Conectado a Firebase</title>
     
     <script type="importmap">
         {
@@ -27,8 +27,8 @@
 <body>
 
 <div id="ui">
-    <b style="color:#58a6ff">ANGO 3D - FREE ENGINE</b>
-    <input type="text" id="promptInput" placeholder="Ej: A red motorcycle, a cat...">
+    <b style="color:#58a6ff">ANGO 3D - FIREBASE READY</b>
+    <input type="text" id="promptInput" placeholder="Ej: A futuristic car...">
     <button id="generateBtn">GENERAR 3D</button>
     <div id="status">ESTADO: LISTO</div>
 </div>
@@ -39,8 +39,28 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
+    
+    // --- IMPORTAR FIREBASE ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // TOKEN Y URL (Modelo Point-E de OpenAI, más estable en API Gratis)
+    // Tu configuración
+    const firebaseConfig = {
+        apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
+        authDomain: "ango-592a4.firebaseapp.com",
+        databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
+        projectId: "ango-592a4",
+        storageBucket: "ango-592a4.firebasestorage.app",
+        messagingSenderId: "234305709468",
+        appId: "1:234305709468:web:4a3009360c6033649dd459",
+        measurementId: "G-4YVSD60SP6"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // TOKEN HF (Mantenlo por ahora para que funcione la IA)
     const HF_TOKEN = "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";
     const API_URL = "https://api-inference.huggingface.co/models/openai/point-e";
 
@@ -70,48 +90,47 @@
 
         try {
             const response = await fetch(API_URL, {
-                headers: { 
-                    "Authorization": `Bearer ${HF_TOKEN}`,
-                    "Content-Type": "application/json"
-                },
+                headers: { "Authorization": `Bearer ${HF_TOKEN}`, "Content-Type": "application/json" },
                 method: "POST",
                 body: JSON.stringify({ inputs: prompt })
             });
 
-            // Si no es 200 OK, analizamos por qué
             if (!response.ok) {
                 const errorData = await response.json();
-                if (errorData.error && errorData.error.includes("currently loading")) {
-                    status.innerText = "MODELO CARGANDO... ESPERA 20 SEG.";
-                } else {
-                    status.innerText = "ERROR: " + (errorData.error || "Servidor saturado");
-                }
+                status.innerText = "ERROR: " + (errorData.error || "Servidor saturado");
                 btn.disabled = false;
                 return;
             }
 
-            // Si llegamos aquí, la respuesta es el archivo 3D
             const blob = await response.blob();
             const buffer = await blob.arrayBuffer();
             const loader = new PLYLoader();
             
-            try {
-                const geometry = loader.parse(buffer);
-                const material = new THREE.PointsMaterial({ size: 0.03, vertexColors: true });
+            const geometry = loader.parse(buffer);
+            const material = new THREE.PointsMaterial({ size: 0.03, vertexColors: true });
 
-                if(points) scene.remove(points);
-                points = new THREE.Points(geometry, material);
-                
-                // Centrado automático
-                geometry.computeBoundingBox();
-                const center = new THREE.Vector3();
-                geometry.boundingBox.getCenter(center);
-                points.position.sub(center);
-                
-                scene.add(points);
-                status.innerText = "¡MODELO GENERADO!";
-            } catch (err) {
-                status.innerText = "ERROR AL PROCESAR 3D";
+            if(points) scene.remove(points);
+            points = new THREE.Points(geometry, material);
+            
+            geometry.computeBoundingBox();
+            const center = new THREE.Vector3();
+            geometry.boundingBox.getCenter(center);
+            points.position.sub(center);
+            
+            scene.add(points);
+            status.innerText = "¡MODELO GENERADO!";
+
+            // --- GUARDAR EN FIREBASE ---
+            try {
+                const logRef = ref(db, 'generaciones');
+                const nuevaGeneracion = push(logRef);
+                set(nuevaGeneracion, {
+                    prompt: prompt,
+                    timestamp: Date.now()
+                });
+                console.log("Datos guardados en Firebase");
+            } catch (fbErr) {
+                console.error("Error al guardar en Firebase:", fbErr);
             }
 
         } catch (e) {
