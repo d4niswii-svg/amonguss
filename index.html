@@ -3,161 +3,639 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ango 3D - Firebase & AI</title>
-    
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-                "@huggingface/inference": "https://cdn.jsdelivr.net/npm/@huggingface/inference@2.6.4/+esm"
-            }
-        }
-    </script>
-
+    <title>Génesis Procedural: Chat IA a Objeto/Personaje</title>
     <style>
-        body { margin: 0; background: #010409; color: #e6edf3; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
-        #ui { position: absolute; top: 15px; left: 15px; z-index: 100; background: rgba(13, 17, 23, 0.9); padding: 20px; border-radius: 12px; width: 280px; border: 1px solid #30363d; backdrop-filter: blur(10px); }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #30363d; background: #010409; color: #58a6ff; box-sizing: border-box; outline: none; }
-        input:focus { border-color: #58a6ff; }
-        button { width: 100%; padding: 12px; background: #238636; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; color: white; transition: 0.3s; }
-        button:hover { background: #2ea043; }
-        button:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
-        #status { font-size: 11px; margin-top: 15px; color: #8b949e; text-align: center; font-family: monospace; text-transform: uppercase; }
-        #viewer { width: 100vw; height: 100vh; }
+        body { margin: 0; background-color: #f0f0f0; color: #333; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        canvas { display: block; }
+        
+        #ui-panel {
+            position: fixed; top: 15px; left: 15px; z-index: 100; /* Reducida la distancia de los bordes */
+            background: rgba(255, 255, 255, 0.95); 
+            padding: 15px; /* Reducido el padding */
+            border-radius: 12px; 
+            width: calc(100% - 30px); /* Ocupa casi todo el ancho disponible en móviles */
+            max-width: 320px; /* Límite para pantallas más grandes, ajustado de 340px */
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1); /* Sombra más suave */
+            border: 1px solid #ffffff;
+            transition: border-color 0.5s ease-in-out;
+            max-height: calc(100vh - 30px); /* Reducida la altura máxima */
+            overflow-y: auto;
+        }
+
+        .btn {
+            background: #222; color: #fff; border: none; padding: 10px; /* Padding de botón más pequeño */
+            width: 100%; cursor: pointer; font-weight: bold; margin-bottom: 8px; /* Margen más pequeño */
+            border-radius: 6px; transition: background 0.2s, color 0.2s, box-shadow 0.2s; 
+            text-transform: uppercase;
+            font-size: 13px; /* Fuente de botón más pequeña */
+        }
+
+        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 10px rgba(0,255,204,0.3); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; color: #888; }
+
+        #status { font-weight: bold; display: block; margin-bottom: 8px; color: #d32f2f; text-align: center; font-size: 13px; }
+        .info { font-size: 10px; /* Fuente más pequeña */ color: #666; line-height: 1.4; margin-top: 12px; border-top: 1px solid #eee; padding-top: 8px; }
+        .info b { color: #333; }
+
+        label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 12px; color: #555; }
+        textarea {
+            width: calc(100% - 16px); /* Ajustado para el padding */
+            padding: 8px; /* Padding de textarea más pequeño */
+            margin-bottom: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            resize: vertical;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 13px; /* Fuente de textarea más pequeña */
+        }
+
+        #chat-container {
+            margin-top: 15px; /* Margen más pequeño */
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+
+        #chat-history {
+            height: 180px; /* Altura del historial ligeramente más pequeña */
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 8px;
+            margin-bottom: 8px;
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            font-size: 12px; /* Fuente de chat más pequeña */
+            line-height: 1.4;
+        }
+
+        .chat-message { margin-bottom: 4px; display: flex; align-items: flex-start; }
+        .chat-message .sender-label { font-weight: bold; min-width: 30px; text-align: right; margin-right: 6px; } /* Ajustado */
+        .chat-message.user .sender-label { color: #007bff; }
+        .chat-message.ai .sender-label { color: #28a745; }
+        .chat-message p { margin: 0; flex-grow: 1; }
     </style>
 </head>
 <body>
 
-<div id="ui">
-    <b style="color:#58a6ff; font-size: 1.2em;">ANGO 3D ENGINE</b>
-    <input type="text" id="promptInput" placeholder="Ej: A blue dragon...">
-    <button id="generateBtn">GENERAR MODELO</button>
-    <div id="status">SISTEMA LISTO</div>
-</div>
+    <div id="ui-panel">
+        <span id="status">Paso 1: Generar ADN</span>
+        
+        <button class="btn" onclick="crearHojaLisa()">1. CREAR HOJA LISA</button>
+        
+        <div id="chat-container">
+            <label>Chatea con la IA para generar objetos:</label>
+            <div id="chat-history">
+                <div class="chat-message ai"><span class="sender-label">IA:</span> <p>¡Hola! Describe la criatura u objeto que quieres que cree. Intentaré deformar una hoja plana para darle forma. Por ejemplo: "un gato gordo con cola larga", "un pilar alto", "un disco plano", "una serpiente con cabeza pequeña".</p></div>
+            </div>
+            <textarea id="chat-input" rows="3" placeholder="Escribe aquí tu descripción..."></textarea>
+            <button class="btn" id="btn-send-prompt" disabled onclick="handleUserPrompt()">2. ENVIAR A LA IA Y GENERAR</button>
+        </div>
 
-<div id="viewer"></div>
+        <div class="info">
+            <b>Generador de Mallas Procedurales Avanzado</b><br>
+            • Sin archivos externos: todo generado matemáticamente.<br>
+            • Morfogénesis paramétrica en 3D.<br>
+            • Transición coherente y suave de una malla a otra.<br>
+            <b style="color: red;">• ADVERTENCIA DE SEGURIDAD: API keys expuestas para prueba. NO USAR EN PRODUCCIÓN.</b>
+            <br>
+            <i>La IA intentará generar un JSON de parámetros para deformar la hoja según tu descripción. Su capacidad para "crear cualquier objeto" está limitada por el algoritmo de deformación de una hoja plana.</i>
+        </div>
+    </div>
 
-<script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
-    import { HfInference } from '@huggingface/inference';
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script> 
 
-    // 1. CONFIGURACIÓN FIREBASE
-    const firebaseConfig = {
-        apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
-        authDomain: "ango-592a4.firebaseapp.com",
-        databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
-        projectId: "ango-592a4",
-        storageBucket: "ango-592a4.firebasestorage.app",
-        messagingSenderId: "234305709468",
-        appId: "1:234305709468:web:4a3009360c6033649dd459",
-        measurementId: "G-4YVSD60SP6"
-    };
+    <!-- Google Generative AI SDK (Gemini) -->
+    <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai@0.2.0/dist/index.min.js"></script>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
-    // 2. CONFIGURACIÓN IA
-    const hf = new HfInference("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");
+    <script>
+        let scene, camera, renderer, controls, mesh;
+        let originalVertices, facesIndices;
 
-    // 3. VARIABLES THREE.JS
-    let scene, camera, renderer, controls, points;
+        // =========================================================================
+        // !!! ADVERTENCIA DE SEGURIDAD EXTREMA !!!
+        // Las siguientes API Keys y configuraciones son SENSIBLES.
+        // NUNCA las incluyas directamente en el código front-end (HTML/JS) de un
+        // sitio web en producción o accesible públicamente.
+        // CUALQUIERA puede ver estas claves y usarlas, lo que podría generar:
+        // - Costes inesperados en tus cuentas de Firebase/IA.
+        // - Acceso no autorizado a tus datos o servicios.
+        // Para entornos reales, estas claves deben gestionarse en un SERVIDOR BACKEND
+        // y comunicarse con él de forma segura.
+        // =========================================================================
 
-    function init() {
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 2, 5);
+        // Tu configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
+            authDomain: "ango-592a4.firebaseapp.com",
+            databaseURL: "https://ango-592a4-default-rtdb.firebaseio.com",
+            projectId: "ango-592a4",
+            storageBucket: "ango-592a4.firebasestorage.app",
+            messagingSenderId: "234305709468",
+            appId: "1:234305709468:web:4a3009360c6033649dd459",
+            measurementId: "G-4YVSD60SP6"
+        };
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        document.getElementById('viewer').appendChild(renderer.domElement);
+        // Tu API Key de IA (Google Generative AI/Gemini)
+        // ** ESTA CLAVE SE EXPONDRÁ PÚBLICAMENTE EN ESTE CÓDIGO CLIENTE **
+        const aiApiKey = "AIzaSyBC2li82cjAWj66m_W4gdLEAUfKI5GcNR"; 
 
-        controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
+        // Inicializar Firebase y Google Generative AI (se hará en DOMContentLoaded)
+        let firebaseApp;
+        let database;
+        let genAI_instance; // Renombrada para evitar conflictos con 'genAI' global si existiera
+        let gemini_model;   // Renombrada para evitar conflictos con 'model' global si existiera
 
-        const light = new THREE.AmbientLight(0xffffff, 1);
-        scene.add(light);
 
-        window.onresize = () => {
+        // =========================================================================
+        // FIN DE LA ADVERTENCIA DE SEGURIDAD PARA CLAVES EXPUESTAS
+        // =========================================================================
+
+        // Mensaje de sistema para guiar a la IA a generar JSON
+        const systemInstruction = `
+            Eres un asistente generador de parámetros para mallas 3D procedimentales. Tu tarea es interpretar la descripción de un usuario sobre una criatura u objeto y generar un objeto JSON **VÁLIDO y SOLO JSON** con los siguientes parámetros para una función de deformación de malla Three.js. No añadas texto explicativo, solo el JSON.
+
+            Los parámetros posibles son (usar valores lógicos dentro de los rangos para cada descripción):
+            - bodyHeight (número, 0.0 a 4.0): Altura general del cuerpo. 0.0 para plano, 4.0 para muy alto.
+            - bodyWidthFactor (número, 0.0 a 1.0): Ancho del cuerpo. 0.0 para estrecho, 1.0 para ancho.
+            - lomoCurveStrength (número, 0.0 a 1.0): Curvatura del lomo. 0.0 para recto, 1.0 para muy curvo.
+            - bellyDrop (número, -1.0 a 1.0): Qué tanto cae el vientre. Positivo para vientre caído, negativo para hinchado hacia arriba.
+            - headHeight (número, 0.0 a 2.0): Altura de la cabeza. 0.0 para sin cabeza.
+            - headForward (número, 0.0 a 1.5): Qué tan adelante está la cabeza.
+            - headNarrow (número, 0.0 a 1.0): Qué tan estrecha es la cabeza.
+            - snoutProminence (número, 0.0 a 1.0): Prominencia del hocico. 0.0 para plano, 1.0 para muy prominente.
+            - earHeight (número, 0.0 a 1.5): Altura de las orejas. 0.0 para sin orejas.
+            - tailLength (número, 0.0 a 4.0): Longitud de la cola. 0.0 para sin cola.
+            - tailLift (número, 0.0 a 1.5): Qué tan levantada está la cola.
+            - tailWaveCount (número, 0.0 a 8.0): Número de ondas en la cola. 0.0 para recta.
+            - tailWaveStrength (número, 0.0 a 1.0): Fuerza de la onda en la cola.
+            - legDrop (número, 0.0 a 2.0): Qué tanto caen las patas. 0.0 para sin patas.
+            - legPinch (número, 0.0 a 0.5): Qué tan "estrechas" son las patas.
+            - bodyShapeInfluence (número, 0.0 a 2.0): Un factor general para influir en la forma del cuerpo base.
+
+            Si un atributo no se menciona o no es aplicable, no lo incluyas en el JSON. La función de deformación usará un valor por defecto.
+            Asegúrate de que los valores numéricos estén dentro de los rangos especificados.
+            Si la descripción pide algo "plano" o "disco", la mayoría de los parámetros de altura y extremidades deben ser 0 o muy bajos.
+
+            Ejemplo de respuesta para "un gato gordo con cola corta":
+            \`\`\`json
+            {
+              "bodyHeight": 2.5,
+              "bodyWidthFactor": 0.8,
+              "bellyDrop": 0.8,
+              "tailLength": 0.8,
+              "tailLift": 0.2,
+              "tailWaveCount": 0,
+              "tailWaveStrength": 0
+            }
+            \`\`\`
+
+            Ejemplo de respuesta para "un pilar alto":
+            \`\`\`json
+            {
+              "bodyHeight": 4.0,
+              "bodyWidthFactor": 0.2,
+              "lomoCurveStrength": 0,
+              "headHeight": 0,
+              "earHeight": 0,
+              "tailLength": 0,
+              "legDrop": 0,
+              "bodyShapeInfluence": 0.8
+            }
+            \`\`\`
+            
+            Ahora, basado en la descripción del usuario, genera los parámetros en formato JSON.
+        `;
+
+        // La función initThreeJS() solo configura la escena Three.js.
+        function initThreeJS() { 
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xeeeeee);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 3, 8); 
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true; 
+            document.body.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.target.set(0, 1, 0); 
+
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0xaaaaaa, 1);
+            scene.add(hemiLight);
+
+            const sun = new THREE.DirectionalLight(0xffffff, 0.6);
+            sun.position.set(10, 20, 10);
+            sun.castShadow = true; 
+            sun.shadow.mapSize.width = 1024;
+            sun.shadow.mapSize.height = 1024;
+            sun.shadow.camera.near = 0.5;
+            sun.shadow.camera.far = 50;
+            sun.shadow.camera.left = -5;
+            sun.shadow.camera.right = 5;
+            sun.shadow.camera.top = 5;
+            sun.shadow.camera.bottom = -5;
+            scene.add(sun);
+
+            const planeGeo = new THREE.PlaneGeometry(10, 10);
+            const planeMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.8, metalness: 0.1 });
+            const plane = new THREE.Mesh(planeGeo, planeMat);
+            plane.rotation.x = -Math.PI / 2;
+            plane.receiveShadow = true;
+            scene.add(plane);
+
+            const grid = new THREE.GridHelper(10, 20, 0xcccccc, 0xeeeeee);
+            scene.add(grid);
+
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function crearHojaLisa() {
+            const resolucion = 100;
+            const tamaño = 8; 
+            const step = tamaño / (resolucion - 1);
+
+            originalVertices = new Float32Array(resolucion * resolucion * 3);
+            facesIndices = [];
+
+            let vIdx = 0;
+            for (let i = 0; i < resolucion; i++) {
+                for (let j = 0; j < resolucion; j++) {
+                    originalVertices[vIdx * 3] = (i * step - tamaño / 2); // X
+                    originalVertices[vIdx * 3 + 1] = 0.0;               // Y
+                    originalVertices[vIdx * 3 + 2] = (j * step - tamaño / 2); // Z
+                    vIdx++;
+                }
+            }
+
+            for (let i = 0; i < resolucion - 1; i++) {
+                for (let j = 0; j < resolucion - 1; j++) {
+                    const a = i * resolucion + j;
+                    const b = (i + 1) * resolucion + j;
+                    const c = (i + 1) * resolucion + j + 1;
+                    const d = i * resolucion + j + 1;
+                    facesIndices.push(a, b, d);
+                    facesIndices.push(b, c, d);
+                }
+            }
+
+            crearMesh();
+
+            document.getElementById('btn-send-prompt').disabled = false; // Habilitar el botón de chat
+            document.getElementById('status').innerText = "ADN Generado: Hoja Lisa lista para la morfogénesis";
+            document.getElementById('ui-panel').style.borderColor = "#fff";
+        }
+
+        function crearMesh() {
+            if (mesh) scene.remove(mesh);
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(originalVertices, 3));
+            geo.setIndex(new THREE.BufferAttribute(new Uint32Array(facesIndices), 1));
+            geo.computeVertexNormals(); 
+
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0xffffff, 
+                roughness: 0.5,
+                metalness: 0.1,
+                side: THREE.DoubleSide 
+            });
+
+            mesh = new THREE.Mesh(geo, mat);
+            mesh.castShadow = true;
+            scene.add(mesh);
+        }
+
+        function smoothstep(edge0, edge1, x) {
+            x = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+            return x * x * (3 - 2 * x);
+        }
+
+        // Esta es la función principal que deforma la malla según los parámetros
+        function deformarMalla(params = {}) {
+            if (!mesh || !originalVertices) return;
+
+            // Parámetros por defecto para un "gato base"
+            const defaultParams = {
+                bodyHeight: 2.0, bodyWidthFactor: 0.5, lomoCurveStrength: 0.4, bellyDrop: 0.5,
+                headHeight: 1.5, headForward: 1.0, headNarrow: 0.7, snoutProminence: 0.5, earHeight: 0.7,
+                tailLength: 2.5, tailLift: 0.8, tailWaveCount: 4.0, tailWaveStrength: 0.4,
+                legDrop: 1.0, legPinch: 0.3,
+                bodyShapeInfluence: 1.0 
+            };
+
+            // Fusionar parámetros de la IA con los por defecto
+            const p = {};
+            for (const key in defaultParams) {
+                // Si la IA proporciona un valor numérico válido, lo usamos. De lo contrario, usamos el valor por defecto.
+                if (params.hasOwnProperty(key) && typeof params[key] === 'number' && !isNaN(params[key])) {
+                    p[key] = params[key];
+                } else {
+                    p[key] = defaultParams[key];
+                }
+            }
+            
+            // Limitar los parámetros a rangos sensatos después de la fusión
+            p.bodyHeight = Math.max(0.0, Math.min(4.0, p.bodyHeight));
+            p.bodyWidthFactor = Math.max(0.0, Math.min(1.0, p.bodyWidthFactor));
+            p.lomoCurveStrength = Math.max(0.0, Math.min(1.0, p.lomoCurveStrength));
+            p.bellyDrop = Math.max(-1.0, Math.min(1.0, p.bellyDrop));
+            p.headHeight = Math.max(0.0, Math.min(2.0, p.headHeight));
+            p.headForward = Math.max(0.0, Math.min(1.5, p.headForward));
+            p.headNarrow = Math.max(0.0, Math.min(1.0, p.headNarrow));
+            p.snoutProminence = Math.max(0.0, Math.min(1.0, p.snoutProminence));
+            p.earHeight = Math.max(0.0, Math.min(1.5, p.earHeight));
+            p.tailLength = Math.max(0.0, Math.min(4.0, p.tailLength));
+            p.tailLift = Math.max(0.0, Math.min(1.5, p.tailLift));
+            p.tailWaveCount = Math.max(0.0, Math.min(8.0, p.tailWaveCount));
+            p.tailWaveStrength = Math.max(0.0, Math.min(1.0, p.tailWaveStrength));
+            p.legDrop = Math.max(0.0, Math.min(2.0, p.legDrop));
+            p.legPinch = Math.max(0.0, Math.min(0.5, p.legPinch));
+            p.bodyShapeInfluence = Math.max(0.0, Math.min(2.0, p.bodyShapeInfluence));
+
+            const count = originalVertices.length / 3;
+            const deformedVertices = new Float32Array(originalVertices.length);
+
+            const sheetWidth = 8; 
+            const sheetHalfWidth = sheetWidth / 2;
+
+            for (let i = 0; i < count; i++) {
+                let x_plane = originalVertices[i * 3];
+                let z_plane = originalVertices[i * 3 + 2];
+                
+                let u = x_plane / sheetHalfWidth; 
+                let v = z_plane / sheetHalfWidth; 
+
+                let current_x = x_plane;
+                let current_y = 0; 
+                let current_z = z_plane;
+
+                // --- 1. Forma principal del cuerpo (generalizada) ---
+                let bodyUInfluence = (1 - Math.pow(Math.abs(u), 3));
+                let bodyVInfluence = Math.max(0, 1 - Math.pow(Math.abs(v / 1.5), 2));
+                
+                let baseBodyHeight = bodyUInfluence * bodyVInfluence * p.bodyHeight * p.bodyShapeInfluence; 
+                current_y += baseBodyHeight;
+
+                current_x *= (0.5 + bodyUInfluence * p.bodyWidthFactor); 
+                current_y += Math.sin((v + 1.0) * Math.PI * 0.7) * p.lomoCurveStrength * p.bodyShapeInfluence; 
+
+                let bellyBlend = smoothstep(-0.8, 0.8, v) * (1 - Math.abs(u));
+                current_y -= bellyBlend * p.bellyDrop * p.bodyShapeInfluence; 
+
+                // --- 2. Esculpir la cabeza (si hay) ---
+                if (p.headHeight > 0.05) { // Solo si la cabeza tiene altura
+                    const headRegionVStart = 0.5;
+                    const headRegionVEnd = 1.0;
+                    let headBlend = smoothstep(headRegionVStart, headRegionVEnd, v);
+
+                    if (headBlend > 0) {
+                        current_y += headBlend * p.headHeight; 
+                        current_z += headBlend * p.headForward; 
+                        current_x *= (1.0 - headBlend * p.headNarrow); 
+
+                        let snoutBlend = smoothstep(0.7, 0.9, v) * smoothstep(0.2, 0.0, Math.abs(u));
+                        current_x *= (1.0 - snoutBlend * p.snoutProminence); 
+                        current_z += snoutBlend * p.snoutProminence * 0.5; 
+
+                        const earXOffset = 0.3; 
+                        const earZOffset = 0.8; 
+                        const earWidth = 0.15; 
+
+                        if (p.earHeight > 0.05) { // Solo si hay orejas
+                            let distLE = Math.sqrt(Math.pow(u + earXOffset, 2) + Math.pow(v - earZOffset, 2));
+                            let earLEBlend = smoothstep(earWidth, 0.05, distLE);
+                            current_y += earLEBlend * p.earHeight * headBlend;
+                            current_x += Math.min(0, u + earXOffset) * earLEBlend * 0.5 * headBlend;
+                            current_z += earLEBlend * 0.2 * headBlend;
+
+                            let distRE = Math.sqrt(Math.pow(u - earXOffset, 2) + Math.pow(v - earZOffset, 2));
+                            let earREBlend = smoothstep(earWidth, 0.05, distRE);
+                            current_y += earREBlend * p.earHeight * headBlend;
+                            current_x += Math.max(0, u - earXOffset) * earREBlend * 0.5 * headBlend;
+                            current_z += earREBlend * 0.2 * headBlend;
+                        }
+                    }
+                }
+                
+                // --- 3. Esculpir la cola (si hay) ---
+                if (p.tailLength > 0.05) { // Solo si la cola tiene longitud
+                    const tailRegionVStart = -0.5;
+                    const tailRegionVEnd = -1.0;
+                    let tailBlend = smoothstep(tailRegionVStart, tailRegionVEnd, -v); 
+
+                    if (tailBlend > 0) {
+                        current_z -= tailBlend * p.tailLength; 
+                        current_y += tailBlend * p.tailLift; 
+                        current_x *= (1.0 - tailBlend * 0.8); 
+
+                        current_x += Math.sin(tailBlend * Math.PI * p.tailWaveCount) * p.tailWaveStrength * (1.0 - tailBlend * 0.5); 
+                        current_y += Math.cos(tailBlend * Math.PI * (p.tailWaveCount / 2)) * (p.tailWaveStrength / 2) * (1.0 - tailBlend * 0.5); 
+                    }
+                }
+
+                // --- 4. Esculpir las patas (si hay) ---
+                if (p.legDrop > 0.05) { // Solo si las patas tienen caída
+                    const legDropHeight = p.legDrop; 
+                    const legPinchFactor = p.legPinch; 
+
+                    const frontLegZ = 0.2;
+                    const backLegZ = -0.3;
+                    const legXOffset = 0.4;
+                    const footRadius = 0.2; 
+
+                    let legInfluence = 0;
+
+                    const footPositions = [
+                        { u: -legXOffset, v: frontLegZ }, { u: legXOffset, v: frontLegZ },
+                        { u: -legXOffset, v: backLegZ }, { u: legXOffset, v: backLegZ }
+                    ];
+                    
+                    for (const foot of footPositions) {
+                        let distToFoot = Math.sqrt(Math.pow(u - foot.u, 2) + Math.pow(v - foot.v, 2));
+                        let footBlend = smoothstep(footRadius, footRadius * 0.1, distToFoot);
+
+                        legInfluence = Math.max(legInfluence, footBlend);
+
+                        current_x += (foot.u * sheetHalfWidth - current_x) * footBlend * legPinchFactor * 0.5;
+                        current_z += (foot.v * sheetHalfWidth - current_z) * footBlend * legPinchFactor * 0.5;
+                    }
+
+                    current_y -= legInfluence * legDropHeight;
+                    current_x *= (1.0 - legInfluence * legPinchFactor);
+                    current_z *= (1.0 - legInfluence * legPinchFactor);
+                }
+
+                deformedVertices[i * 3] = current_x;
+                deformedVertices[i * 3 + 1] = current_y;
+                deformedVertices[i * 3 + 2] = current_z;
+            }
+
+            mesh.geometry.attributes.position.array.set(deformedVertices);
+            mesh.geometry.attributes.position.needsUpdate = true;
+            mesh.geometry.computeVertexNormals(); 
+
+            mesh.geometry.computeBoundingBox();
+            if (mesh.geometry.boundingBox) {
+                mesh.position.y = -mesh.geometry.boundingBox.min.y;
+            }
+            
+            document.getElementById('status').innerText = "Génesis Completa: ¡Criatura Morfológica Creada!";
+            document.getElementById('ui-panel').style.borderColor = "#00ffcc";
+
+            // Guardar el prompt y los parámetros en Firebase (ejemplo)
+            if (database) {
+                const newCreatureRef = database.ref('creatures').push();
+                newCreatureRef.set({
+                    prompt: document.getElementById('chat-input').value, // Último prompt del usuario
+                    timestamp: new Date().toISOString(),
+                    parameters: p // Guardar los parámetros usados
+                }).then(() => {
+                    // console.log("Datos guardados en Firebase con ID:", newCreatureRef.key);
+                }).catch(error => {
+                    console.error("Error al guardar en Firebase:", error);
+                });
+            }
+        }
+
+        function addChatMessage(sender, message) {
+            const chatHistory = document.getElementById('chat-history');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat-message', sender);
+            const senderLabel = sender === 'user' ? 'Tú:' : 'IA:';
+            messageDiv.innerHTML = `<span class="sender-label">${senderLabel}</span> <p>${message}</p>`;
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        async function getAIResponse(userPrompt) {
+            addChatMessage('ai', 'Estoy pensando cómo transformar la hoja...');
+            try {
+                // Verificar si el modelo de la IA está inicializado antes de usarlo
+                if (!gemini_model) { // Usamos el nombre renombrado
+                    throw new Error("El modelo de Google Generative AI no está inicializado. ¿API Key válida o problema de carga del SDK?");
+                }
+
+                const generationConfig = {
+                    temperature: 0.7, 
+                    topP: 0.9,
+                    topK: 40,
+                };
+                
+                const result = await gemini_model.generateContent({ // Usamos el nombre renombrado
+                    contents: [{ role: "user", parts: [{ text: systemInstruction + "\n\n" + userPrompt }] }],
+                    generationConfig,
+                });
+
+                const response = result.response;
+                const aiResponseText = response.text();
+                
+                const jsonMatch = aiResponseText.match(/```json\n([\s\S]*?)\n```/);
+                let params = {};
+
+                if (jsonMatch && jsonMatch[1]) {
+                    try {
+                        params = JSON.parse(jsonMatch[1]);
+                        console.log("JSON de parámetros de la IA:", params);
+                        return { params: params, responseText: "" }; 
+                    } catch (e) {
+                        console.error("Error al parsear el JSON de la IA:", e);
+                        addChatMessage('ai', `¡Vaya! La IA intentó generar parámetros pero su formato no fue correcto. Intenta ser más claro. Esto es lo que dijo:\n\n${aiResponseText}`);
+                        return { params: {}, responseText: aiResponseText }; 
+                    }
+                } else {
+                    addChatMessage('ai', `La IA respondió: ${aiResponseText}. No pude extraer parámetros para la deformación.`);
+                    return { params: {}, responseText: aiResponseText }; 
+                }
+
+            } catch (error) {
+                console.error("Error al llamar a la API de IA:", error);
+                addChatMessage('ai', `Lo siento, hubo un error al conectar con la IA (${error.message}). Asegúrate de que tu API Key sea válida y de tener conexión a internet. Inténtalo de nuevo.`);
+                return { params: {}, responseText: "Error de conexión con la IA." };
+            }
+        }
+
+        async function handleUserPrompt() {
+            const chatInput = document.getElementById('chat-input');
+            const userPrompt = chatInput.value.trim();
+
+            if (!userPrompt) {
+                alert("Por favor, escribe una descripción para la IA.");
+                return;
+            }
+
+            addChatMessage('user', userPrompt);
+            chatInput.value = '';
+
+            document.getElementById('btn-send-prompt').disabled = true;
+            document.getElementById('status').innerText = "IA procesando tu solicitud...";
+            document.getElementById('ui-panel').style.borderColor = "#f0e68c";
+
+            const aiResult = await getAIResponse(userPrompt);
+            const aiGeneratedParams = aiResult.params;
+            
+            deformarMalla(aiGeneratedParams);
+            
+            if (Object.keys(aiGeneratedParams).length > 0) {
+                 addChatMessage('ai', '¡Malla deformada con los nuevos parámetros!');
+            }
+
+
+            document.getElementById('btn-send-prompt').disabled = false;
+        }
+
+        function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        };
+        }
 
-        animate();
-    }
+        function animate() {
+            requestAnimationFrame(animate);
+            if (controls) controls.update();
+            renderer.render(scene, camera);
+        }
 
-    function animate() {
-        requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-    }
-
-    async function generate() {
-        const prompt = document.getElementById('promptInput').value.trim();
-        const status = document.getElementById('status');
-        const btn = document.getElementById('generateBtn');
-
-        if (!prompt) return;
-        
-        btn.disabled = true;
-        status.innerText = "PROCESANDO CON IA...";
-
-        try {
-            // Llamada a Hugging Face usando la librería oficial (maneja mejor CORS)
-            const response = await hf.request({
-                model: 'openai/point-e',
-                inputs: prompt,
-            });
-
-            status.innerText = "DESCARGANDO MALLA...";
-            
-            const blob = await response;
-            const buffer = await blob.arrayBuffer();
-            const loader = new PLYLoader();
-            const geometry = loader.parse(buffer);
-            
-            const material = new THREE.PointsMaterial({ size: 0.04, vertexColors: true });
-
-            if (points) scene.remove(points);
-            points = new THREE.Points(geometry, material);
-
-            geometry.computeBoundingBox();
-            const center = new THREE.Vector3();
-            geometry.boundingBox.getCenter(center);
-            points.position.sub(center);
-            
-            scene.add(points);
-            status.innerText = "¡MODELO GENERADO!";
-
-            // GUARDAR LOG EN FIREBASE
+        // Llama a la función initThreeJS() y las inicializaciones de SDKs solo cuando el DOM esté completamente cargado.
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar Firebase
             try {
-                const logRef = ref(db, 'generaciones');
-                push(logRef, {
-                    prompt: prompt,
-                    date: new Date().toISOString(),
-                    success: true
-                });
-            } catch (fbError) {
-                console.error("Error Firebase:", fbError);
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+                database = firebaseApp.database();
+                console.log("Firebase inicializado con éxito.");
+            } catch (e) {
+                console.error("Error al inicializar Firebase. Asegúrate de que los SDKs estén cargados y la configuración sea correcta:", e);
             }
 
-        } catch (error) {
-            console.error(error);
-            status.innerText = "ERROR: REINTENTA EN 30 SEG.";
-            if (error.message.includes("loading")) status.innerText = "MODELO CARGANDO... ESPERA.";
-        } finally {
-            btn.disabled = false;
-        }
-    }
+            // Inicializar Google Generative AI (usando la variable global `GoogleGenerativeAI` directamente)
+            // Agregamos un pequeño retraso o un intento de reintento si no se encuentra inmediatamente
+            function initializeGemini() {
+                try {
+                    if (window.GoogleGenerativeAI && typeof window.GoogleGenerativeAI === 'function') {
+                        genAI_instance = new window.GoogleGenerativeAI(aiApiKey);
+                        gemini_model = genAI_instance.getGenerativeModel({ model: "gemini-pro" }); 
+                        console.log("Google Generative AI inicializado con éxito.");
+                    } else {
+                        // Si aún no está disponible, lo intentamos de nuevo en un momento
+                        // Limitamos los reintentos para no entrar en un bucle infinito si hay un error real
+                        console.warn("GoogleGenerativeAI SDK no encontrado, reintentando...");
+                        setTimeout(initializeGemini, 500); // Reintentar después de 500ms
+                    }
+                } catch (e) {
+                    console.error("Error al inicializar Google Generative AI:", e);
+                }
+            }
+            initializeGemini(); // Empezar el proceso de inicialización de Gemini
 
-    document.getElementById('generateBtn').onclick = generate;
-    init();
-</script>
+            // Ahora, inicia la escena de Three.js
+            initThreeJS(); 
+        });
+    </script>
 </body>
 </html>
