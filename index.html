@@ -2,134 +2,32 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Génesis Procedural: Chat IA a Objeto/Personaje</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Firebase ROI Selector</title>
     <style>
-        body { margin: 0; background-color: #f0f0f0; color: #333; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        canvas { display: block; }
-        
-        #ui-panel {
-            position: fixed; top: 10px; left: 10px; z-index: 100; /* Reducida la distancia de los bordes */
-            background: rgba(255, 255, 255, 0.95); 
-            padding: 12px; /* Reducido el padding */
-            border-radius: 10px; /* Bordes más suaves */
-            width: calc(100% - 20px); /* Ocupa casi todo el ancho disponible en móviles */
-            max-width: 300px; /* Límite para pantallas más grandes, ajustado de 320px */
-            box-shadow: 0 6px 20px rgba(0,0,0,0.1); /* Sombra más suave */
-            border: 1px solid #ffffff;
-            transition: border-color 0.5s ease-in-out;
-            max-height: calc(100vh - 20px); /* Reducida la altura máxima */
-            overflow-y: auto;
-        }
-
-        .btn {
-            background: #222; color: #fff; border: none; padding: 9px; /* Padding de botón más pequeño */
-            width: 100%; cursor: pointer; font-weight: bold; margin-bottom: 7px; /* Margen más pequeño */
-            border-radius: 5px; transition: background 0.2s, color 0.2s, box-shadow 0.2s; 
-            text-transform: uppercase;
-            font-size: 12px; /* Fuente de botón más pequeña */
-        }
-
-        .btn:hover { background: #00ffcc; color: #000; box-shadow: 0 0 10px rgba(0,255,204,0.3); }
-        .btn:disabled { background: #ccc; cursor: not-allowed; color: #888; }
-
-        #status { font-weight: bold; display: block; margin-bottom: 7px; color: #d32f2f; text-align: center; font-size: 12px; }
-        .info { font-size: 9px; /* Fuente más pequeña */ color: #666; line-height: 1.3; margin-top: 10px; border-top: 1px solid #eee; padding-top: 7px; }
-        .info b { color: #333; }
-
-        label { display: block; margin-bottom: 3px; font-weight: bold; font-size: 11px; color: #555; }
-        textarea {
-            width: calc(100% - 14px); /* Ajustado para el padding */
-            padding: 7px; /* Padding de textarea más pequeño */
-            margin-bottom: 7px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            resize: vertical;
-            font-family: 'Segoe UI', sans-serif;
-            font-size: 12px; /* Fuente de textarea más pequeña */
-        }
-
-        #chat-container {
-            margin-top: 12px; /* Margen más pequeño */
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-        }
-
-        #chat-history {
-            height: 160px; /* Altura del historial ligeramente más pequeña */
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            padding: 7px;
-            margin-bottom: 7px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            font-size: 11px; /* Fuente de chat más pequeña */
-            line-height: 1.3;
-        }
-
-        .chat-message { margin-bottom: 3px; display: flex; align-items: flex-start; }
-        .chat-message .sender-label { font-weight: bold; min-width: 28px; text-align: right; margin-right: 5px; } /* Ajustado */
-        .chat-message.user .sender-label { color: #007bff; }
-        .chat-message.ai .sender-label { color: #28a745; }
-        .chat-message p { margin: 0; flex-grow: 1; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; height: 100vh; font-family: sans-serif; }
+        #game-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.4; }
+        #selector-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; cursor: crosshair; }
+        #ui-panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #fff; padding: 15px; border-radius: 12px; z-index: 20; width: 85%; text-align: center; border: 1px solid #ff9800; }
+        button { background: #ff9800; color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
+        #status { font-size: 13px; color: #0f0; margin-bottom: 5px; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <div id="ui-panel">
-        <span id="status">Cargando SDKs...</span>
-        
-        <button class="btn" id="btn-crear-hoja" disabled>1. CREAR HOJA LISA</button>
-        
-        <div id="chat-container">
-            <label>Chatea con la IA para generar objetos:</label>
-            <div id="chat-history">
-                <div class="chat-message ai"><span class="sender-label">IA:</span> <p>Inicializando...</p></div>
-            </div>
-            <textarea id="chat-input" rows="3" placeholder="Escribe aquí tu descripción..."></textarea>
-            <button class="btn" id="btn-send-prompt" disabled>2. ENVIAR A LA IA Y GENERAR</button>
-        </div>
+    <video id="game-video" autoplay playsinline></video>
+    <canvas id="selector-canvas"></canvas>
 
-        <div class="info">
-            <b>Generador de Mallas Procedurales Avanzado</b><br>
-            • Sin archivos externos: todo generado matemáticamente.<br>
-            • Morfogénesis paramétrica en 3D.<br>
-            • Transición coherente y suave de una malla a otra.<br>
-            <b style="color: red;">• ADVERTENCIA DE SEGURIDAD: API keys expuestas para prueba. NO USAR EN PRODUCCIÓN.</b>
-            <br>
-            <i>La IA intentará generar un JSON de parámetros para deformar la hoja según tu descripción. Su capacidad para "crear cualquier objeto" está limitada por el algoritmo de deformación de una hoja plana.</i>
-        </div>
+    <div id="ui-panel">
+        <div id="status">SISTEMA LISTO: INICIA CAPTURA</div>
+        <button id="btn-start">INICIAR LECTURA PANTALLA</button>
     </div>
 
-    <!-- Firebase SDKs (v8, para carga global) -->
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script> 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    <!-- Google Generative AI SDK (UMD build para carga global) -->
-    <script src="https://cdn.jsdelivr.net/npm/@google/generative-ai@0.11.0/dist/gemini-web.umd.js"></script> 
-
-    <!-- Three.js SDKs (para carga global) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    
-
-    <!-- Nuestro script principal (ahora un script normal, no un módulo ES) -->
-    <script>
-        let scene, camera, renderer, mesh;
-        let originalVertices, facesIndices;
-
-        // =========================================================================
-        // !!! ADVERTENCIA DE SEGURIDAD EXTREMA !!!
-        // Las siguientes API Keys y configuraciones son SENSIBLES.
-        // NUNCA las incluyas directamente en el código front-end (HTML/JS) de un
-        // sitio web en producción o accesible públicamente.
-        // CUALQUIERA puede ver estas claves y usarlas, lo que podría generar:
-        // - Costes inesperados en tus cuentas de Firebase/IA.
-        // - Acceso no autorizado a tus datos o servicios.
-        // Para entornos reales, estas claves deben gestionarse en un SERVIDOR BACKEND
-        // y comunicarse con él de forma segura.
-        // =========================================================================
-
-        // Tu configuración de Firebase
+        // Tu configuración que proporcionaste
         const firebaseConfig = {
             apiKey: "AIzaSyC_MyjSFLB-mHDWWaOfAlRetLDB_pAxgR0",
             authDomain: "ango-592a4.firebaseapp.com",
@@ -141,507 +39,89 @@
             measurementId: "G-4YVSD60SP6"
         };
 
-        // Tu API Key de IA (Google Generative AI/Gemini)
-        // ** ESTA CLAVE SE EXPONDRÁ PÚBLICAMENTE EN ESTE CÓDIGO CLIENTE **
-        const aiApiKey = "AIzaSyBC2li82cjAWj66m_W4gdLEAUfKI5GcNR"; 
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-        // Variables para SDKs inicializados
-        let firebaseApp;
-        let database;
-        let gemini_model; // Será inicializado con window.GoogleGenerativeAI
+        // Variables de UI y Canvas
+        const video = document.getElementById('game-video');
+        const canvas = document.getElementById('selector-canvas');
+        const ctx = canvas.getContext('2d');
+        const btn = document.getElementById('btn-start');
+        const status = document.getElementById('status');
 
-        // =========================================================================
-        // FIN DE LA ADVERTENCIA DE SEGURIDAD PARA CLAVES EXPUESTAS
-        // =========================================================================
+        let isDrawing = false;
+        let startX, startY;
+        let roi = { x: 0, y: 0, w: 0, h: 0 };
 
-        // Mensaje de sistema para guiar a la IA a generar JSON
-        const systemInstruction = `
-            Eres un asistente generador de parámetros para mallas 3D procedimentales. Tu tarea es interpretar la descripción de un usuario sobre una criatura u objeto y generar un objeto JSON **VÁLIDO y SOLO JSON** con los siguientes parámetros para una función de deformación de malla Three.js. No añadas texto explicativo, solo el JSON.
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-            Los parámetros posibles son (usar valores lógicos dentro de los rangos para cada descripción):
-            - bodyHeight (número, 0.0 a 4.0): Altura general del cuerpo. 0.0 para plano, 4.0 para muy alto.
-            - bodyWidthFactor (número, 0.0 a 1.0): Ancho del cuerpo. 0.0 para estrecho, 1.0 para ancho.
-            - lomoCurveStrength (número, 0.0 a 1.0): Curvatura del lomo. 0.0 para recto, 1.0 para muy curvo.
-            - bellyDrop (número, -1.0 a 1.0): Qué tanto cae el vientre. Positivo para vientre caído, negativo para hinchado hacia arriba.
-            - headHeight (número, 0.0 a 2.0): Altura de la cabeza. 0.0 para sin cabeza.
-            - headForward (número, 0.0 a 1.5): Qué tan adelante está la cabeza.
-            - headNarrow (número, 0.0 a 1.0): Qué tan estrecha es la cabeza.
-            - snoutProminence (número, 0.0 a 1.0): Prominencia del hocico. 0.0 para plano, 1.0 para muy prominente.
-            - earHeight (número, 0.0 a 1.5): Altura de las orejas. 0.0 para sin orejas.
-            - tailLength (número, 0.0 a 4.0): Longitud de la cola. 0.0 para sin cola.
-            - tailLift (número, 0.0 a 1.5): Qué tan levantada está la cola.
-            - tailWaveCount (número, 0.0 a 8.0): Número de ondas en la cola. 0.0 para recta.
-            - tailWaveStrength (número, 0.0 a 1.0): Fuerza de la onda en la cola.
-            - legDrop (número, 0.0 a 2.0): Qué tanto caen las patas. 0.0 para sin patas.
-            - legPinch (número, 0.0 a 0.5): Qué tan "estrechas" son las patas.
-            - bodyShapeInfluence (número, 0.0 a 2.0): Un factor general para influir en la forma del cuerpo base.
-
-            Si un atributo no se menciona o no es aplicable, no lo incluyas en el JSON. La función de deformación usará un valor por defecto.
-            Asegúrate de que los valores numéricos estén dentro de los rangos especificados.
-            Si la descripción pide algo "plano" o "disco", la mayoría de los parámetros de altura y extremidades deben ser 0 o muy bajos.
-
-            Ejemplo de respuesta para "un gato gordo con cola corta":
-            \`\`\`json
-            {
-              "bodyHeight": 2.5,
-              "bodyWidthFactor": 0.8,
-              "bellyDrop": 0.8,
-              "tailLength": 0.8,
-              "tailLift": 0.2,
-              "tailWaveCount": 0,
-              "tailWaveStrength": 0
-            }
-            \`\`\`
-
-            Ejemplo de respuesta para "un pilar alto":
-            \`\`\`json
-            {
-              "bodyHeight": 4.0,
-              "bodyWidthFactor": 0.2,
-              "lomoCurveStrength": 0,
-              "headHeight": 0,
-              "earHeight": 0,
-              "tailLength": 0,
-              "legDrop": 0,
-              "bodyShapeInfluence": 0.8
-            }
-            \`\`\`
-            
-            Ahora, basado en la descripción del usuario, genera los parámetros en formato JSON.
-        `;
-
-        function initThreeJS() { 
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xeeeeee);
-
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 3, 8); 
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.shadowMap.enabled = true; 
-            document.body.appendChild(renderer.domElement);
-
-            // OrbitControls removed as requested
-            // controls = new OrbitControls(camera, renderer.domElement);
-            // controls.target.set(0, 1, 0); 
-
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0xaaaaaa, 1);
-            scene.add(hemiLight);
-
-            const sun = new THREE.DirectionalLight(0xffffff, 0.6);
-            sun.position.set(10, 20, 10);
-            sun.castShadow = true; 
-            sun.shadow.mapSize.width = 1024;
-            sun.shadow.mapSize.height = 1024;
-            sun.shadow.camera.near = 0.5;
-            sun.shadow.camera.far = 50;
-            sun.shadow.camera.left = -5;
-            sun.shadow.camera.right = 5;
-            sun.shadow.camera.top = 5;
-            sun.shadow.camera.bottom = -5;
-            scene.add(sun);
-
-            const planeGeo = new THREE.PlaneGeometry(10, 10);
-            const planeMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.8, metalness: 0.1 });
-            const plane = new THREE.Mesh(planeGeo, planeMat);
-            plane.rotation.x = -Math.PI / 2;
-            plane.receiveShadow = true;
-            scene.add(plane);
-
-            const grid = new THREE.GridHelper(10, 20, 0xcccccc, 0xeeeeee);
-            scene.add(grid);
-
-            window.addEventListener('resize', onWindowResize);
-            animate();
-        }
-
-        function crearHojaLisa() {
-            const resolucion = 100;
-            const tamaño = 8; 
-            const step = tamaño / (resolucion - 1);
-
-            originalVertices = new Float32Array(resolucion * resolucion * 3);
-            facesIndices = [];
-
-            let vIdx = 0;
-            for (let i = 0; i < resolucion; i++) {
-                for (let j = 0; j < resolucion; j++) {
-                    originalVertices[vIdx * 3] = (i * step - tamaño / 2); // X
-                    originalVertices[vIdx * 3 + 1] = 0.0;               // Y
-                    originalVertices[vIdx * 3 + 2] = (j * step - tamaño / 2); // Z
-                    vIdx++;
-                }
-            }
-
-            for (let i = 0; i < resolucion - 1; i++) {
-                for (let j = 0; j < resolucion - 1; j++) {
-                    const a = i * resolucion + j;
-                    const b = (i + 1) * resolucion + j;
-                    const c = (i + 1) * resolucion + j + 1;
-                    const d = i * resolucion + j + 1;
-                    facesIndices.push(a, b, d);
-                    facesIndices.push(b, c, d);
-                }
-            }
-
-            crearMesh();
-
-            // Habilitar el botón de chat si la IA ya está lista
-            if (gemini_model) {
-                document.getElementById('btn-send-prompt').disabled = false; 
-                document.getElementById('status').innerText = "IA lista. ¡Chatea para deformar!";
-            } else {
-                document.getElementById('status').innerText = "ADN Generado: Hoja Lisa. Esperando IA...";
-            }
-            document.getElementById('ui-panel').style.borderColor = "#fff";
-        }
-
-        function crearMesh() {
-            if (mesh) scene.remove(mesh);
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute('position', new THREE.BufferAttribute(originalVertices, 3));
-            geo.setIndex(new THREE.BufferAttribute(new Uint32Array(facesIndices), 1));
-            geo.computeVertexNormals(); 
-
-            const mat = new THREE.MeshStandardMaterial({
-                color: 0xffffff, 
-                roughness: 0.5,
-                metalness: 0.1,
-                side: THREE.DoubleSide 
-            });
-
-            mesh = new THREE.Mesh(geo, mat);
-            mesh.castShadow = true;
-            scene.add(mesh);
-        }
-
-        function smoothstep(edge0, edge1, x) {
-            x = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
-            return x * x * (3 - 2 * x);
-        }
-
-        function deformarMalla(params = {}) {
-            if (!mesh || !originalVertices) return;
-
-            const defaultParams = {
-                bodyHeight: 2.0, bodyWidthFactor: 0.5, lomoCurveStrength: 0.4, bellyDrop: 0.5,
-                headHeight: 1.5, headForward: 1.0, headNarrow: 0.7, snoutProminence: 0.5, earHeight: 0.7,
-                tailLength: 2.5, tailLift: 0.8, tailWaveCount: 4.0, tailWaveStrength: 0.4,
-                legDrop: 1.0, legPinch: 0.3,
-                bodyShapeInfluence: 1.0 
-            };
-
-            const p = {};
-            for (const key in defaultParams) {
-                if (params.hasOwnProperty(key) && typeof params[key] === 'number' && !isNaN(params[key])) {
-                    p[key] = params[key];
-                } else {
-                    p[key] = defaultParams[key];
-                }
-            }
-            
-            p.bodyHeight = Math.max(0.0, Math.min(4.0, p.bodyHeight));
-            p.bodyWidthFactor = Math.max(0.0, Math.min(1.0, p.bodyWidthFactor));
-            p.lomoCurveStrength = Math.max(0.0, Math.min(1.0, p.lomoCurveStrength));
-            p.bellyDrop = Math.max(-1.0, Math.min(1.0, p.bellyDrop));
-            p.headHeight = Math.max(0.0, Math.min(2.0, p.headHeight));
-            p.headForward = Math.max(0.0, Math.min(1.5, p.headForward));
-            p.headNarrow = Math.max(0.0, Math.min(1.0, p.headNarrow));
-            p.snoutProminence = Math.max(0.0, Math.min(1.0, p.snoutProminence));
-            p.earHeight = Math.max(0.0, Math.min(1.5, p.earHeight));
-            p.tailLength = Math.max(0.0, Math.min(4.0, p.tailLength));
-            p.tailLift = Math.max(0.0, Math.min(1.5, p.tailLift));
-            p.tailWaveCount = Math.max(0.0, Math.min(8.0, p.tailWaveCount));
-            p.tailWaveStrength = Math.max(0.0, Math.min(1.0, p.tailWaveStrength));
-            p.legDrop = Math.max(0.0, Math.min(2.0, p.legDrop));
-            p.legPinch = Math.max(0.0, Math.min(0.5, p.legPinch));
-            p.bodyShapeInfluence = Math.max(0.0, Math.min(2.0, p.bodyShapeInfluence));
-
-            const count = originalVertices.length / 3;
-            const deformedVertices = new Float32Array(originalVertices.length);
-
-            const sheetWidth = 8; 
-            const sheetHalfWidth = sheetWidth / 2;
-
-            for (let i = 0; i < count; i++) {
-                let x_plane = originalVertices[i * 3];
-                let z_plane = originalVertices[i * 3 + 2];
-                
-                let u = x_plane / sheetHalfWidth; 
-                let v = z_plane / sheetHalfWidth; 
-
-                let current_x = x_plane;
-                let current_y = 0; 
-                let current_z = z_plane;
-
-                // --- 1. Forma principal del cuerpo (generalizada) ---
-                let bodyUInfluence = (1 - Math.pow(Math.abs(u), 3));
-                let bodyVInfluence = Math.max(0, 1 - Math.pow(Math.abs(v / 1.5), 2));
-                
-                let baseBodyHeight = bodyUInfluence * bodyVInfluence * p.bodyHeight * p.bodyShapeInfluence; 
-                current_y += baseBodyHeight;
-
-                current_x *= (0.5 + bodyUInfluence * p.bodyWidthFactor); 
-                current_y += Math.sin((v + 1.0) * Math.PI * 0.7) * p.lomoCurveStrength * p.bodyShapeInfluence; 
-
-                let bellyBlend = smoothstep(-0.8, 0.8, v) * (1 - Math.abs(u));
-                current_y -= bellyBlend * p.bellyDrop * p.bodyShapeInfluence; 
-
-                // --- 2. Esculpir la cabeza (si hay) ---
-                if (p.headHeight > 0.05) { 
-                    const headRegionVStart = 0.5;
-                    const headRegionVEnd = 1.0;
-                    let headBlend = smoothstep(headRegionVStart, headRegionVEnd, v);
-
-                    if (headBlend > 0) {
-                        current_y += headBlend * p.headHeight; 
-                        current_z += headBlend * p.headForward; 
-                        current_x *= (1.0 - headBlend * p.headNarrow); 
-
-                        let snoutBlend = smoothstep(0.7, 0.9, v) * smoothstep(0.2, 0.0, Math.abs(u));
-                        current_x *= (1.0 - snoutBlend * p.snoutProminence); 
-                        current_z += snoutBlend * p.snoutProminence * 0.5; 
-
-                        const earXOffset = 0.3; 
-                        const earZOffset = 0.8; 
-                        const earWidth = 0.15; 
-
-                        if (p.earHeight > 0.05) { 
-                            let distLE = Math.sqrt(Math.pow(u + earXOffset, 2) + Math.pow(v - earZOffset, 2));
-                            let earLEBlend = smoothstep(earWidth, 0.05, distLE);
-                            current_y += earLEBlend * p.earHeight * headBlend;
-                            current_x += Math.min(0, u + earXOffset) * earLEBlend * 0.5 * headBlend;
-                            current_z += earLEBlend * 0.2 * headBlend;
-
-                            let distRE = Math.sqrt(Math.pow(u - earXOffset, 2) + Math.pow(v - earZOffset, 2));
-                            let earREBlend = smoothstep(earWidth, 0.05, distRE);
-                            current_y += earREBlend * p.earHeight * headBlend;
-                            current_x += Math.max(0, u - earXOffset) * earREBlend * 0.5 * headBlend;
-                            current_z += earREBlend * 0.2 * headBlend;
-                        }
-                    }
-                }
-                
-                // --- 3. Esculpir la cola (si hay) ---
-                if (p.tailLength > 0.05) { 
-                    const tailRegionVStart = -0.5;
-                    const tailRegionVEnd = -1.0;
-                    let tailBlend = smoothstep(tailRegionVStart, tailRegionVEnd, -v); 
-
-                    if (tailBlend > 0) {
-                        current_z -= tailBlend * p.tailLength; 
-                        current_y += tailBlend * p.tailLift; 
-                        current_x *= (1.0 - tailBlend * 0.8); 
-
-                        current_x += Math.sin(tailBlend * Math.PI * p.tailWaveCount) * p.tailWaveStrength * (1.0 - tailBlend * 0.5); 
-                        current_y += Math.cos(tailBlend * Math.PI * (p.tailWaveCount / 2)) * (p.tailWaveStrength / 2) * (1.0 - tailBlend * 0.5); 
-                    }
-                }
-
-                // --- 4. Esculpir las patas (si hay) ---
-                if (p.legDrop > 0.05) { 
-                    const legDropHeight = p.legDrop; 
-                    const legPinchFactor = p.legPinch; 
-
-                    const frontLegZ = 0.2;
-                    const backLegZ = -0.3;
-                    const legXOffset = 0.4;
-                    const footRadius = 0.2; 
-
-                    let legInfluence = 0;
-
-                    const footPositions = [
-                        { u: -legXOffset, v: frontLegZ }, { u: legXOffset, v: frontLegZ },
-                        { u: -legXOffset, v: backLegZ }, { u: legXOffset, v: backLegZ }
-                    ];
-                    
-                    for (const foot of footPositions) {
-                        let distToFoot = Math.sqrt(Math.pow(u - foot.u, 2) + Math.pow(v - foot.v, 2));
-                        let footBlend = smoothstep(footRadius, footRadius * 0.1, distToFoot);
-
-                        legInfluence = Math.max(legInfluence, footBlend);
-
-                        current_x += (foot.u * sheetHalfWidth - current_x) * footBlend * legPinchFactor * 0.5;
-                        current_z += (foot.v * sheetHalfWidth - current_z) * footBlend * legPinchFactor * 0.5;
-                    }
-
-                    current_y -= legInfluence * legDropHeight;
-                    current_x *= (1.0 - legInfluence * legPinchFactor);
-                    current_z *= (1.0 - legInfluence * legPinchFactor);
-                }
-
-                deformedVertices[i * 3] = current_x;
-                deformedVertices[i * 3 + 1] = current_y;
-                deformedVertices[i * 3 + 2] = current_z;
-            }
-
-            mesh.geometry.attributes.position.array.set(deformedVertices);
-            mesh.geometry.attributes.position.needsUpdate = true;
-            mesh.geometry.computeVertexNormals(); 
-
-            mesh.geometry.computeBoundingBox();
-            if (mesh.geometry.boundingBox) {
-                mesh.position.y = -mesh.geometry.boundingBox.min.y;
-            }
-            
-            document.getElementById('status').innerText = "Génesis Completa: ¡Criatura Morfológica Creada!";
-            document.getElementById('ui-panel').style.borderColor = "#00ffcc";
-
-            if (database) {
-                // Firebase SDK v8 usa firebase.database().ref().push().set()
-                window.firebase.database().ref('creatures').push().set({
-                    prompt: document.getElementById('chat-input').value,
-                    timestamp: new Date().toISOString(),
-                    parameters: p
-                }).then(() => {
-                    // console.log("Datos guardados en Firebase con ID:", newCreatureRef.key);
-                }).catch(error => {
-                    console.error("Error al guardar en Firebase:", error);
-                });
-            }
-        }
-
-        function addChatMessage(sender, message) {
-            const chatHistory = document.getElementById('chat-history');
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('chat-message', sender);
-            const senderLabel = sender === 'user' ? 'Tú:' : 'IA:';
-            messageDiv.innerHTML = `<span class="sender-label">${senderLabel}</span> <p>${message}</p>`;
-            chatHistory.appendChild(messageDiv);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-        }
-
-        async function getAIResponse(userPrompt) {
-            addChatMessage('ai', 'Estoy pensando cómo transformar la hoja...');
+        // --- 1. Iniciar Captura ---
+        btn.onclick = async () => {
             try {
-                // Verificar si el modelo de la IA está inicializado antes de usarlo
-                if (!gemini_model) { 
-                    addChatMessage('ai', 'Error: La IA no está lista aún. Por favor, asegúrate de que tu API Key sea válida y la consola no muestre errores de inicialización.');
-                    document.getElementById('status').innerText = "ERROR: IA no inicializada.";
-                    throw new Error("El modelo de Google Generative AI no está inicializado.");
-                }
-
-                const generationConfig = {
-                    temperature: 0.7, 
-                    topP: 0.9,
-                    topK: 40,
-                };
-                
-                // Usamos el modelo de Gemini directamente
-                const result = await gemini_model.generateContent({ 
-                    contents: [{ role: "user", parts: [{ text: systemInstruction + "\n\n" + userPrompt }] }],
-                    generationConfig,
-                });
-
-                const response = result.response;
-                const aiResponseText = response.text();
-                
-                const jsonMatch = aiResponseText.match(/```json\n([\s\S]*?)\n```/);
-                let params = {};
-
-                if (jsonMatch && jsonMatch[1]) {
-                    try {
-                        params = JSON.parse(jsonMatch[1]);
-                        console.log("JSON de parámetros de la IA:", params);
-                        return { params: params, responseText: "" }; 
-                    } catch (e) {
-                        console.error("Error al parsear el JSON de la IA:", e);
-                        addChatMessage('ai', `¡Vaya! La IA intentó generar parámetros pero su formato no fue correcto. Intenta ser más claro. Esto es lo que dijo:\n\n${aiResponseText}`);
-                        return { params: {}, responseText: aiResponseText }; 
-                    }
-                } else {
-                    addChatMessage('ai', `La IA respondió: ${aiResponseText}. No pude extraer parámetros para la deformación.`);
-                    return { params: {}, responseText: aiResponseText }; 
-                }
-
-            } catch (error) {
-                console.error("Error al llamar a la API de IA:", error);
-                addChatMessage('ai', `Lo siento, hubo un error al conectar con la IA (${error.message}). Asegúrate de que tu API Key sea válida y de tener conexión a internet. Inténtalo de nuevo.`);
-                return { params: {}, responseText: "Error de conexión con la IA." };
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                video.srcObject = stream;
+                status.innerText = "DIBUJA EL RECUADRO EN PANTALLA";
+                btn.style.display = "none";
+            } catch (err) {
+                status.innerText = "ERROR: " + err.message;
             }
-        }
+        };
 
-        async function handleUserPrompt() {
-            const chatInput = document.getElementById('chat-input');
-            const userPrompt = chatInput.value.trim();
-
-            if (!userPrompt) {
-                alert("Por favor, escribe una descripción para la IA.");
-                return;
-            }
-
-            addChatMessage('user', userPrompt);
-            chatInput.value = '';
-
-            document.getElementById('btn-send-prompt').disabled = true;
-            document.getElementById('status').innerText = "IA procesando tu solicitud...";
-            document.getElementById('ui-panel').style.borderColor = "#f0e68c";
-
-            const aiResult = await getAIResponse(userPrompt);
-            const aiGeneratedParams = aiResult.params;
-            
-            deformarMalla(aiGeneratedParams);
-            
-            if (Object.keys(aiGeneratedParams).length > 0) {
-                 addChatMessage('ai', '¡Malla deformada con los nuevos parámetros!');
-            }
-
-
-            document.getElementById('btn-send-prompt').disabled = false;
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            // OrbitControls.update() call removed as requested
-            // if (controls) controls.update();
-            renderer.render(scene, camera);
-        }
-
-        // Llama a la función initThreeJS() y configura los eventos de los botones
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('status').innerText = "Inicializando Three.js y SDKs...";
-            initThreeJS(); 
-
-            // Inicializar Firebase (ahora `window.firebase` debería estar disponible)
-            try {
-                firebaseApp = window.firebase.initializeApp(firebaseConfig);
-                database = window.firebase.database();
-                console.log("Firebase inicializado con éxito.");
-            } catch (e) {
-                console.error("Error al inicializar Firebase. Asegúrate de que los SDKs estén cargados y la configuración sea correcta:", e);
-                document.getElementById('status').innerText += " (Error en Firebase)";
-            }
-
-            // Inicializar Google Generative AI (ahora `window.GoogleGenerativeAI` debería estar disponible)
-            try {
-                if (window.GoogleGenerativeAI) {
-                    const genAI_instance = new window.GoogleGenerativeAI(aiApiKey);
-                    gemini_model = genAI_instance.getGenerativeModel({ model: "gemini-pro" }); 
-                    console.log("Google Generative AI inicializado con éxito.");
-                    document.getElementById('status').innerText = "SDKs listos. Pulsa 'CREAR HOJA LISA'.";
-                    addChatMessage('ai', '¡Hola! Describe la criatura u objeto que quieres que cree. Intentaré deformar una hoja plana para darle forma. Por ejemplo: "un gato gordo con cola larga", "un pilar alto", "un disco plano", "una serpiente con cabeza pequeña".');
-                    document.getElementById('btn-crear-hoja').disabled = false; // Habilitar botón de crear hoja
-                } else {
-                    throw new Error("window.GoogleGenerativeAI no encontrado después de cargar el SDK UMD.");
-                }
-            } catch (e) {
-                console.error("Error al inicializar Google Generative AI:", e);
-                document.getElementById('status').innerText = `ERROR: IA no disponible (${e.message}). Recarga la página.`;
-                addChatMessage('ai', `Error crítico al inicializar la IA: ${e.message}. Recarga la página.`);
-            }
-
-            // Asignar event listeners a los botones
-            document.getElementById('btn-crear-hoja').addEventListener('click', crearHojaLisa);
-            document.getElementById('btn-send-prompt').addEventListener('click', handleUserPrompt);
+        // --- 2. Eventos Táctiles ---
+        canvas.addEventListener('touchstart', (e) => {
+            isDrawing = true;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
         });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isDrawing) return;
+            const curX = e.touches[0].clientX;
+            const curY = e.touches[0].clientY;
+
+            roi.x = Math.min(startX, curX);
+            roi.y = Math.min(startY, curY);
+            roi.w = Math.abs(startX - curX);
+            roi.h = Math.abs(startY - curY);
+
+            drawSelection();
+        });
+
+        canvas.addEventListener('touchend', () => {
+            isDrawing = false;
+            saveToFirebase();
+        });
+
+        function drawSelection() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "#ff9800";
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]); // Línea punteada
+            ctx.strokeRect(roi.x, roi.y, roi.w, roi.h);
+        }
+
+        // --- 3. Guardar en Firebase ---
+        function saveToFirebase() {
+            status.innerText = "GUARDANDO EN CLOUD...";
+            
+            // Referencia en la base de datos (sección 'current_roi')
+            const roiRef = ref(db, 'macros/osrs_config');
+            
+            set(roiRef, {
+                x: Math.round(roi.x),
+                y: Math.round(roi.y),
+                width: Math.round(roi.w),
+                height: Math.round(roi.h),
+                timestamp: Date.now()
+            }).then(() => {
+                status.innerText = "✅ COORDENADAS SINCRONIZADAS";
+                setTimeout(() => status.innerText = "DIBUJA OTRA ZONA O ABRE OSRS", 2000);
+            }).catch((error) => {
+                status.innerText = "❌ ERROR DB: " + error.message;
+            });
+        }
     </script>
 </body>
 </html>
